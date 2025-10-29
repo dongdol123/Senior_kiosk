@@ -7,7 +7,7 @@ export default function MenuPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const entry = (searchParams.get("entry") || "voice").toLowerCase();
-    // blinking removed per requirement
+
     const [errorMessage, setErrorMessage] = useState("");
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
@@ -18,6 +18,60 @@ export default function MenuPage() {
     const restartingRef = useRef(false);
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
+
+    // cart state
+    const MENU_ITEMS = [
+        { id: "a", name: "메뉴 A", price: 5000 },
+        { id: "b", name: "메뉴 B", price: 5000 },
+        { id: "c", name: "메뉴 C", price: 5000 },
+        { id: "d", name: "메뉴 D", price: 5000 },
+    ];
+    const [cartItems, setCartItems] = useState([]); // [{id, name, price, qty}]
+
+    async function addToCart(item) {
+        setCartItems((prev) => {
+            const idx = prev.findIndex((p) => p.id === item.id);
+            if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+                return next;
+            }
+            return [...prev, { ...item, qty: 1 }];
+        });
+        try { await speakKorean(`${item.name} 담았어요.`); } catch { }
+    }
+
+    async function removeFromCart(itemId) {
+        let removedCompletely = false;
+        let removedItemName = "";
+        setCartItems((prev) => {
+            const idx = prev.findIndex((p) => p.id === itemId);
+            if (idx === -1) return prev;
+            const target = prev[idx];
+            removedItemName = target.name;
+            if (target.qty <= 1) {
+                removedCompletely = true;
+                return prev.filter((p) => p.id !== itemId);
+            }
+            const next = [...prev];
+            next[idx] = { ...target, qty: target.qty - 1 };
+            return next;
+        });
+        try {
+            if (removedCompletely) {
+                await speakKorean(`${removedItemName}를 장바구니에서 비웠어요.`);
+            } else {
+                await speakKorean(`${removedItemName} 한 개 뺐어요.`);
+            }
+        } catch { }
+    }
+
+    async function clearCart() {
+        setCartItems([]);
+        try { await speakKorean("장바구니를 모두 비웠어요."); } catch { }
+    }
+
+    const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
 
     async function speakKorean(text) {
         try {
@@ -37,7 +91,7 @@ export default function MenuPage() {
         }
     }
 
-    // no blinking effect
+    // 여기부턴 그냥 주문하기
 
     useEffect(() => {
         mountedRef.current = true;
@@ -122,7 +176,7 @@ export default function MenuPage() {
                 setErrorMessage("마이크 사용 권한을 허용해 주세요.");
             }
         } else {
-            // simple entry: do not start mic
+
             shouldListenRef.current = false;
         }
 
@@ -213,6 +267,60 @@ export default function MenuPage() {
                 </button>
             </div>
 
+            {/* Cart panel */}
+            <div
+                style={{
+                    height: "25vh",
+                    minHeight: 180,
+                    padding: "12px 16px",
+                }}
+            >
+                <div
+                    style={{
+                        height: "100%",
+                        background: "#ffffff",
+                        border: "1px solid #eee",
+                        borderRadius: 12,
+                        padding: 12,
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",
+                    }}
+                >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <div style={{ fontWeight: "bold" }}>장바구니</div>
+                        <div style={{ fontSize: 14, color: "#555" }}>총액: {cartTotal.toLocaleString()}원</div>
+                    </div>
+
+                    <div style={{ flex: 1, overflowY: "auto", borderTop: "1px dashed #e5e5e5", paddingTop: 8 }}>
+                        {cartItems.length === 0 ? (
+                            <div style={{ color: "#888" }}>담긴 상품이 없습니다.</div>
+                        ) : (
+                            cartItems.map((it) => (
+                                <div key={it.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <div style={{ width: 36, height: 36, background: "#f3f3f3", border: "1px solid #eee", borderRadius: 6 }} />
+                                        <div>
+                                            <div style={{ fontWeight: 600 }}>{it.name}</div>
+                                            <div style={{ fontSize: 12, color: "#777" }}>{it.price.toLocaleString()}원 × {it.qty}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                        <button onClick={() => removeFromCart(it.id)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>-</button>
+                                        <button onClick={() => addToCart(it)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>+</button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
+                        <button onClick={clearCart} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>비우기</button>
+                        <button style={{ padding: "8px 12px", borderRadius: 8, border: "none", background: "#1e7a39", color: "#fff", cursor: "pointer" }}>결제하기</button>
+                    </div>
+                </div>
+            </div>
+
             <div
                 style={{
                     flex: 1,
@@ -224,36 +332,32 @@ export default function MenuPage() {
                     color: "#777",
                 }}
             >
-                {/* 메뉴 4개 */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 160px)", gap: "16px" }}>
-                    {[1, 2, 3, 4].map((num) => (
-                        <button
-                            key={num}
-                            style={{
-                                height: 100,
-                                borderRadius: 12,
-                                background: "#ffffff",
-                                border: "1px solid #e5e5e5",
-                                boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                                fontSize: "1.25rem",
-                                cursor: "pointer",
-                            }}
-                            onClick={async () => {
-                                if (num === 1) {
-                                    setOrdered(true);
-                                    const msg = "메뉴 1 주문을 완료했어요. 결제하시겠어요?";
-                                    setAssistantMessage(msg);
-                                    await speakKorean(msg);
-                                    try { recognitionRef.current?.stop(); } catch { }
-                                } else {
-                                    const msg = "아직은 메뉴 1만 주문할 수 있어요.";
-                                    setAssistantMessage(msg);
-                                    await speakKorean(msg);
-                                }
-                            }}
-                        >
-                            메뉴 {num}
-                        </button>
+                {/* 메뉴 4개 (A-D) */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(160px, 200px))", gap: "16px" }}>
+                    {MENU_ITEMS.map((m) => (
+                        <div key={m.id} style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                            background: "#ffffff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: 12,
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                            padding: 12,
+                        }}>
+                            {/* 이미지 자리 */}
+                            <div style={{ height: 100, background: "#f3f3f3", border: "1px dashed #ddd", borderRadius: 8 }} />
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <div>
+                                    <div style={{ fontWeight: 700 }}>{m.name}</div>
+                                    <div style={{ color: "#777", marginTop: 4 }}>{m.price.toLocaleString()}원</div>
+                                </div>
+                                <button
+                                    onClick={() => addToCart(m)}
+                                    style={{ background: "#1e7a39", color: "#fff", border: "none", borderRadius: 8, padding: "8px 10px", cursor: "pointer" }}
+                                >담기</button>
+                            </div>
+                        </div>
                     ))}
                 </div>
 
