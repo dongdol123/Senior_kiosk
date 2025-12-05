@@ -437,7 +437,10 @@ export default function MenuPage() {
                                     <div style={{ color: "#777", marginTop: 4 }}>{m.price.toLocaleString()}원</div>
                                 </div>
                                 <button
-                                    onClick={() => addToCart(m)}
+                                    onClick={() => {
+                                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                                        router.push(`/menu-option?menuId=${m.id}&menuName=${encodeURIComponent(m.name)}&price=${m.price}&cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}`);
+                                    }}
                                     style={{ background: "#1e7a39", color: "#fff", border: "none", borderRadius: 8, padding: "8px 10px", cursor: "pointer" }}
                                 >담기</button>
                             </div>
