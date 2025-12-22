@@ -21,10 +21,23 @@ export default function MenuPage() {
     const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
     // cart state
-    const [MENU_ITEMS, setMENU_ITEMS] = useState([]);
+    const STATIC_MENU = [
+        { id: "main-1", name: "불고기버거", price: 5000, keywords: ["불고기", "bulgogi"] },
+        { id: "main-2", name: "새우버거", price: 4800, keywords: ["새우", "shrimp"] },
+        { id: "drink-1", name: "콜라", price: 2000, keywords: ["콜라", "coke"] },
+        { id: "drink-2", name: "제로콜라", price: 2000, keywords: ["제로", "제로콜라", "coke zero", "zero"] },
+        { id: "drink-3", name: "사이다", price: 2000, keywords: ["사이다", "soda"] },
+        { id: "drink-4", name: "커피", price: 2000, keywords: ["커피", "coffee"] },
+        { id: "side-1", name: "감자튀김", price: 3000, keywords: ["감자", "튀김", "감튀", "fries"] },
+        { id: "side-2", name: "샐러드", price: 3000, keywords: ["샐러드", "salad"] },
+        { id: "side-3", name: "치킨텐더", price: 3000, keywords: ["치킨", "텐더", "치킨텐더", "tender"] },
+    ];
+    const [MENU_ITEMS, setMENU_ITEMS] = useState(STATIC_MENU);
     const [cartItems, setCartItems] = useState([]); // [{id, name, price, qty}]
     const [recommendedMenus, setRecommendedMenus] = useState([]);
     const [showRecommendation, setShowRecommendation] = useState(false);
+    const [showFriesModal, setShowFriesModal] = useState(false);
+    const [selectedFries, setSelectedFries] = useState(null);
 
     // DB에서 메뉴 로드
     useEffect(() => {
@@ -32,8 +45,36 @@ export default function MenuPage() {
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/menu`);
                 const data = await res.json();
-                if (res.ok && data.menus) {
-                    setMENU_ITEMS(data.menus);
+                if (res.ok && data.menus && data.menus.length > 0) {
+                    const normalizeName = (name) => (name || "").replace(/\s+/g, "").toLowerCase();
+
+                    // API 데이터를 이름(공백 제거) 기준으로 중복 제거하고, 가격을 정정한 뒤 누락분을 STATIC_MENU로 보완
+                    const uniqueByName = new Map();
+                    data.menus.forEach((item) => {
+                        if (!item?.name) return;
+                        const key = normalizeName(item.name);
+                        if (!uniqueByName.has(key)) uniqueByName.set(key, item);
+                    });
+
+                    const canonical = Array.from(uniqueByName.values()).map((item) => {
+                        const corrected = { ...item };
+                        const n = normalizeName(corrected.name);
+                        if (n === "불고기버거") corrected.price = 5000;
+                        if (n === "새우버거") corrected.price = 4800;
+                        if (n === "감자튀김") corrected.price = 3000;
+                        if (n === "샐러드") corrected.price = 3000;
+                        if (n === "치킨텐더") corrected.price = 3000;
+                        if (["콜라", "제로콜라", "사이다", "커피"].includes(corrected.name)) corrected.price = 2000;
+                        return corrected;
+                    });
+
+                    // 누락된 필수 메뉴를 STATIC_MENU 기준으로 채워 넣기 (공백 제거 기준)
+                    const existingNames = new Set(canonical.map((m) => normalizeName(m.name)));
+                    STATIC_MENU.forEach((item) => {
+                        if (!existingNames.has(normalizeName(item.name))) canonical.push(item);
+                    });
+
+                    setMENU_ITEMS(canonical.slice(0, 16));
                 }
             } catch (e) {
                 console.error('Failed to load menus:', e);
@@ -272,10 +313,10 @@ export default function MenuPage() {
     return (
         <main
             style={{
-                display: "flex",
-                flexDirection: "column",
+                position: "relative",
                 minHeight: "100vh",
                 backgroundColor: "#f9f9f9",
+                paddingBottom: 220, // space for bottom cart
             }}
         >
             <div
@@ -284,201 +325,258 @@ export default function MenuPage() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "16px",
+                    borderBottom: "1px solid #e5e5e5",
+                    backgroundColor: "#fff",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 50,
                 }}
             >
-                <div
-                    style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        backgroundColor: entry === "voice" ? "#e6f4ea" : "#eee",
-                        color: entry === "voice" ? "#1e7a39" : "#777",
-                        border: entry === "voice" ? "1px solid #bfe3ca" : "1px solid #ddd",
-                        borderRadius: "999px",
-                        padding: "8px 14px",
-                        fontWeight: "bold",
-                        opacity: entry === "voice" ? (isListening ? 1 : 0.85) : 1,
-                    }}
-                >
-                    <span style={{ width: 10, height: 10, borderRadius: "50%", opacity: 1, background: entry === "voice" ? "#34c759" : "#bbb" }} />
-                    {entry === "voice" ? "음성 주문중" : "간편 모드"}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            backgroundColor: entry === "voice" ? "#e6f4ea" : "#eee",
+                            color: entry === "voice" ? "#1e7a39" : "#777",
+                            border: entry === "voice" ? "1px solid #bfe3ca" : "1px solid #ddd",
+                            borderRadius: "999px",
+                            padding: "8px 14px",
+                            fontWeight: "bold",
+                            opacity: entry === "voice" ? (isListening ? 1 : 0.85) : 1,
+                        }}
+                    >
+                        <span style={{ width: 10, height: 10, borderRadius: "50%", opacity: 1, background: entry === "voice" ? "#34c759" : "#bbb" }} />
+                        {entry === "voice" ? "음성 주문중" : "간편 모드"}
+                    </div>
+                    <div style={{ color: "#555", fontSize: 14 }}>
+                        {isListening ? "음성 인식 중입니다." : "마이크를 준비하고 있어요..."}
+                    </div>
                 </div>
 
-                <button
-                    onClick={() => {
-                        shouldListenRef.current = false;
-                        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
-                        try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
-                        if (typeof window !== "undefined" && window.history.length > 1) {
-                            router.back();
-                        } else {
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    {errorMessage ? (
+                        <div style={{ color: "#b00020", fontSize: 13, fontWeight: 700 }}>{errorMessage}</div>
+                    ) : null}
+                    <button
+                        onClick={() => {
+                            shouldListenRef.current = false;
+                            try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
+                            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
                             router.push("/");
-                        }
-                    }}
-                    style={{
-                        backgroundColor: "#ffffff",
-                        border: "1px solid #ddd",
-                        padding: "8px 14px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
-                    }}
-                >
-                    뒤로 가기
-                </button>
+                        }}
+                        style={{
+                            backgroundColor: "#ffffff",
+                            border: "1px solid #ddd",
+                            padding: "8px 14px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        뒤로 가기
+                    </button>
+                </div>
             </div>
 
-            {/* Cart panel */}
             <div
                 style={{
-                    height: "25vh",
-                    minHeight: 180,
-                    padding: "12px 16px",
+                    padding: "12px 24px",
+                    background: "#f2f4f7",
+                    borderBottom: "1px solid #e5e5e5",
                 }}
             >
+                <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ fontWeight: 800, fontSize: 20 }}>메뉴 목록</div>
+                    <div style={{ color: "#666", fontSize: 14 }}>버거 · 음료 · 사이드</div>
+                </div>
+            </div>
+
+            <div
+                style={{
+                    maxWidth: 1200,
+                    margin: "0 auto",
+                    padding: "0 24px 24px",
+                }}
+            >
+                {/* 메뉴 4 x 4 */}
                 <div
                     style={{
-                        height: "100%",
-                        background: "#ffffff",
-                        border: "1px solid #eee",
-                        borderRadius: 12,
-                        padding: 12,
-                        display: "flex",
-                        flexDirection: "column",
-                        overflow: "hidden",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                        gap: "16px",
+                        alignItems: "stretch",
                     }}
                 >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <div style={{ fontWeight: "bold" }}>장바구니</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ fontSize: 14, color: "#555" }}>총액: {cartTotal.toLocaleString()}원</div>
-                            <button
-                                onClick={() => {
-                                    if (cartItems.length === 0) {
-                                        setErrorMessage("장바구니가 비어있습니다.");
-                                        return;
-                                    }
-                                    // 장바구니 데이터를 쿼리 파라미터로 전달
-                                    const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                                    router.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${searchParams.get("orderType") || "takeout"}`);
-                                }}
-                                disabled={cartItems.length === 0}
+                    {MENU_ITEMS.slice(0, 16).map((m) => (
+                        <div
+                            key={m.id}
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 12,
+                                background: "#ffffff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: 16,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                                padding: 16,
+                                minHeight: 220,
+                            }}
+                        >
+                            <div
                                 style={{
-                                    padding: "8px 16px",
-                                    borderRadius: 8,
-                                    border: "none",
-                                    background: cartItems.length === 0 ? "#ccc" : "#1e7a39",
-                                    color: "#fff",
-                                    cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                                    fontWeight: 600,
+                                    height: 140,
+                                    background: "linear-gradient(135deg, #f8fbff 0%, #eef3ff 100%)",
+                                    border: "1px dashed #d8dfee",
+                                    borderRadius: 12,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#8aa0c5",
+                                    fontWeight: 700,
                                 }}
                             >
-                                주문하기
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style={{ flex: 1, overflowY: "auto", borderTop: "1px dashed #e5e5e5", paddingTop: 8 }}>
-                        {cartItems.length === 0 ? (
-                            <div style={{ color: "#888" }}>담긴 상품이 없습니다.</div>
-                        ) : (
-                            cartItems.map((it) => (
-                                <div key={it.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        <div style={{ width: 36, height: 36, background: "#f3f3f3", border: "1px solid #eee", borderRadius: 6 }} />
-                                        <div>
-                                            <div style={{ fontWeight: 600 }}>{it.name}</div>
-                                            <div style={{ fontSize: 12, color: "#777" }}>{it.price.toLocaleString()}원 × {it.qty}</div>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                        <button onClick={() => removeFromCart(it.id)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>-</button>
-                                        <button onClick={() => addToCart(it)} style={{ padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>+</button>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 8 }}>
-                        <button onClick={clearCart} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>비우기</button>
-                    </div>
-                </div>
-            </div>
-
-            <div
-                style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#777",
-                }}
-            >
-                {/* 메뉴 4개 (A-D) */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(160px, 200px))", gap: "16px" }}>
-                    {MENU_ITEMS.map((m) => (
-                        <div key={m.id} style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 8,
-                            background: "#ffffff",
-                            border: "1px solid #e5e5e5",
-                            borderRadius: 12,
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                            padding: 12,
-                        }}>
-                            {/* 이미지 자리 */}
-                            <div style={{ height: 100, background: "#f3f3f3", border: "1px dashed #ddd", borderRadius: 8 }} />
+                                메뉴 이미지
+                            </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <div>
-                                    <div style={{ fontWeight: 700 }}>{m.name}</div>
-                                    <div style={{ color: "#777", marginTop: 4 }}>{m.price.toLocaleString()}원</div>
+                                    <div style={{ fontWeight: 700, fontSize: 18 }}>{m.name}</div>
+                                    <div style={{ color: "#555", marginTop: 6, fontSize: 15 }}>{m.price.toLocaleString()}원</div>
                                 </div>
                                 <button
                                     onClick={() => {
+                                        const name = m.name;
                                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                                        router.push(`/menu-option?menuId=${m.id}&menuName=${encodeURIComponent(m.name)}&price=${m.price}&cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}`);
+                                        const orderType = searchParams.get("orderType") || "takeout";
+
+                                        // 감자튀김: 사이즈 선택 모달
+                                        if (/감자튀김/.test(name)) {
+                                            setSelectedFries(m);
+                                            setShowFriesModal(true);
+                                            return;
+                                        }
+
+                                        // 샐러드, 치킨텐더: 바로 담기
+                                        if (/샐러드|치킨텐더/.test(name)) {
+                                            addToCart(m);
+                                            return;
+                                        }
+
+                                        router.push(`/menu-option?menuId=${m.id}&menuName=${encodeURIComponent(name)}&price=${m.price}&cart=${cartData}&orderType=${orderType}`);
                                     }}
-                                    style={{ background: "#1e7a39", color: "#fff", border: "none", borderRadius: 8, padding: "8px 10px", cursor: "pointer" }}
-                                >담기</button>
+                                    style={{ background: "#1e7a39", color: "#fff", border: "none", borderRadius: 10, padding: "10px 12px", cursor: "pointer", fontWeight: 700 }}
+                                >
+                                    담기
+                                </button>
                             </div>
+                        </div>
+                    ))}
+                    {Array.from({ length: Math.max(0, 16 - MENU_ITEMS.length) }).map((_, idx) => (
+                        <div
+                            key={`placeholder-${idx}`}
+                            style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 12,
+                                background: "#f6f7f9",
+                                border: "1px dashed #d0d7e2",
+                                borderRadius: 16,
+                                padding: 16,
+                                minHeight: 220,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#8aa0c5",
+                                fontWeight: 700,
+                            }}
+                        >
+                            메뉴 준비중
                         </div>
                     ))}
                 </div>
 
-                {/* 간단 채팅 UI */}
-                <div style={{
-                    width: 340,
-                    maxWidth: "90vw",
-                    background: "#fff",
-                    border: "1px solid #eee",
-                    borderRadius: 12,
-                    padding: 12,
-                    marginTop: 12,
-                }}>
-                    <div style={{ fontSize: 14, color: "#888", marginBottom: 6 }}>대화</div>
-                    {lastUser ? (
-                        <div style={{ marginBottom: 8 }}>
-                            <strong>사용자</strong>: {lastUser}
-                        </div>
-                    ) : null}
-                    {assistantMessage ? (
-                        <div>
-                            <strong>티노</strong>: {assistantMessage}
-                        </div>
+            </div>
+
+            {/* Bottom cart */}
+            <div
+                style={{
+                    position: "fixed",
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "#ffffff",
+                    borderTop: "1px solid #e5e5e5",
+                    boxShadow: "0 -4px 14px rgba(0,0,0,0.08)",
+                    padding: "14px 20px",
+                    zIndex: 900,
+                }}
+            >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                    <div style={{ fontWeight: 800, fontSize: 18 }}>장바구니</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ fontSize: 15, color: "#333", fontWeight: 700 }}>총액 {cartTotal.toLocaleString()}원</div>
+                        <button
+                            onClick={() => {
+                                if (cartItems.length === 0) {
+                                    setErrorMessage("장바구니가 비어있습니다.");
+                                    return;
+                                }
+                                const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                                router.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${searchParams.get("orderType") || "takeout"}`);
+                            }}
+                            disabled={cartItems.length === 0}
+                            style={{
+                                padding: "10px 18px",
+                                borderRadius: 12,
+                                border: "none",
+                                background: cartItems.length === 0 ? "#ccc" : "#1e7a39",
+                                color: "#fff",
+                                cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+                                fontWeight: 700,
+                                minWidth: 120,
+                            }}
+                        >
+                            주문하기
+                        </button>
+                        <button
+                            onClick={clearCart}
+                            style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ddd", background: "#fff", cursor: "pointer", fontWeight: 600 }}
+                        >
+                            비우기
+                        </button>
+                    </div>
+                </div>
+                <div style={{ marginTop: 12, display: "flex", gap: 10, overflowX: "auto", paddingBottom: 6 }}>
+                    {cartItems.length === 0 ? (
+                        <div style={{ color: "#777" }}>담긴 상품이 없습니다.</div>
                     ) : (
-                        <div style={{ color: "#666" }}>
-                            {isListening ? "음성 인식 중입니다. 메뉴를 말씀해 주세요." : "마이크를 준비하고 있어요..."}
-                        </div>
+                        cartItems.map((it) => (
+                            <div
+                                key={it.id}
+                                style={{
+                                    minWidth: 180,
+                                    border: "1px solid #eee",
+                                    borderRadius: 12,
+                                    padding: "10px 12px",
+                                    background: "#f9fafb",
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    gap: 10,
+                                }}
+                            >
+                                <div>
+                                    <div style={{ fontWeight: 700 }}>{it.name}</div>
+                                    <div style={{ color: "#666", fontSize: 13 }}>{it.price.toLocaleString()}원 × {it.qty}</div>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <button onClick={() => removeFromCart(it.id)} style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>-</button>
+                                    <button onClick={() => addToCart(it)} style={{ padding: "6px 8px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", cursor: "pointer" }}>+</button>
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
             </div>
-
-            {errorMessage ? (
-                <div style={{ color: "#b00020", padding: "0 16px 16px" }}>{errorMessage}</div>
-            ) : null}
 
             {/* 추천 메뉴 모달 */}
             {showRecommendation && recommendedMenus.length > 0 && (
@@ -561,6 +659,83 @@ export default function MenuPage() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 감자튀김 사이즈 선택 모달 */}
+            {showFriesModal && selectedFries && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: "rgba(0,0,0,0.5)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1100,
+                    }}
+                    onClick={() => setShowFriesModal(false)}
+                >
+                    <div
+                        style={{
+                            background: "#fff",
+                            borderRadius: 16,
+                            padding: 20,
+                            width: "90%",
+                            maxWidth: 420,
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                            <div style={{ fontSize: "1.3rem", fontWeight: 800 }}>감자튀김 사이즈 선택</div>
+                            <button
+                                onClick={() => setShowFriesModal(false)}
+                                style={{ background: "transparent", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#666" }}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <button
+                                onClick={() => {
+                                    addToCart({ ...selectedFries, id: `${selectedFries.id}_M`, name: "감자튀김 (미디움)", price: 3000 });
+                                    setShowFriesModal(false);
+                                }}
+                                style={{
+                                    height: 60,
+                                    borderRadius: 12,
+                                    border: "1px solid #1e7a39",
+                                    background: "#f5fbf7",
+                                    color: "#1e7a39",
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                미디움으로 담기 (3,000원)
+                            </button>
+                            <button
+                                onClick={() => {
+                                    addToCart({ ...selectedFries, id: `${selectedFries.id}_L`, name: "감자튀김 (라지)", price: 4000 });
+                                    setShowFriesModal(false);
+                                }}
+                                style={{
+                                    height: 60,
+                                    borderRadius: 12,
+                                    border: "1px solid #ff6b35",
+                                    background: "#fff7f3",
+                                    color: "#ff6b35",
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                }}
+                            >
+                                라지로 담기 (4,000원)
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -239,7 +239,14 @@ export default function SideSelectPage() {
                     </div>
                 </div>
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => {
+                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                        const orderType = searchParams.get("orderType") || "takeout";
+                        router.push(
+                            `/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
+                            `&cart=${cartData}&orderType=${orderType}`
+                        );
+                    }}
                     style={{
                         backgroundColor: "#ffffff",
                         border: "1px solid #ddd",
