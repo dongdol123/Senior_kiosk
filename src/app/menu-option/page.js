@@ -15,6 +15,11 @@ export default function MenuOptionPage() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
 
+    const isDrink = (() => {
+        const n = (menuName || "").replace(/\s+/g, "").toLowerCase();
+        return ["콜라", "제로콜라", "사이다", "커피", "coke", "zero", "soda", "coffee"].some((k) => n.includes(k));
+    })();
+
     async function speakKorean(text) {
         try {
             const synth = window.speechSynthesis;
@@ -80,6 +85,26 @@ export default function MenuOptionPage() {
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
 
+            // 음료인 경우 사이즈 음성 선택
+            if (isDrink) {
+                if (/미디움|미디엄|중간/.test(normalized)) {
+                    setAssistantMessage("미디움으로 담을게요.");
+                    await speakKorean("미디움으로 담을게요.");
+                    setTimeout(() => handleDrinkSize("미디움"), 600);
+                    return;
+                }
+                if (/라지|큰거|큰사이즈/.test(normalized)) {
+                    setAssistantMessage("라지로 담을게요. 500원 추가됩니다.");
+                    await speakKorean("라지로 담을게요. 500원 추가됩니다.");
+                    setTimeout(() => handleDrinkSize("라지"), 600);
+                    return;
+                }
+                const msg = "미디움 또는 라지를 말씀해주세요.";
+                setAssistantMessage(msg);
+                await speakKorean(msg);
+                return;
+            }
+
             // 단품 선택
             if (/단품|단품으로|단품주문/.test(normalized)) {
                 setAssistantMessage("단품을 선택하셨어요.");
@@ -132,6 +157,22 @@ export default function MenuOptionPage() {
             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
         };
     }, []);
+
+    function handleDrinkSize(size) {
+        const price = menuPrice + (size === "라지" ? 500 : 0);
+        const newCartItems = [...cartItems];
+        const id = `${menuId}_${size}`;
+        const idx = newCartItems.findIndex((p) => p.id === id);
+        if (idx >= 0) {
+            newCartItems[idx] = { ...newCartItems[idx], qty: newCartItems[idx].qty + 1 };
+        } else {
+            newCartItems.push({ id, name: `${menuName} (${size})`, price, qty: 1, type: "drink", size });
+        }
+
+        const cartData = encodeURIComponent(JSON.stringify(newCartItems));
+        const orderType = searchParams.get("orderType") || "takeout";
+        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+    }
 
     function handleSingle() {
         // 단품 장바구니에 추가
@@ -224,7 +265,11 @@ export default function MenuOptionPage() {
                     </div>
                 </div>
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => {
+                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                        const orderType = searchParams.get("orderType") || "takeout";
+                        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                    }}
                     style={{
                         backgroundColor: "#ffffff",
                         border: "1px solid #ddd",
@@ -265,80 +310,160 @@ export default function MenuOptionPage() {
                     gap: "30px",
                 }}
             >
-                {/* 단품/세트 선택 버튼 */}
-                <div
-                    style={{
-                        display: "flex",
-                        gap: "24px",
-                        width: "100%",
-                        maxWidth: "600px",
-                    }}
-                >
-                    <button
-                        onClick={handleSingle}
+                {!isDrink ? (
+                    <>
+                        {/* 단품/세트 선택 버튼 */}
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: "24px",
+                                width: "100%",
+                                maxWidth: "600px",
+                            }}
+                        >
+                            <button
+                                onClick={handleSingle}
+                                style={{
+                                    flex: 1,
+                                    height: "120px",
+                                    fontSize: "2rem",
+                                    fontWeight: "bold",
+                                    backgroundColor: "#1e7a39",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "16px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                }}
+                            >
+                                단품
+                                <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9 }}>
+                                    {menuPrice.toLocaleString()}원
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={handleSet}
+                                style={{
+                                    flex: 1,
+                                    height: "120px",
+                                    fontSize: "2rem",
+                                    fontWeight: "bold",
+                                    backgroundColor: "#ff6b35",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "16px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                }}
+                            >
+                                세트
+                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9 }}>
+                                    음료+사이드 선택
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* 기본 세트 적용 버튼 */}
+                        <button
+                            onClick={handleDefaultSet}
+                            style={{
+                                width: "100%",
+                                maxWidth: "600px",
+                                height: "80px",
+                                fontSize: "1.5rem",
+                                fontWeight: "bold",
+                                backgroundColor: "#4a90e2",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "16px",
+                                cursor: "pointer",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            }}
+                        >
+                            기본 세트 적용 (콜라 / 감자튀김)
+                            <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9 }}>
+                                {(menuPrice + 2000 + 3000).toLocaleString()}원
+                            </div>
+                        </button>
+                    </>
+                ) : (
+                    <div
                         style={{
-                            flex: 1,
-                            height: "120px",
-                            fontSize: "2rem",
-                            fontWeight: "bold",
-                            backgroundColor: "#1e7a39",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "16px",
-                            cursor: "pointer",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            display: "grid",
+                            gridTemplateColumns: "1.2fr 1fr",
+                            gap: "16px",
+                            width: "100%",
+                            maxWidth: "720px",
                         }}
                     >
-                        단품
-                        <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9 }}>
-                            {menuPrice.toLocaleString()}원
+                        <div
+                            style={{
+                                background: "#fff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: 14,
+                                padding: 16,
+                                minHeight: 200,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#8aa0c5",
+                                fontWeight: 700,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                            }}
+                        >
+                            음료 이미지 추가 영역
                         </div>
-                    </button>
-
-                    <button
-                        onClick={handleSet}
-                        style={{
-                            flex: 1,
-                            height: "120px",
-                            fontSize: "2rem",
-                            fontWeight: "bold",
-                            backgroundColor: "#ff6b35",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "16px",
-                            cursor: "pointer",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                        }}
-                    >
-                        세트
-                        <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9 }}>
-                            음료+사이드 선택
+                        <div
+                            style={{
+                                background: "#fff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: 14,
+                                padding: 16,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 12,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                            }}
+                        >
+                            <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                                {menuName} 사이즈를 선택하세요
+                            </div>
+                            {["미디움", "라지"].map((size) => (
+                                <button
+                                    key={size}
+                                    onClick={() => handleDrinkSize(size)}
+                                    style={{
+                                        height: "70px",
+                                        fontSize: "1.1rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: "#f7f9fc",
+                                        color: "#333",
+                                        border: "1px solid #d7dfef",
+                                        borderRadius: "10px",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "0 14px",
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{ fontSize: "1rem", fontWeight: 700, lineHeight: 1.2 }}>
+                                            {size === "미디움" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기 (+500원)"}
+                                        </div>
+                                        <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>
+                                            {size === "라지" ? `+500원 (총 ${(menuPrice + 500).toLocaleString()}원)` : `${menuPrice.toLocaleString()}원`}
+                                        </div>
+                                    </div>
+                                    <span style={{ fontWeight: 800, fontSize: "1rem" }}>
+                                        {size === "라지" ? "+500원" : "M"}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
-                    </button>
-                </div>
-
-                {/* 기본 세트 적용 버튼 */}
-                <button
-                    onClick={handleDefaultSet}
-                    style={{
-                        width: "100%",
-                        maxWidth: "600px",
-                        height: "80px",
-                        fontSize: "1.5rem",
-                        fontWeight: "bold",
-                        backgroundColor: "#4a90e2",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: "16px",
-                        cursor: "pointer",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                    }}
-                >
-                    기본 세트 적용 (콜라 / 감자튀김)
-                    <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9 }}>
-                        {(menuPrice + 2000 + 3000).toLocaleString()}원
                     </div>
-                </button>
+                )}
             </div>
         </main>
     );

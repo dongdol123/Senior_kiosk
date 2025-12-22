@@ -17,10 +17,10 @@ export default function DrinkSelectPage() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
 
-    const drinks = ["콜라", "사이다", "제로콜라"];
+    const drinks = ["콜라", "제로콜라", "사이다", "커피"];
     const sizes = [
         { name: "미디움", price: 2000 },
-        { name: "라지", price: 2500 },
+        { name: "라지", price: 2500 }, // +500원
     ];
 
     async function speakKorean(text) {
@@ -97,6 +97,13 @@ export default function DrinkSelectPage() {
                     await speakKorean(msg);
                     return;
                 }
+                if (/제로|제로콜라/.test(normalized)) {
+                    setSelectedDrink("제로콜라");
+                    const msg = "제로콜라를 선택하셨어요. 사이즈를 선택해주세요.";
+                    setAssistantMessage(msg);
+                    await speakKorean(msg);
+                    return;
+                }
                 if (/사이다/.test(normalized)) {
                     setSelectedDrink("사이다");
                     const msg = "사이다를 선택하셨어요. 사이즈를 선택해주세요.";
@@ -104,9 +111,9 @@ export default function DrinkSelectPage() {
                     await speakKorean(msg);
                     return;
                 }
-                if (/제로|제로콜라/.test(normalized)) {
-                    setSelectedDrink("제로콜라");
-                    const msg = "제로콜라를 선택하셨어요. 사이즈를 선택해주세요.";
+                if (/커피|coffee/.test(normalized)) {
+                    setSelectedDrink("커피");
+                    const msg = "커피를 선택하셨어요. 사이즈를 선택해주세요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
                     return;
@@ -133,7 +140,7 @@ export default function DrinkSelectPage() {
                 }
             }
 
-            const msg = selectedDrink ? "미디움 또는 라지 사이즈를 말씀해주세요." : "콜라, 사이다, 제로콜라 중 하나를 말씀해주세요.";
+            const msg = selectedDrink ? "미디움 또는 라지 사이즈를 말씀해주세요." : "콜라, 제로콜라, 사이다, 커피 중 하나를 말씀해주세요.";
             setAssistantMessage(msg);
             await speakKorean(msg);
         };
@@ -219,7 +226,11 @@ export default function DrinkSelectPage() {
                     </div>
                 </div>
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => {
+                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                        const orderType = searchParams.get("orderType") || "takeout";
+                        router.push(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}`);
+                    }}
                     style={{
                         backgroundColor: "#ffffff",
                         border: "1px solid #ddd",
@@ -269,8 +280,8 @@ export default function DrinkSelectPage() {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(3, 1fr)",
-                            gap: "16px",
+                            gridTemplateColumns: "repeat(4, 1fr)",
+                            gap: "12px",
                         }}
                     >
                         {drinks.map((drink) => (
@@ -278,8 +289,8 @@ export default function DrinkSelectPage() {
                                 key={drink}
                                 onClick={() => setSelectedDrink(drink)}
                                 style={{
-                                    height: "100px",
-                                    fontSize: "1.3rem",
+                                    height: "90px",
+                                    fontSize: "1.1rem",
                                     fontWeight: "bold",
                                     backgroundColor: selectedDrink === drink ? "#1e7a39" : "#fff",
                                     color: selectedDrink === drink ? "#fff" : "#333",
@@ -290,70 +301,92 @@ export default function DrinkSelectPage() {
                                 }}
                             >
                                 {drink}
+                                <div style={{ fontSize: "0.9rem", marginTop: 6, opacity: 0.85 }}>
+                                    M {sizes[0].price.toLocaleString()}원
+                                </div>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* 사이즈 선택 */}
+                {/* 사이즈 선택 카드 */}
                 {selectedDrink && (
-                    <div>
-                        <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "20px" }}>
-                            사이즈를 선택하세요
-                        </h3>
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "1.2fr 1fr",
+                            gap: "16px",
+                            alignItems: "stretch",
+                        }}
+                    >
                         <div
                             style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(2, 1fr)",
-                                gap: "16px",
+                                background: "#fff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: 14,
+                                padding: 16,
+                                minHeight: 220,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#8aa0c5",
+                                fontWeight: 700,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
                             }}
                         >
+                            음료 이미지 추가 영역
+                        </div>
+                        <div
+                            style={{
+                                background: "#fff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: 14,
+                                padding: 16,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 12,
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                            }}
+                        >
+                            <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                                {selectedDrink} 사이즈를 선택하세요
+                            </div>
                             {sizes.map((size) => (
                                 <button
                                     key={size.name}
-                                    onClick={() => setSelectedSize(size.name)}
+                                    onClick={() => {
+                                        setSelectedSize(size.name);
+                                        setTimeout(() => handleNext(), 150); // 터치 즉시 진행
+                                    }}
                                     style={{
-                                        height: "100px",
-                                        fontSize: "1.3rem",
+                                        height: "70px",
+                                        fontSize: "1.1rem",
                                         fontWeight: "bold",
-                                        backgroundColor: selectedSize === size.name ? "#4a90e2" : "#fff",
+                                        backgroundColor: selectedSize === size.name ? "#4a90e2" : "#f7f9fc",
                                         color: selectedSize === size.name ? "#fff" : "#333",
-                                        border: selectedSize === size.name ? "3px solid #4a90e2" : "2px solid #ddd",
-                                        borderRadius: "12px",
+                                        border: selectedSize === size.name ? "2px solid #4a90e2" : "1px solid #d7dfef",
+                                        borderRadius: "10px",
                                         cursor: "pointer",
-                                        boxShadow: selectedSize === size.name ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
+                                        boxShadow: selectedSize === size.name ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "0 14px",
                                     }}
                                 >
-                                    {size.name}
-                                    <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9 }}>
-                                        {size.price.toLocaleString()}원
+                                    <div>
+                                        {size.name === "미디움" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기 (+500원)"}
+                                        <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>
+                                            {size.name === "라지" ? `+500원 (총 ${size.price.toLocaleString()}원)` : `${size.price.toLocaleString()}원`}
+                                        </div>
                                     </div>
+                                    <span style={{ fontWeight: 800, fontSize: "1rem" }}>
+                                        {size.name === "라지" ? "+500원" : "M"}
+                                    </span>
                                 </button>
                             ))}
                         </div>
                     </div>
-                )}
-
-                {/* 다음 버튼 */}
-                {selectedDrink && selectedSize && (
-                    <button
-                        onClick={handleNext}
-                        style={{
-                            width: "100%",
-                            height: "80px",
-                            fontSize: "1.8rem",
-                            fontWeight: "bold",
-                            backgroundColor: "#1e7a39",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "16px",
-                            cursor: "pointer",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                            marginTop: "auto",
-                        }}
-                    >
-                        다음 (사이드 선택)
-                    </button>
                 )}
             </div>
         </main>
