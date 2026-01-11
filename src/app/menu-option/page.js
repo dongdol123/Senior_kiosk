@@ -312,80 +312,80 @@ export default function MenuOptionPage() {
             >
                 {!isDrink ? (
                     <>
-                        {/* 단품/세트 선택 버튼 */}
-                        <div
-                            style={{
-                                display: "flex",
-                                gap: "24px",
-                                width: "100%",
-                                maxWidth: "600px",
-                            }}
-                        >
-                            <button
-                                onClick={handleSingle}
-                                style={{
-                                    flex: 1,
-                                    height: "120px",
-                                    fontSize: "2rem",
-                                    fontWeight: "bold",
-                                    backgroundColor: "#1e7a39",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "16px",
-                                    cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                }}
-                            >
-                                단품
-                                <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9 }}>
-                                    {menuPrice.toLocaleString()}원
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={handleSet}
-                                style={{
-                                    flex: 1,
-                                    height: "120px",
-                                    fontSize: "2rem",
-                                    fontWeight: "bold",
-                                    backgroundColor: "#ff6b35",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "16px",
-                                    cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                }}
-                            >
-                                세트
-                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9 }}>
-                                    음료+사이드 선택
-                                </div>
-                            </button>
+                {/* 단품/세트 선택 버튼 */}
+                <div
+                    style={{
+                        display: "flex",
+                        gap: "24px",
+                        width: "100%",
+                        maxWidth: "600px",
+                    }}
+                >
+                    <button
+                        onClick={handleSingle}
+                        style={{
+                            flex: 1,
+                            height: "120px",
+                            fontSize: "2rem",
+                            fontWeight: "bold",
+                            backgroundColor: "#1e7a39",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "16px",
+                            cursor: "pointer",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        }}
+                    >
+                        단품
+                        <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9 }}>
+                            {menuPrice.toLocaleString()}원
                         </div>
+                    </button>
 
-                        {/* 기본 세트 적용 버튼 */}
-                        <button
-                            onClick={handleDefaultSet}
-                            style={{
-                                width: "100%",
-                                maxWidth: "600px",
-                                height: "80px",
-                                fontSize: "1.5rem",
-                                fontWeight: "bold",
-                                backgroundColor: "#4a90e2",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: "16px",
-                                cursor: "pointer",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                            }}
-                        >
-                            기본 세트 적용 (콜라 / 감자튀김)
-                            <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9 }}>
-                                {(menuPrice + 2000 + 3000).toLocaleString()}원
-                            </div>
-                        </button>
+                    <button
+                        onClick={handleSet}
+                        style={{
+                            flex: 1,
+                            height: "120px",
+                            fontSize: "2rem",
+                            fontWeight: "bold",
+                            backgroundColor: "#ff6b35",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "16px",
+                            cursor: "pointer",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        }}
+                    >
+                        세트
+                        <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9 }}>
+                            음료+사이드 선택
+                        </div>
+                    </button>
+                </div>
+
+                {/* 기본 세트 적용 버튼 */}
+                <button
+                    onClick={handleDefaultSet}
+                    style={{
+                        width: "100%",
+                        maxWidth: "600px",
+                        height: "80px",
+                        fontSize: "1.5rem",
+                        fontWeight: "bold",
+                        backgroundColor: "#4a90e2",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "16px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    }}
+                >
+                    기본 세트 적용 (콜라 M / 감자튀김 M)
+                    <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9 }}>
+                        {(menuPrice + 2000 + 3000).toLocaleString()}원
+                    </div>
+                </button>
                     </>
                 ) : (
                     <div
@@ -407,12 +407,54 @@ export default function MenuOptionPage() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#8aa0c5",
-                                fontWeight: 700,
                                 boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                                overflow: "hidden",
                             }}
                         >
-                            음료 이미지 추가 영역
+                            {(() => {
+                                const n = (menuName || "").replace(/\s+/g, "").toLowerCase();
+                                const isCola = ["콜라", "제로콜라", "coke", "zero"].some((k) => n.includes(k));
+                                const isCider = ["사이다", "soda"].some((k) => n.includes(k));
+                                const isCoffee = ["커피", "coffee"].some((k) => n.includes(k));
+                                return isCola ? (
+                                    <img
+                                        src="/coke_size.png"
+                                        alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : isCider ? (
+                                    <img
+                                        src="/cider_size.png"
+                                        alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : isCoffee ? (
+                                    <img
+                                        src="/coffee_size.png"
+                                        alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ color: "#8aa0c5", fontWeight: 700 }}>
+                                        음료 이미지 추가 영역
+                                    </div>
+                                );
+                            })()}
                         </div>
                         <div
                             style={{
