@@ -329,12 +329,48 @@ export default function DrinkSelectPage() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "#8aa0c5",
-                                fontWeight: 700,
                                 boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                                overflow: "hidden",
                             }}
                         >
-                            음료 이미지 추가 영역
+                            {selectedDrink === "콜라" || selectedDrink === "제로콜라" ? (
+                                <img
+                                    src="/coke_size.png"
+                                    alt="사이즈 선택"
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain",
+                                        display: "block",
+                                    }}
+                                />
+                            ) : selectedDrink === "사이다" ? (
+                                <img
+                                    src="/cider_size.png"
+                                    alt="사이즈 선택"
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain",
+                                        display: "block",
+                                    }}
+                                />
+                            ) : selectedDrink === "커피" ? (
+                                <img
+                                    src="/coffee_size.png"
+                                    alt="사이즈 선택"
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain",
+                                        display: "block",
+                                    }}
+                                />
+                            ) : (
+                                <div style={{ color: "#8aa0c5", fontWeight: 700 }}>
+                                    음료 이미지 추가 영역
+                                </div>
+                            )}
                         </div>
                         <div
                             style={{
