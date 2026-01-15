@@ -126,7 +126,6 @@ export default function SideSelectPage() {
                     const msg = "미디움 사이즈를 선택하셨어요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
-                    setTimeout(() => handleComplete(), 1500);
                     return;
                 }
                 if (/라지|큰거|큰사이즈/.test(normalized)) {
@@ -134,7 +133,6 @@ export default function SideSelectPage() {
                     const msg = "라지 사이즈를 선택하셨어요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
-                    setTimeout(() => handleComplete(), 1500);
                     return;
                 }
             }
@@ -408,25 +406,59 @@ export default function SideSelectPage() {
                     </div>
                 )}
 
-                {/* 완료 버튼 */}
+            </div>
+
+            {/* 이전/다음 버튼 - 하단 고정 */}
+            <div
+                style={{
+                    position: "fixed",
+                    bottom: "20px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    display: "flex",
+                    gap: "20px",
+                    zIndex: 100,
+                }}
+            >
+                <button
+                    onClick={() => {
+                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                        const orderType = searchParams.get("orderType") || "takeout";
+                        router.push(
+                            `/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
+                            `&cart=${cartData}&orderType=${orderType}`
+                        );
+                    }}
+                    style={{
+                        padding: "16px 32px",
+                        fontSize: "1.3rem",
+                        fontWeight: "bold",
+                        backgroundColor: "#fff",
+                        color: "#333",
+                        border: "2px solid #ddd",
+                        borderRadius: "12px",
+                        cursor: "pointer",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                >
+                    이전
+                </button>
                 {selectedSide && selectedSideSize && (
                     <button
                         onClick={handleComplete}
                         style={{
-                            width: "100%",
-                            height: "80px",
-                            fontSize: "1.8rem",
+                            padding: "16px 32px",
+                            fontSize: "1.3rem",
                             fontWeight: "bold",
                             backgroundColor: "#1e7a39",
                             color: "#fff",
                             border: "none",
-                            borderRadius: "16px",
+                            borderRadius: "12px",
                             cursor: "pointer",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                            marginTop: "auto",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                         }}
                     >
-                        장바구니에 담기
+                        다음
                     </button>
                 )}
             </div>
