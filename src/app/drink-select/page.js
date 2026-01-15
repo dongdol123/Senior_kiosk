@@ -14,6 +14,7 @@ export default function DrinkSelectPage() {
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
 
@@ -45,7 +46,7 @@ export default function DrinkSelectPage() {
         setMenuName(decodeURIComponent(searchParams.get("menuName") || ""));
         setMenuPrice(parseInt(searchParams.get("price") || "0"));
         setMenuId(searchParams.get("menuId") || "");
-        
+
         const cartParam = searchParams.get("cart");
         if (cartParam) {
             try {
@@ -76,7 +77,7 @@ export default function DrinkSelectPage() {
             setIsListening(false);
             if (mountedRef.current) {
                 setTimeout(() => {
-                    try { recognition.start(); } catch {}
+                    try { recognition.start(); } catch { }
                 }, 500);
             }
         };
@@ -127,7 +128,6 @@ export default function DrinkSelectPage() {
                     const msg = "미디움 사이즈를 선택하셨어요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
-                    setTimeout(() => handleNext(), 1500);
                     return;
                 }
                 if (/라지|큰거|큰사이즈/.test(normalized)) {
@@ -135,7 +135,6 @@ export default function DrinkSelectPage() {
                     const msg = "라지 사이즈를 선택하셨어요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
-                    setTimeout(() => handleNext(), 1500);
                     return;
                 }
             }
@@ -163,21 +162,27 @@ export default function DrinkSelectPage() {
                     recognitionRef.current.onstart = null;
                     recognitionRef.current.stop();
                 }
-            } catch {}
-            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
+            } catch { }
+            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
         };
     }, [selectedDrink, selectedSize]);
 
     function handleNext() {
-        if (!selectedDrink || !selectedSize) {
-            alert("음료와 사이즈를 선택해주세요.");
+        if (!selectedDrink) {
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
+            return;
+        }
+        if (!selectedSize) {
+            setShowAlert(true);
+            setTimeout(() => setShowAlert(false), 3000);
             return;
         }
 
         const selectedSizeObj = sizes.find(s => s.name === selectedSize);
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        
+
         router.push(
             `/side-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
             `&drink=${encodeURIComponent(selectedDrink)}&drinkSize=${encodeURIComponent(selectedSize)}&drinkPrice=${selectedSizeObj.price}` +
@@ -392,7 +397,6 @@ export default function DrinkSelectPage() {
                                     key={size.name}
                                     onClick={() => {
                                         setSelectedSize(size.name);
-                                        setTimeout(() => handleNext(), 150); // 터치 즉시 진행
                                     }}
                                     style={{
                                         height: "70px",
@@ -424,7 +428,58 @@ export default function DrinkSelectPage() {
                         </div>
                     </div>
                 )}
+
+                {/* 다음 버튼 - 우측 하단 고정 */}
+                {selectedDrink && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            bottom: "20px",
+                            right: "20px",
+                            zIndex: 100,
+                        }}
+                    >
+                        <button
+                            onClick={handleNext}
+                            style={{
+                                padding: "16px 32px",
+                                fontSize: "1.3rem",
+                                fontWeight: "bold",
+                                backgroundColor: "#1e7a39",
+                                color: "#fff",
+                                border: "none",
+                                borderRadius: "12px",
+                                cursor: "pointer",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                            }}
+                        >
+                            다음
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {/* 팝업 알림 */}
+            {showAlert && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        backgroundColor: "#fff",
+                        padding: "30px 40px",
+                        borderRadius: "16px",
+                        boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                        zIndex: 1000,
+                        border: "2px solid #b00020",
+                    }}
+                >
+                    <div style={{ fontSize: "1.3rem", fontWeight: "bold", color: "#b00020", textAlign: "center" }}>
+                        음료 선택을 진행해주세요
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

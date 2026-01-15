@@ -264,7 +264,10 @@ export default function OrderConfirmPage() {
                 </div>
 
                 <button
-                    onClick={() => router.back()}
+                    onClick={() => {
+                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                    }}
                     style={{
                         backgroundColor: "#ffffff",
                         border: "1px solid #ddd",
@@ -426,8 +429,9 @@ export default function OrderConfirmPage() {
                             setErrorMessage("주문할 메뉴가 없습니다.");
                             return;
                         }
-                        // 결제 처리 (추후 구현)
-                        alert(`결제하기: ${total.toLocaleString()}원`);
+                        // 적립 페이지로 이동
+                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}`);
                     }}
                     disabled={cartItems.length === 0}
                     style={{
@@ -456,6 +460,7 @@ export default function OrderConfirmPage() {
         </main>
     );
 }
+
 
 
 
