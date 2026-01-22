@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { speakKorean } from "../utils/speakKorean";
 
 export default function MenuPage() {
     const router = useRouter();
@@ -24,7 +25,7 @@ export default function MenuPage() {
     // cart state
     const STATIC_MENU = [
         { id: "main-1", name: "불고기버거", price: 5000, keywords: ["불고기", "bulgogi"] },
-        { id: "main-2", name: "새우버거", price: 4800, keywords: ["새우", "shrimp"] },
+        { id: "main-2", name: "치킨버거", price: 4800, keywords: ["치킨", "chicken"] },
         { id: "drink-1", name: "콜라", price: 2000, keywords: ["콜라", "coke"] },
         { id: "drink-2", name: "제로콜라", price: 2000, keywords: ["제로", "제로콜라", "coke zero", "zero"] },
         { id: "drink-3", name: "사이다", price: 2000, keywords: ["사이다", "soda"] },
@@ -62,7 +63,7 @@ export default function MenuPage() {
                         const corrected = { ...item };
                         const n = normalizeName(corrected.name);
                         if (n === "불고기버거") corrected.price = 5000;
-                        if (n === "새우버거") corrected.price = 4800;
+                        if (n === "치킨버거") corrected.price = 4800;
                         if (n === "감자튀김") corrected.price = 3000;
                         if (n === "샐러드") corrected.price = 3000;
                         if (n === "치킨텐더") corrected.price = 3000;
@@ -149,25 +150,18 @@ export default function MenuPage() {
         try { await speakKorean("장바구니를 모두 비웠어요."); } catch { }
     }
 
-    const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
-
-    async function speakKorean(text) {
-        try {
-            const synth = window.speechSynthesis;
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = "ko-KR";
-            utter.rate = 0.95;
-            synth.cancel();
-            await new Promise((resolve) => {
-                utter.onend = resolve;
-                setTimeout(resolve, 5000);
-                synth.speak(utter);
-            });
-        } catch (e) {
-            // no-op
+    async function handleOrder() {
+        if (cartItems.length === 0) {
+            const msg = "장바구니가 비었어요.";
+            setAssistantMessage(msg);
+            await speakKorean(msg);
+            return;
         }
+        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+        router.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${searchParams.get("orderType") || "takeout"}`);
     }
+
+    const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
 
     // 여기부턴 그냥 주문하기
 
@@ -223,6 +217,14 @@ export default function MenuPage() {
             setLastUser(transcript);
 
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
+
+            // 주문하기 명령 감지
+            const orderPattern = /주문|결제|주문해|주문해줘|주문할래|주문하겠어|결제해|결제해줘|결제할래|결제하겠어/;
+            if (orderPattern.test(normalized)) {
+                await handleOrder();
+                try { recognition.stop(); } catch { }
+                return;
+            }
 
             // 새우 키워드 감지 시 추천 페이지로 이동
             const shrimpPattern = /새우|shrimp|슈림프/;
@@ -458,7 +460,29 @@ export default function MenuPage() {
                                                 overflow: "hidden",
                                             }}
                                         >
-                                            {m.name && /버거/.test(m.name) ? (
+                                            {m.name && /칠리/.test(m.name) ? (
+                                                <img
+                                                    src="/C_srp.png"
+                                                    alt={m.name}
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        objectFit: "contain",
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            ) : m.name && /트러플/.test(m.name) ? (
+                                                <img
+                                                    src="/T_srp.png"
+                                                    alt={m.name}
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "100%",
+                                                        objectFit: "contain",
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            ) : m.name && /버거/.test(m.name) ? (
                                                 <img
                                                     src="/burger.png"
                                                     alt={m.name}
@@ -679,14 +703,7 @@ export default function MenuPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ fontSize: 15, color: "#333", fontWeight: 700 }}>총액 {cartTotal.toLocaleString()}원</div>
                         <button
-                            onClick={() => {
-                                if (cartItems.length === 0) {
-                                    setErrorMessage("장바구니가 비어있습니다.");
-                                    return;
-                                }
-                                const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                                router.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${searchParams.get("orderType") || "takeout"}`);
-                            }}
+                            onClick={handleOrder}
                             disabled={cartItems.length === 0}
                             style={{
                                 padding: "10px 18px",

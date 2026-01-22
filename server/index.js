@@ -36,6 +36,7 @@ pool.getConnection()
 app.use('/api/voice-order', require('./routes/voice-order')(pool));
 app.use('/api/cart', require('./routes/cart')(pool));
 app.use('/api/menu', require('./routes/menu')(pool));
+app.use('/api/tts', require('./routes/tts')());
 
 // Health check
 app.get('/health', (req, res) => {

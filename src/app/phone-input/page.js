@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { speakKorean } from "../utils/speakKorean";
 
 export default function PhoneInputPage() {
     const router = useRouter();
@@ -15,24 +16,6 @@ export default function PhoneInputPage() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
-
-    async function speakKorean(text) {
-        try {
-            const synth = window.speechSynthesis;
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = "ko-KR";
-            utter.rate = 0.95;
-            synth.cancel();
-            await new Promise((resolve) => {
-                utter.onend = resolve;
-                setTimeout(resolve, 5000);
-                synth.speak(utter);
-            });
-        } catch (e) {
-            // no-op
-        }
-    }
 
     // 숫자 텍스트를 숫자로 변환 (예: "일공일" -> "010", "공일공" -> "010")
     function convertKoreanNumberToDigit(text) {
