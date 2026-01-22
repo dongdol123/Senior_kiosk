@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { speakKorean } from "../utils/speakKorean";
 
 export default function PointsPage() {
     const router = useRouter();
@@ -13,24 +14,6 @@ export default function PointsPage() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
-
-    async function speakKorean(text) {
-        try {
-            const synth = window.speechSynthesis;
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = "ko-KR";
-            utter.rate = 0.95;
-            synth.cancel();
-            await new Promise((resolve) => {
-                utter.onend = resolve;
-                setTimeout(resolve, 5000);
-                synth.speak(utter);
-            });
-        } catch (e) {
-            // no-op
-        }
-    }
 
     useEffect(() => {
         const totalParam = searchParams.get("total");

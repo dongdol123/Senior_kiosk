@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { speakKorean } from "../utils/speakKorean";
 
 export default function OrderConfirmPage() {
     const router = useRouter();
@@ -20,7 +21,7 @@ export default function OrderConfirmPage() {
 
     // 메뉴 데이터 (메뉴 페이지와 동일)
     const MENU_ITEMS = [
-        { id: "shrimp", name: "새우버거", price: 5000, keywords: ["새우", "shrimp"] },
+        { id: "chicken", name: "치킨버거", price: 4800, keywords: ["치킨", "chicken"] },
         { id: "bulgogi", name: "불고기버거", price: 5000, keywords: ["불고기", "bulgogi"] },
         { id: "cheese", name: "치즈버거", price: 5000, keywords: ["치즈", "cheese"] },
         { id: "truffle", name: "트러플새우버거", price: 6000, keywords: ["트러플", "새우", "truffle", "shrimp"] },
@@ -48,24 +49,6 @@ export default function OrderConfirmPage() {
         }
     }, [searchParams]);
 
-    async function speakKorean(text) {
-        try {
-            const synth = window.speechSynthesis;
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = "ko-KR";
-            utter.rate = 0.95;
-            synth.cancel();
-            await new Promise((resolve) => {
-                utter.onend = resolve;
-                setTimeout(resolve, 5000);
-                synth.speak(utter);
-            });
-        } catch (e) {
-            // no-op
-        }
-    }
-
     // 음성 인식으로 메뉴 수정
     useEffect(() => {
         mountedRef.current = true;
@@ -88,7 +71,7 @@ export default function OrderConfirmPage() {
             setIsListening(false);
             if (mountedRef.current && shouldListenRef.current) {
                 setTimeout(() => {
-                    try { recognition.start(); } catch {}
+                    try { recognition.start(); } catch { }
                 }, 500);
             }
         };
@@ -104,7 +87,7 @@ export default function OrderConfirmPage() {
             // 메뉴 추가/삭제 명령 처리
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
 
-            // 추가 명령: "새우버거 추가", "불고기 하나 더"
+            // 추가 명령: "치킨버거 추가", "불고기 하나 더"
             if (/추가|더|하나|주문/.test(normalized)) {
                 const matched = MENU_ITEMS.find(item =>
                     item.keywords.some(kw => normalized.includes(kw.toLowerCase()))
@@ -126,7 +109,7 @@ export default function OrderConfirmPage() {
                 }
             }
 
-            // 삭제 명령: "새우버거 빼기", "불고기 취소"
+            // 삭제 명령: "치킨버거 빼기", "불고기 취소"
             if (/빼|취소|삭제|제거/.test(normalized)) {
                 const matched = MENU_ITEMS.find(item =>
                     item.keywords.some(kw => normalized.includes(kw.toLowerCase()))
@@ -189,8 +172,8 @@ export default function OrderConfirmPage() {
                     recognitionRef.current.onstart = null;
                     recognitionRef.current.stop();
                 }
-            } catch {}
-            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
+            } catch { }
+            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
         };
     }, []);
 

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { speakKorean } from "../utils/speakKorean";
 
 export default function SideSelectPage() {
     const router = useRouter();
@@ -25,24 +26,6 @@ export default function SideSelectPage() {
         { name: "미디움", price: 3000 },
         { name: "라지", price: 4000 },
     ];
-
-    async function speakKorean(text) {
-        try {
-            const synth = window.speechSynthesis;
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = "ko-KR";
-            utter.rate = 0.95;
-            synth.cancel();
-            await new Promise((resolve) => {
-                utter.onend = resolve;
-                setTimeout(resolve, 5000);
-                synth.speak(utter);
-            });
-        } catch (e) {
-            // no-op
-        }
-    }
 
     useEffect(() => {
         setMenuName(decodeURIComponent(searchParams.get("menuName") || ""));

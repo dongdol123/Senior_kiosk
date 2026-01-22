@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { speakKorean } from "../utils/speakKorean";
 
 export default function ShrimpRecommendPage() {
     const router = useRouter();
@@ -43,24 +44,6 @@ export default function ShrimpRecommendPage() {
             console.error('Failed to load cart:', e);
         }
     }, [searchParams]);
-
-    async function speakKorean(text) {
-        try {
-            const synth = window.speechSynthesis;
-            if (!synth) return;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.lang = "ko-KR";
-            utter.rate = 0.95;
-            synth.cancel();
-            await new Promise((resolve) => {
-                utter.onend = resolve;
-                setTimeout(resolve, 5000);
-                synth.speak(utter);
-            });
-        } catch (e) {
-            // no-op
-        }
-    }
 
     // 음성 인식으로 메뉴 선택
     useEffect(() => {
@@ -152,6 +135,12 @@ export default function ShrimpRecommendPage() {
         };
     }, [shrimpMenus]);
 
+    function handleBack() {
+        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+        const orderType = searchParams.get("orderType") || "takeout";
+        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+    }
+
     async function handleSelectMenu(menu) {
         // 장바구니에 추가
         const newCartItems = [...cartItems];
@@ -208,6 +197,20 @@ export default function ShrimpRecommendPage() {
                     <span style={{ width: 10, height: 10, background: isListening ? "#34c759" : "#bbb", borderRadius: "50%" }} />
                     {isListening ? "음성 인식 중" : "터치 또는 음성으로 선택"}
                 </div>
+                <button
+                    onClick={handleBack}
+                    style={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #ddd",
+                        padding: "8px 14px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                        fontSize: "1rem",
+                        fontWeight: "500",
+                    }}
+                >
+                    뒤로 가기
+                </button>
             </div>
 
             {/* 메뉴 표시 */}
@@ -272,9 +275,34 @@ export default function ShrimpRecommendPage() {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     color: "#999",
+                                    overflow: "hidden",
                                 }}
                             >
-                                이미지
+                                {menu.name.includes("칠리") ? (
+                                    <img
+                                        src="/C_srp.png"
+                                        alt={menu.name}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : menu.name.includes("트러플") ? (
+                                    <img
+                                        src="/T_srp.png"
+                                        alt={menu.name}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    "이미지"
+                                )}
                             </div>
 
                             {/* 메뉴 정보 */}
@@ -308,6 +336,7 @@ export default function ShrimpRecommendPage() {
         </main>
     );
 }
+
 
 
 

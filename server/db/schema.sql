@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS menu (
 INSERT INTO menu (name, price, keywords)
 VALUES
 ("불고기 버거", 5000, "불고기,불고기버거,불버거,bulgogi,불거지"),
+("치킨 버거", 4800, "치킨,치킨버거,치버거,chicken,치킨보거"),
 ("트러플 새우버거", 6500, "트러플,트러플새우,새우,고급새우,트룰플,트룰피,슈림프,truffle,shrimp"),
 ("칠리 새우버거", 6200, "칠리,칠리새우,매운새우,매운거,shrimp,chili,매콤,칠리버거"),
 ("치즈버거", 4800, "치즈,치즈버거,cheese,치즈버,치즈보거")
