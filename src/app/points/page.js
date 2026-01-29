@@ -132,8 +132,9 @@ export default function PointsPage() {
     }
 
     function handlePaymentWithoutPoints() {
-        // 적립 없이 결제 진행 (추후 구현)
-        alert(`결제하기: ${total.toLocaleString()}원`);
+        // 적립 없이 결제 진행
+        const cartData = searchParams.get("cart");
+        router.push(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}`);
     }
 
     return (

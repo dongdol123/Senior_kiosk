@@ -45,6 +45,36 @@ export default function SideSelectPage() {
         }
     }, [searchParams]);
 
+    // 사이드와 사이즈가 모두 선택되면 자동으로 주문 완료
+    useEffect(() => {
+        if (selectedSide && selectedSideSize) {
+            const timer = setTimeout(() => {
+                const selectedSideSizeObj = sideSizes.find(s => s.name === selectedSideSize);
+                const totalPrice = menuPrice + drinkPrice + selectedSideSizeObj.price;
+                const newCartItems = [...cartItems];
+                // menuName이 있으면 사용하고, 없으면 items의 첫 번째 항목 이름 사용
+                const items = [
+                    { name: menuName, price: menuPrice },
+                    { name: drink, size: drinkSize, price: drinkPrice },
+                    { name: selectedSide, size: selectedSideSize, price: selectedSideSizeObj.price },
+                ];
+                const setName = menuName && menuName.trim() ? `${menuName} 세트` : (items[0]?.name ? `${items[0].name} 세트` : `세트`);
+                newCartItems.push({
+                    id: `${menuId}_set_${Date.now()}`,
+                    name: setName,
+                    price: totalPrice,
+                    qty: 1,
+                    type: "set",
+                    items: items,
+                });
+                const cartData = encodeURIComponent(JSON.stringify(newCartItems));
+                const orderType = searchParams.get("orderType") || "takeout";
+                router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+            }, 800);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedSide, selectedSideSize, menuName, menuPrice, drinkPrice, drink, drinkSize, menuId, cartItems, searchParams, router]);
+
     // 음성 인식
     useEffect(() => {
         mountedRef.current = true;
@@ -81,46 +111,88 @@ export default function SideSelectPage() {
             if (!selectedSide) {
                 if (/감자|감자튀김|프라이/.test(normalized)) {
                     setSelectedSide("감자튀김");
-                    const msg = "감자튀김을 선택하셨어요. 사이즈를 선택해주세요.";
+                    const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
                     return;
                 }
                 if (/치킨|치킨텐더|텐더/.test(normalized)) {
                     setSelectedSide("치킨텐더");
-                    const msg = "치킨텐더를 선택하셨어요. 사이즈를 선택해주세요.";
+                    // 치킨텐더는 사이즈 선택 없이 바로 장바구니에 담기
+                    const newCartItems = [...cartItems];
+                    const selectedSideSizeObj = sideSizes.find(s => s.name === "미디움");
+                    const totalPrice = menuPrice + drinkPrice + selectedSideSizeObj.price;
+                    newCartItems.push({
+                        id: `${menuId}_set_${Date.now()}`,
+                        name: menuName ? `${menuName} 세트` : `세트`,
+                        price: totalPrice,
+                        qty: 1,
+                        type: "set",
+                        items: [
+                            { name: menuName, price: menuPrice },
+                            { name: drink, size: drinkSize, price: drinkPrice },
+                            { name: "치킨텐더", size: "미디움", price: selectedSideSizeObj.price },
+                        ],
+                    });
+                    const cartData = encodeURIComponent(JSON.stringify(newCartItems));
+                    const orderType = searchParams.get("orderType") || "takeout";
+                    const msg = "치킨텐더를 장바구니에 담았어요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
+                    setTimeout(() => {
+                        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                    }, 1000);
                     return;
                 }
                 if (/샐러드/.test(normalized)) {
                     setSelectedSide("샐러드");
-                    const msg = "샐러드를 선택하셨어요. 사이즈를 선택해주세요.";
+                    // 샐러드는 사이즈 선택 없이 바로 장바구니에 담기
+                    const newCartItems = [...cartItems];
+                    const selectedSideSizeObj = sideSizes.find(s => s.name === "미디움");
+                    const totalPrice = menuPrice + drinkPrice + selectedSideSizeObj.price;
+                    newCartItems.push({
+                        id: `${menuId}_set_${Date.now()}`,
+                        name: menuName ? `${menuName} 세트` : `세트`,
+                        price: totalPrice,
+                        qty: 1,
+                        type: "set",
+                        items: [
+                            { name: menuName, price: menuPrice },
+                            { name: drink, size: drinkSize, price: drinkPrice },
+                            { name: "샐러드", size: "미디움", price: selectedSideSizeObj.price },
+                        ],
+                    });
+                    const cartData = encodeURIComponent(JSON.stringify(newCartItems));
+                    const orderType = searchParams.get("orderType") || "takeout";
+                    const msg = "샐러드를 장바구니에 담았어요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
+                    setTimeout(() => {
+                        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                    }, 1000);
                     return;
                 }
             }
 
-            // 사이즈 선택
-            if (selectedSide && !selectedSideSize) {
+            // 사이즈 선택 (감자튀김만)
+            if (selectedSide === "감자튀김" && !selectedSideSize) {
                 if (/미디움|미디엄|중간/.test(normalized)) {
                     setSelectedSideSize("미디움");
-                    const msg = "미디움 사이즈를 선택하셨어요.";
-                    setAssistantMessage(msg);
-                    await speakKorean(msg);
                     return;
                 }
-                if (/라지|큰거|큰사이즈/.test(normalized)) {
+                if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
                     setSelectedSideSize("라지");
-                    const msg = "라지 사이즈를 선택하셨어요.";
-                    setAssistantMessage(msg);
-                    await speakKorean(msg);
                     return;
                 }
+                const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
+                setAssistantMessage(msg);
+                await speakKorean(msg);
+                return;
             }
 
-            const msg = selectedSide ? "미디움 또는 라지 사이즈를 말씀해주세요." : "감자튀김, 치킨텐더, 샐러드 중 하나를 말씀해주세요.";
+            const msg = selectedSide === "감자튀김" && !selectedSideSize 
+                ? "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?" 
+                : "감자튀김, 치킨텐더, 샐러드 중 하나를 말씀해주세요.";
             setAssistantMessage(msg);
             await speakKorean(msg);
         };
@@ -161,17 +233,20 @@ export default function SideSelectPage() {
         const newCartItems = [...cartItems];
         const idx = newCartItems.findIndex((p) => p.id === `${menuId}_set_${Date.now()}`);
         
+        // menuName이 있으면 사용하고, 없으면 items의 첫 번째 항목 이름 사용
+        const items = [
+            { name: menuName, price: menuPrice },
+            { name: drink, size: drinkSize, price: drinkPrice },
+            { name: selectedSide, size: selectedSideSize, price: selectedSideSizeObj.price },
+        ];
+        const setName = menuName && menuName.trim() ? `${menuName} 세트` : (items[0]?.name ? `${items[0].name} 세트` : `세트`);
         newCartItems.push({
             id: `${menuId}_set_${Date.now()}`,
-            name: `${menuName} 세트`,
+            name: setName,
             price: totalPrice,
             qty: 1,
             type: "set",
-            items: [
-                { name: menuName, price: menuPrice },
-                { name: drink, size: drinkSize, price: drinkPrice },
-                { name: selectedSide, size: selectedSideSize, price: selectedSideSizeObj.price },
-            ],
+            items: items,
         });
 
         const cartData = encodeURIComponent(JSON.stringify(newCartItems));

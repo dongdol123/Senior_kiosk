@@ -76,7 +76,10 @@ export default function OrderConfirmPage() {
             }
         };
         recognition.onerror = (event) => {
-            setErrorMessage(`음성 인식 오류: ${event.error}`);
+            // "aborted"는 정상적인 중단이므로 무시
+            if (event.error !== "aborted") {
+                setErrorMessage(`음성 인식 오류: ${event.error}`);
+            }
             setIsListening(false);
         };
 

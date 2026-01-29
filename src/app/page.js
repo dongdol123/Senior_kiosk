@@ -6,6 +6,50 @@ import { useRouter } from "next/navigation";
 export default function Home() {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState("");
+  const mountedRef = useRef(true);
+
+  // 첫 페이지가 마운트될 때 음성인식 초기화
+  useEffect(() => {
+    mountedRef.current = true;
+    
+    // 실행 중인 모든 음성인식 정리
+    if (typeof window !== "undefined") {
+      // SpeechRecognition 정리
+      try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          // 전역 recognition 인스턴스가 있다면 정리
+          if (window.currentRecognition) {
+            try {
+              window.currentRecognition.stop();
+              window.currentRecognition.onresult = null;
+              window.currentRecognition.onend = null;
+              window.currentRecognition.onerror = null;
+              window.currentRecognition.onstart = null;
+            } catch (e) {
+              console.log("음성인식 정리 중 오류:", e);
+            }
+            window.currentRecognition = null;
+          }
+        }
+      } catch (e) {
+        console.log("SpeechRecognition 정리 중 오류:", e);
+      }
+
+      // SpeechSynthesis 정리
+      try {
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      } catch (e) {
+        console.log("SpeechSynthesis 정리 중 오류:", e);
+      }
+    }
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   function handleOrderType(type) {
     // 포장 또는 매장 선택 시 바로 음성 주문 시작
@@ -19,8 +63,9 @@ export default function Home() {
         flexDirection: "column",
         minHeight: "100vh",
         backgroundColor: "#f9f9f9",
-      }}
-    >
+        padding: "20px",
+        }}
+      >
       {/* 메인 컨텐츠 영역 */}
       <div
         style={{
@@ -41,8 +86,8 @@ export default function Home() {
             maxWidth: "500px",
             textAlign: "center",
             padding: "0 20px",
-          }}
-        >
+        }}
+      >
           <h1 style={{ 
             fontSize: "2.5rem", 
             fontWeight: "600", 
@@ -75,7 +120,7 @@ export default function Home() {
               height: "auto",
               display: "block",
               objectFit: "contain",
-            }}
+          }}
           />
         </div>
 

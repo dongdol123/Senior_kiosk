@@ -142,23 +142,10 @@ export default function ShrimpRecommendPage() {
     }
 
     async function handleSelectMenu(menu) {
-        // 장바구니에 추가
-        const newCartItems = [...cartItems];
-        const idx = newCartItems.findIndex((p) => p.id === menu.id);
-        if (idx >= 0) {
-            newCartItems[idx] = { ...newCartItems[idx], qty: newCartItems[idx].qty + 1 };
-        } else {
-            newCartItems.push({ ...menu, qty: 1 });
-        }
-
-        const msg = `${menu.name}를 장바구니에 담았어요.`;
-        setAssistantMessage(msg);
-        await speakKorean(msg);
-
-        // 장바구니 데이터를 메뉴 페이지로 전달하고 이동
-        const cartData = encodeURIComponent(JSON.stringify(newCartItems));
+        // 세트/단품 선택 페이지로 이동
+        const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(menu.name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}`);
     }
 
     return (

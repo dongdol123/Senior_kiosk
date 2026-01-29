@@ -29,7 +29,7 @@ export default function DrinkSelectPage() {
         setMenuName(decodeURIComponent(searchParams.get("menuName") || ""));
         setMenuPrice(parseInt(searchParams.get("price") || "0"));
         setMenuId(searchParams.get("menuId") || "");
-
+        
         const cartParam = searchParams.get("cart");
         if (cartParam) {
             try {
@@ -39,6 +39,25 @@ export default function DrinkSelectPage() {
             }
         }
     }, [searchParams]);
+
+    // 음료와 사이즈가 모두 선택되면 자동으로 사이드 선택 페이지로 이동
+    useEffect(() => {
+        if (selectedDrink && selectedSize) {
+            const selectedSizeObj = sizes.find(s => s.name === selectedSize);
+            if (selectedSizeObj) {
+                const timer = setTimeout(() => {
+                    const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                    const orderType = searchParams.get("orderType") || "takeout";
+                    router.push(
+                        `/side-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
+                        `&drink=${encodeURIComponent(selectedDrink)}&drinkSize=${encodeURIComponent(selectedSize)}&drinkPrice=${selectedSizeObj.price}` +
+                        `&cart=${cartData}&orderType=${orderType}`
+                    );
+                }, 800);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [selectedDrink, selectedSize]);
 
     // 음성 인식
     useEffect(() => {
@@ -108,16 +127,10 @@ export default function DrinkSelectPage() {
             if (selectedDrink && !selectedSize) {
                 if (/미디움|미디엄|중간/.test(normalized)) {
                     setSelectedSize("미디움");
-                    const msg = "미디움 사이즈를 선택하셨어요.";
-                    setAssistantMessage(msg);
-                    await speakKorean(msg);
                     return;
                 }
                 if (/라지|큰거|큰사이즈/.test(normalized)) {
                     setSelectedSize("라지");
-                    const msg = "라지 사이즈를 선택하셨어요.";
-                    setAssistantMessage(msg);
-                    await speakKorean(msg);
                     return;
                 }
             }
@@ -165,7 +178,7 @@ export default function DrinkSelectPage() {
         const selectedSizeObj = sizes.find(s => s.name === selectedSize);
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-
+        
         router.push(
             `/side-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
             `&drink=${encodeURIComponent(selectedDrink)}&drinkSize=${encodeURIComponent(selectedSize)}&drinkPrice=${selectedSizeObj.price}` +
@@ -422,22 +435,22 @@ export default function DrinkSelectPage() {
                             zIndex: 100,
                         }}
                     >
-                        <button
-                            onClick={handleNext}
-                            style={{
+                    <button
+                        onClick={handleNext}
+                        style={{
                                 padding: "16px 32px",
                                 fontSize: "1.3rem",
-                                fontWeight: "bold",
-                                backgroundColor: "#1e7a39",
-                                color: "#fff",
-                                border: "none",
+                            fontWeight: "bold",
+                            backgroundColor: "#1e7a39",
+                            color: "#fff",
+                            border: "none",
                                 borderRadius: "12px",
-                                cursor: "pointer",
+                            cursor: "pointer",
                                 boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                            }}
-                        >
+                        }}
+                    >
                             다음
-                        </button>
+                    </button>
                     </div>
                 )}
             </div>

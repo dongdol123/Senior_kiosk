@@ -206,10 +206,10 @@ export default function PhoneInputPage() {
             alert("올바른 핸드폰 번호를 입력해주세요.");
             return;
         }
-        
-        // 포인트 적립 및 결제 처리 (추후 구현)
+
+        // 결제 페이지로 이동
         const cartData = searchParams.get("cart");
-        alert(`핸드폰 번호 ${formatPhoneNumber(phoneNumber)}로 포인트 적립 후 결제하기: ${total.toLocaleString()}원`);
+        router.push(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${phoneNumber}`);
     }
 
     function handleBack() {
