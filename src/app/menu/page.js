@@ -170,6 +170,17 @@ export default function MenuPage() {
         shouldListenRef.current = true;
         firstStartRef.current = true; // 컴포넌트가 마운트될 때마다 리셋
 
+        // 이전 음성인식 정리
+        if (typeof window !== "undefined") {
+            try {
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            } catch (e) {
+                console.log("SpeechSynthesis 정리 중 오류:", e);
+            }
+        }
+
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
         if (!SpeechRecognition) {
@@ -208,7 +219,10 @@ export default function MenuPage() {
             }
         };
         recognition.onerror = (event) => {
+            // "aborted"는 정상적인 중단이므로 무시
+            if (event.error !== "aborted") {
             setErrorMessage(`음성 인식 오류: ${event.error}`);
+            }
             setIsListening(false);
         };
 
@@ -218,6 +232,44 @@ export default function MenuPage() {
 
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
 
+            // 메뉴 이름 직접 말하기 - 가장 먼저 체크 (부가 설명 없이 바로 담기)
+            const matchedMenu = MENU_ITEMS.find((item) => {
+                const menuNameNormalized = item.name.replaceAll(" ", "").toLowerCase();
+                // 메뉴 이름이 포함되어 있는지 확인
+                if (normalized.includes(menuNameNormalized) || menuNameNormalized.includes(normalized)) {
+                    return true;
+                }
+                // 키워드로도 확인
+                return item.keywords && item.keywords.some((kw) => {
+                    const kwNormalized = kw.replaceAll(" ", "").toLowerCase();
+                    return normalized.includes(kwNormalized);
+                });
+            });
+
+            if (matchedMenu) {
+                console.log("✅ 메뉴 매칭됨:", matchedMenu.name, "사용자 입력:", transcript);
+                
+                // 감자튀김은 사이즈 선택 모달 표시
+                if (/감자튀김/.test(matchedMenu.name)) {
+                    setSelectedFries(matchedMenu);
+                    setShowFriesModal(true);
+                    return;
+                }
+
+                // 샐러드, 치킨텐더는 바로 담기
+                if (/샐러드|치킨텐더/.test(matchedMenu.name)) {
+                    addToCart(matchedMenu);
+                    return;
+                }
+
+                // 버거(새우버거 포함)나 음료는 옵션 선택 페이지로 이동
+                const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                const orderType = searchParams.get("orderType") || "takeout";
+                console.log("🚀 menu-option으로 이동:", matchedMenu.name);
+                router.push(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}`);
+                return;
+            }
+
             // 주문하기 명령 감지
             const orderPattern = /주문|결제|주문해|주문해줘|주문할래|주문하겠어|결제해|결제해줘|결제할래|결제하겠어/;
             if (orderPattern.test(normalized)) {
@@ -226,9 +278,9 @@ export default function MenuPage() {
                 return;
             }
 
-            // 새우 키워드 감지 시 추천 페이지로 이동
-            const shrimpPattern = /새우|shrimp|슈림프/;
-            if (shrimpPattern.test(transcript.toLowerCase())) {
+            // 새우 추천 요청 감지 - "새우 추천", "새우 메뉴 추천", "새우 들어간 메뉴 추천해줘" 같은 맥락만
+            const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)/;
+            if (shrimpRecommendPattern.test(normalized)) {
                 const cartData = encodeURIComponent(JSON.stringify(cartItems));
                 router.push(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}`);
                 try { recognition.stop(); } catch { }
@@ -348,22 +400,22 @@ export default function MenuPage() {
                 }}
             >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            backgroundColor: entry === "voice" ? "#e6f4ea" : "#eee",
-                            color: entry === "voice" ? "#1e7a39" : "#777",
-                            border: entry === "voice" ? "1px solid #bfe3ca" : "1px solid #ddd",
-                            borderRadius: "999px",
-                            padding: "8px 14px",
-                            fontWeight: "bold",
-                            opacity: entry === "voice" ? (isListening ? 1 : 0.85) : 1,
-                        }}
-                    >
-                        <span style={{ width: 10, height: 10, borderRadius: "50%", opacity: 1, background: entry === "voice" ? "#34c759" : "#bbb" }} />
-                        {entry === "voice" ? "음성 주문중" : "간편 모드"}
+                <div
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        backgroundColor: entry === "voice" ? "#e6f4ea" : "#eee",
+                        color: entry === "voice" ? "#1e7a39" : "#777",
+                        border: entry === "voice" ? "1px solid #bfe3ca" : "1px solid #ddd",
+                        borderRadius: "999px",
+                        padding: "8px 14px",
+                        fontWeight: "bold",
+                        opacity: entry === "voice" ? (isListening ? 1 : 0.85) : 1,
+                    }}
+                >
+                    <span style={{ width: 10, height: 10, borderRadius: "50%", opacity: 1, background: entry === "voice" ? "#34c759" : "#bbb" }} />
+                    {entry === "voice" ? "음성 주문중" : "간편 모드"}
                     </div>
                     <div style={{ color: "#555", fontSize: 14 }}>
                         {isListening ? "음성 인식 중입니다." : "마이크를 준비하고 있어요..."}
@@ -374,23 +426,23 @@ export default function MenuPage() {
                     {errorMessage ? (
                         <div style={{ color: "#b00020", fontSize: 13, fontWeight: 700 }}>{errorMessage}</div>
                     ) : null}
-                    <button
-                        onClick={() => {
-                            shouldListenRef.current = false;
-                            try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
-                            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
+                <button
+                    onClick={() => {
+                        shouldListenRef.current = false;
+                        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
+                        try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
                             router.push("/");
-                        }}
-                        style={{
-                            backgroundColor: "#ffffff",
-                            border: "1px solid #ddd",
-                            padding: "8px 14px",
-                            borderRadius: "8px",
-                            cursor: "pointer",
-                        }}
-                    >
-                        뒤로 가기
-                    </button>
+                    }}
+                    style={{
+                        backgroundColor: "#ffffff",
+                        border: "1px solid #ddd",
+                        padding: "8px 14px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    뒤로 가기
+                </button>
                 </div>
             </div>
 
@@ -435,9 +487,9 @@ export default function MenuPage() {
                                             display: "flex",
                                             flexDirection: "column",
                                             gap: 6,
-                                            background: "#ffffff",
+                        background: "#ffffff",
                                             border: "1px solid #e5e5e5",
-                                            borderRadius: 12,
+                        borderRadius: 12,
                                             boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                                             padding: 10,
                                             minHeight: 0,
@@ -451,15 +503,15 @@ export default function MenuPage() {
                                                 background: (m.name && /버거/.test(m.name)) || (m.name && /콜라|제로콜라|사이다|커피|감자튀김|샐러드|치킨텐더/.test(m.name)) ? "transparent" : "linear-gradient(135deg, #f8fbff 0%, #eef3ff 100%)",
                                                 border: (m.name && /버거/.test(m.name)) || (m.name && /콜라|제로콜라|사이다|커피|감자튀김|샐러드|치킨텐더/.test(m.name)) ? "none" : "1px dashed #d8dfee",
                                                 borderRadius: 8,
-                                                display: "flex",
+                        display: "flex",
                                                 alignItems: "center",
                                                 justifyContent: "center",
                                                 color: "#8aa0c5",
                                                 fontWeight: 700,
                                                 fontSize: 12,
-                                                overflow: "hidden",
-                                            }}
-                                        >
+                        overflow: "hidden",
+                    }}
+                >
                                             {m.name && /칠리/.test(m.name) ? (
                                                 <img
                                                     src="/C_srp.png"
@@ -568,8 +620,8 @@ export default function MenuPage() {
                                                 <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</div>
                                                 <div style={{ color: "#555", marginTop: 4, fontSize: 13 }}>{m.price.toLocaleString()}원</div>
                                             </div>
-                                            <button
-                                                onClick={() => {
+                            <button
+                                onClick={() => {
                                                     const name = m.name;
                                                     const cartData = encodeURIComponent(JSON.stringify(cartItems));
                                                     const orderType = searchParams.get("orderType") || "takeout";
@@ -584,8 +636,8 @@ export default function MenuPage() {
                                                     // 샐러드, 치킨텐더: 바로 담기
                                                     if (/샐러드|치킨텐더/.test(name)) {
                                                         addToCart(m);
-                                                        return;
-                                                    }
+                                        return;
+                                    }
 
                                                     router.push(`/menu-option?menuId=${m.id}&menuName=${encodeURIComponent(name)}&price=${m.price}&cart=${cartData}&orderType=${orderType}`);
                                                 }}
@@ -739,7 +791,7 @@ export default function MenuPage() {
                                     borderRadius: 12,
                                     padding: "10px 12px",
                                     background: "#f9fafb",
-                                    display: "flex",
+                            display: "flex",
                                     justifyContent: "space-between",
                                     alignItems: "center",
                                     gap: 10,
