@@ -18,6 +18,7 @@ export default function SideSelectPage() {
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
+    const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
 
@@ -43,6 +44,29 @@ export default function SideSelectPage() {
                 console.error("Failed to load cart:", e);
             }
         }
+    }, [searchParams]);
+
+    // 페이지 진입 시 1초 후 음성 안내
+    useEffect(() => {
+        // 이전 음성 안내 정리
+        if (typeof window !== "undefined") {
+            try {
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            } catch (e) {
+                console.log("SpeechSynthesis 정리 중 오류:", e);
+            }
+        }
+
+        // 1초 후 음성 안내
+        const timer = setTimeout(() => {
+            const msg = "사이드를 선택해주세요.";
+            setAssistantMessage(msg);
+            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+        }, 1000);
+
+        return () => clearTimeout(timer);
     }, [searchParams]);
 
     // 사이드와 사이즈가 모두 선택되면 자동으로 주문 완료
@@ -90,7 +114,9 @@ export default function SideSelectPage() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => setIsListening(true);
+        recognition.onstart = () => {
+            setIsListening(true);
+        };
         recognition.onend = () => {
             setIsListening(false);
             if (mountedRef.current) {
@@ -106,6 +132,17 @@ export default function SideSelectPage() {
         recognition.onresult = async (event) => {
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
+            
+            // 음성 인식 로그 추가
+            const logEntry = {
+                time: new Date().toLocaleTimeString('ko-KR'),
+                transcript: transcript,
+                normalized: normalized
+            };
+            setVoiceLogs((prev) => {
+                const newLogs = [logEntry, ...prev].slice(0, 10);
+                return newLogs;
+            });
 
             // 사이드 선택
             if (!selectedSide) {
@@ -263,6 +300,56 @@ export default function SideSelectPage() {
                 backgroundColor: "#f9f9f9",
             }}
         >
+            {/* 음성 인식 로그창 - 항상 표시 */}
+            <div
+                    style={{
+                        position: "fixed",
+                        top: "10px",
+                        right: "10px",
+                        width: "300px",
+                        maxHeight: "400px",
+                        backgroundColor: "#fff",
+                        border: "2px solid #1e7a39",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        zIndex: 1000,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        overflowY: "auto",
+                    }}
+                >
+                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                        🎤 음성 인식 로그
+                    </div>
+                    {voiceLogs.length === 0 ? (
+                        <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                            음성 인식 대기 중...
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            {voiceLogs.map((log, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "8px",
+                                    backgroundColor: "#f5f5f5",
+                                    borderRadius: "6px",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                <div style={{ color: "#666", fontSize: "0.75rem", marginBottom: "4px" }}>
+                                    {log.time}
+                                </div>
+                                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {log.transcript}
+                                </div>
+                                <div style={{ color: "#888", fontSize: "0.75rem" }}>
+                                    (정규화: {log.normalized})
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                    )}
+            </div>
             {/* 상단 헤더 */}
             <div
                 style={{

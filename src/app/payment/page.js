@@ -13,6 +13,7 @@ export default function PaymentPage() {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
+    const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
@@ -95,6 +96,29 @@ export default function PaymentPage() {
         }
     };
 
+    // 페이지 진입 시 즉시 음성 안내
+    useEffect(() => {
+        // 이전 음성 안내 정리
+        if (typeof window !== "undefined") {
+            try {
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            } catch (e) {
+                console.log("SpeechSynthesis 정리 중 오류:", e);
+            }
+        }
+
+        // 약간의 딜레이 후 음성 안내
+        const timer = setTimeout(() => {
+            const msg = "카드결제, 페이결제 중 선택해주세요.";
+            setAssistantMessage(msg);
+            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, []);
+
     // 음성 인식 초기화
     useEffect(() => {
         mountedRef.current = true;
@@ -114,12 +138,6 @@ export default function PaymentPage() {
 
         recognition.onstart = async () => {
             setIsListening(true);
-            if (firstStartRef.current) {
-                firstStartRef.current = false;
-                const greeting = "카드결제 또는 페이결제 중 선택해주세요.";
-                setAssistantMessage(greeting);
-                await speakKorean(greeting);
-            }
         };
 
         recognition.onend = () => {
@@ -136,8 +154,8 @@ export default function PaymentPage() {
         };
 
         recognition.onerror = (event) => {
-            // "aborted"는 정상적인 중단이므로 무시
-            if (event.error !== "aborted") {
+            // "aborted"와 "no-speech"는 정상적인 동작이므로 무시
+            if (event.error !== "aborted" && event.error !== "no-speech") {
                 console.error("음성인식 오류:", event.error);
             }
             setIsListening(false);
@@ -146,18 +164,59 @@ export default function PaymentPage() {
         recognition.onresult = async (event) => {
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
+            
+            // 음성 인식 로그 추가
+            const logEntry = {
+                time: new Date().toLocaleTimeString('ko-KR'),
+                transcript: transcript,
+                normalized: normalized
+            };
+            setVoiceLogs((prev) => {
+                const newLogs = [logEntry, ...prev].slice(0, 10);
+                return newLogs;
+            });
 
-            if (normalized.includes("카드") || normalized.includes("card")) {
+            console.log("🎤 결제 페이지 음성 인식:", transcript, "normalized:", normalized);
+
+            // 카드결제 인식 - 더 정확한 키워드 매칭
+            if (/카드|카드결제|카드로|카드로결제|card/.test(normalized)) {
+                console.log("✅ 카드결제 인식됨");
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.log("음성 인식 중지 오류:", e);
+                }
                 handleCardPayment();
-            } else if (normalized.includes("페이") || normalized.includes("pay")) {
-                handlePayPayment();
-            } else if (normalized.includes("뒤로") || normalized.includes("back")) {
-                handleBack();
-            } else {
-                const msg = "카드결제 또는 페이결제를 말씀해주세요.";
-                setAssistantMessage(msg);
-                await speakKorean(msg);
+                return;
             }
+            
+            // 페이결제 인식 - 더 정확한 키워드 매칭
+            if (/페이|페이결제|페이로|페이로결제|pay|모바일페이/.test(normalized)) {
+                console.log("✅ 페이결제 인식됨");
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.log("음성 인식 중지 오류:", e);
+                }
+                handlePayPayment();
+                return;
+            }
+            
+            // 뒤로가기 인식
+            if (/뒤로|뒤로가기|back/.test(normalized)) {
+                try {
+                    recognition.stop();
+                } catch (e) {
+                    console.log("음성 인식 중지 오류:", e);
+                }
+                handleBack();
+                return;
+            }
+            
+            // 인식되지 않은 경우 안내 메시지 (안내만 하고 음성 인식은 계속)
+            const msg = "카드결제 또는 페이결제를 말씀해주세요.";
+            setAssistantMessage(msg);
+            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
         };
 
         // 음성인식 시작
@@ -197,6 +256,56 @@ export default function PaymentPage() {
                 padding: "20px",
             }}
         >
+            {/* 음성 인식 로그창 - 항상 표시 */}
+            <div
+                    style={{
+                        position: "fixed",
+                        top: "10px",
+                        right: "10px",
+                        width: "300px",
+                        maxHeight: "400px",
+                        backgroundColor: "#fff",
+                        border: "2px solid #1e7a39",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        zIndex: 1000,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        overflowY: "auto",
+                    }}
+                >
+                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                        🎤 음성 인식 로그
+                    </div>
+                    {voiceLogs.length === 0 ? (
+                        <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                            음성 인식 대기 중...
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            {voiceLogs.map((log, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "8px",
+                                    backgroundColor: "#f5f5f5",
+                                    borderRadius: "6px",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                <div style={{ color: "#666", fontSize: "0.75rem", marginBottom: "4px" }}>
+                                    {log.time}
+                                </div>
+                                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {log.transcript}
+                                </div>
+                                <div style={{ color: "#888", fontSize: "0.75rem" }}>
+                                    (정규화: {log.normalized})
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                    )}
+            </div>
             {/* 상단 바 */}
             <div
                 style={{
@@ -331,24 +440,23 @@ export default function PaymentPage() {
                     </button>
                 </div>
 
-                {/* 음성 안내 메시지 */}
-                {assistantMessage && (
-                    <div
-                        style={{
-                            backgroundColor: "#fff",
-                            padding: "16px 24px",
-                            borderRadius: "12px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                            maxWidth: "500px",
-                            width: "100%",
-                            textAlign: "center",
-                        }}
-                    >
-                        <p style={{ margin: 0, fontSize: "1.1rem" }}>
-                            {isListening && "🎤 "} {assistantMessage}
-                        </p>
-                    </div>
-                )}
+                {/* 음성 안내 메시지 - 고정 */}
+                <div
+                    style={{
+                        backgroundColor: "#fff",
+                        padding: "16px 24px",
+                        borderRadius: "12px",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                        maxWidth: "500px",
+                        width: "100%",
+                        textAlign: "center",
+                        border: "2px solid #1e7a39",
+                    }}
+                >
+                    <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: "600", color: "#1e7a39" }}>
+                        {isListening && "🎤 "} {assistantMessage || "카드결제, 페이결제 중 선택해주세요."}
+                    </p>
+                </div>
             </div>
         </main>
     );

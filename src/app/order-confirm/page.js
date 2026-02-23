@@ -14,10 +14,15 @@ export default function OrderConfirmPage() {
     const [assistantMessage, setAssistantMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const [lastUser, setLastUser] = useState("");
+    const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
     const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const firstStartRef = useRef(true);
+    const cartItemsRef = useRef([]);
+    const totalRef = useRef(0);
+    const orderTypeRef = useRef("takeout");
 
     // 메뉴 데이터 (메뉴 페이지와 동일)
     const MENU_ITEMS = [
@@ -37,22 +42,50 @@ export default function OrderConfirmPage() {
             if (cartParam) {
                 const items = JSON.parse(decodeURIComponent(cartParam));
                 setCartItems(items);
+                cartItemsRef.current = items;
             }
             if (totalParam) {
-                setTotal(parseInt(totalParam));
+                const totalValue = parseInt(totalParam);
+                setTotal(totalValue);
+                totalRef.current = totalValue;
             }
             if (orderTypeParam) {
                 setOrderType(orderTypeParam);
+                orderTypeRef.current = orderTypeParam;
             }
         } catch (e) {
             setErrorMessage("주문 정보를 불러올 수 없습니다.");
         }
     }, [searchParams]);
 
+    // 페이지 진입 시 즉시 음성 안내
+    useEffect(() => {
+        // 이전 음성 안내 정리
+        if (typeof window !== "undefined") {
+            try {
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            } catch (e) {
+                console.log("SpeechSynthesis 정리 중 오류:", e);
+            }
+        }
+
+        // 약간의 딜레이 후 음성 안내
+        const timer = setTimeout(() => {
+            const msg = "장바구니에 담긴 메뉴가 맞나요?";
+            setAssistantMessage(msg);
+            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, []);
+
     // 음성 인식으로 메뉴 수정
     useEffect(() => {
         mountedRef.current = true;
         shouldListenRef.current = true;
+        firstStartRef.current = true;
 
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -66,7 +99,9 @@ export default function OrderConfirmPage() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => setIsListening(true);
+        recognition.onstart = async () => {
+            setIsListening(true);
+        };
         recognition.onend = () => {
             setIsListening(false);
             if (mountedRef.current && shouldListenRef.current) {
@@ -76,8 +111,8 @@ export default function OrderConfirmPage() {
             }
         };
         recognition.onerror = (event) => {
-            // "aborted"는 정상적인 중단이므로 무시
-            if (event.error !== "aborted") {
+            // "aborted"와 "no-speech"는 정상적인 동작이므로 무시
+            if (event.error !== "aborted" && event.error !== "no-speech") {
                 setErrorMessage(`음성 인식 오류: ${event.error}`);
             }
             setIsListening(false);
@@ -89,6 +124,107 @@ export default function OrderConfirmPage() {
 
             // 메뉴 추가/삭제 명령 처리
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
+            
+            // 음성 인식 로그 추가
+            const logEntry = {
+                time: new Date().toLocaleTimeString('ko-KR'),
+                transcript: transcript,
+                normalized: normalized
+            };
+            setVoiceLogs((prev) => {
+                const newLogs = [logEntry, ...prev].slice(0, 10);
+                return newLogs;
+            });
+
+            // 결제 명령: "결제해줘", "결제", "결제할게" 등
+            if (/결제|결제해|결제할|결제하겠|결제하자/.test(normalized)) {
+                console.log("✅ 결제 명령 인식됨:", transcript, "normalized:", normalized);
+                // 음성 인식 먼저 중지
+                try { 
+                    recognition.stop(); 
+                    shouldListenRef.current = false;
+                } catch (e) {
+                    console.error("음성 인식 중지 오류:", e);
+                }
+                
+                const msg = "결제 페이지로 이동합니다.";
+                setAssistantMessage(msg);
+                
+                // 음성 안내는 백그라운드에서 실행하고, 페이지 이동은 즉시
+                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+                
+                // 결제 페이지로 이동 (최신 값 사용)
+                const cartData = encodeURIComponent(JSON.stringify(cartItemsRef.current));
+                console.log("🚀 결제 페이지로 이동:", cartData, totalRef.current, orderTypeRef.current);
+                
+                // 1초 후에 강제로 페이지 이동
+                setTimeout(() => {
+                    console.log("페이지 이동 실행");
+                    router.push(`/points?cart=${cartData}&total=${totalRef.current}&orderType=${orderTypeRef.current}`);
+                }, 1000);
+                
+                return;
+            }
+
+            // 확인 응답: "맞다", "맞아", "네", "예", "맞습니다" 등
+            if (/맞|네|예|좋|그래|옳|맞습니다|맞아요|맞습니다/.test(normalized)) {
+                console.log("✅ 확인 응답 인식됨:", transcript, "normalized:", normalized);
+                // 음성 인식 먼저 중지
+                try { 
+                    recognition.stop(); 
+                    shouldListenRef.current = false;
+                } catch (e) {
+                    console.error("음성 인식 중지 오류:", e);
+                }
+                
+                const msg = "주문을 확인했습니다. 결제 페이지로 이동합니다.";
+                setAssistantMessage(msg);
+                
+                // 음성 안내는 백그라운드에서 실행하고, 페이지 이동은 즉시
+                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+                
+                // 결제 페이지로 이동 (최신 값 사용)
+                const cartData = encodeURIComponent(JSON.stringify(cartItemsRef.current));
+                console.log("🚀 결제 페이지로 이동:", cartData, totalRef.current, orderTypeRef.current);
+                
+                // 1초 후에 강제로 페이지 이동
+                setTimeout(() => {
+                    console.log("페이지 이동 실행");
+                    router.push(`/points?cart=${cartData}&total=${totalRef.current}&orderType=${orderTypeRef.current}`);
+                }, 1000);
+                
+                return;
+            }
+
+            // 부정 응답: "아니", "아니요", "아니야", "틀려" 등
+            if (/아니|틀|다시|취소|돌아|뒤로/.test(normalized)) {
+                console.log("✅ 부정 응답 인식됨:", transcript, "normalized:", normalized);
+                // 음성 인식 먼저 중지
+                try { 
+                    recognition.stop(); 
+                    shouldListenRef.current = false;
+                } catch (e) {
+                    console.error("음성 인식 중지 오류:", e);
+                }
+                
+                const msg = "메뉴 페이지로 돌아갑니다.";
+                setAssistantMessage(msg);
+                
+                // 음성 안내는 백그라운드에서 실행하고, 페이지 이동은 즉시
+                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+                
+                // 메뉴 페이지로 이동 (최신 값 사용)
+                const cartData = encodeURIComponent(JSON.stringify(cartItemsRef.current));
+                console.log("🚀 메뉴 페이지로 이동:", cartData, orderTypeRef.current);
+                
+                // 1초 후에 강제로 페이지 이동
+                setTimeout(() => {
+                    console.log("페이지 이동 실행");
+                    router.push(`/menu?entry=voice&orderType=${orderTypeRef.current}&cart=${cartData}`);
+                }, 1000);
+                
+                return;
+            }
 
             // 추가 명령: "치킨버거 추가", "불고기 하나 더"
             if (/추가|더|하나|주문/.test(normalized)) {
@@ -184,6 +320,8 @@ export default function OrderConfirmPage() {
     useEffect(() => {
         const newTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
         setTotal(newTotal);
+        totalRef.current = newTotal;
+        cartItemsRef.current = cartItems;
     }, [cartItems]);
 
     function addToCart(item) {
@@ -221,6 +359,56 @@ export default function OrderConfirmPage() {
                 backgroundColor: "#f9f9f9",
             }}
         >
+            {/* 음성 인식 로그창 - 항상 표시 */}
+            <div
+                    style={{
+                        position: "fixed",
+                        top: "10px",
+                        right: "10px",
+                        width: "300px",
+                        maxHeight: "400px",
+                        backgroundColor: "#fff",
+                        border: "2px solid #1e7a39",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        zIndex: 1000,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        overflowY: "auto",
+                    }}
+                >
+                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                        🎤 음성 인식 로그
+                    </div>
+                    {voiceLogs.length === 0 ? (
+                        <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                            음성 인식 대기 중...
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            {voiceLogs.map((log, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "8px",
+                                    backgroundColor: "#f5f5f5",
+                                    borderRadius: "6px",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                <div style={{ color: "#666", fontSize: "0.75rem", marginBottom: "4px" }}>
+                                    {log.time}
+                                </div>
+                                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {log.transcript}
+                                </div>
+                                <div style={{ color: "#888", fontSize: "0.75rem" }}>
+                                    (정규화: {log.normalized})
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                    )}
+            </div>
             {/* 상단 헤더 */}
             <div
                 style={{

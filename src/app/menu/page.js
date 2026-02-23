@@ -15,12 +15,16 @@ export default function MenuPage() {
     const [ordered, setOrdered] = useState(false);
     const [conversation, setConversation] = useState([]);
     const [lastUser, setLastUser] = useState("");
+    const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const restartingRef = useRef(false);
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
     const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
     const firstStartRef = useRef(true);
+    const cartItemsRef = useRef([]);
+    const routerRef = useRef(null);
+    const searchParamsRef = useRef(null);
 
     // cart state
     const STATIC_MENU = [
@@ -151,17 +155,33 @@ export default function MenuPage() {
     }
 
     async function handleOrder() {
-        if (cartItems.length === 0) {
+        // 최신 cartItems 값 사용
+        const currentCartItems = cartItemsRef.current;
+        if (currentCartItems.length === 0) {
             const msg = "장바구니가 비었어요.";
             setAssistantMessage(msg);
             await speakKorean(msg);
             return;
         }
-        const cartData = encodeURIComponent(JSON.stringify(cartItems));
-        router.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${searchParams.get("orderType") || "takeout"}`);
+        const cartTotal = currentCartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+        const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
+        const orderType = searchParamsRef.current?.get("orderType") || "takeout";
+        if (routerRef.current) {
+            routerRef.current.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${orderType}`);
+        }
     }
 
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+
+    // cartItems와 router를 ref로 업데이트
+    useEffect(() => {
+        cartItemsRef.current = cartItems;
+    }, [cartItems]);
+
+    useEffect(() => {
+        routerRef.current = router;
+        searchParamsRef.current = searchParams;
+    }, [router, searchParams]);
 
     // 여기부턴 그냥 주문하기
 
@@ -169,6 +189,15 @@ export default function MenuPage() {
         mountedRef.current = true;
         shouldListenRef.current = true;
         firstStartRef.current = true; // 컴포넌트가 마운트될 때마다 리셋
+        
+        // 음성 인식이 이미 실행 중이면 중지하고 재시작하여 인사말이 나오도록 함
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.stop();
+            } catch (e) {
+                console.log("기존 음성 인식 중지 시도:", e);
+            }
+        }
 
         // 이전 음성인식 정리
         if (typeof window !== "undefined") {
@@ -195,12 +224,12 @@ export default function MenuPage() {
 
         recognition.onstart = async () => {
             setIsListening(true);
-            // 처음 시작할 때만 인사말
+            // 음성 인식이 시작된 후 음성 안내 재생
             if (firstStartRef.current) {
                 firstStartRef.current = false;
                 const greeting = "무엇을 주문하시겠어요?";
                 setAssistantMessage(greeting);
-                await speakKorean(greeting);
+                speakKorean(greeting).catch(err => console.error("음성 안내 오류:", err));
             }
         };
         recognition.onend = () => {
@@ -219,8 +248,8 @@ export default function MenuPage() {
             }
         };
         recognition.onerror = (event) => {
-            // "aborted"는 정상적인 중단이므로 무시
-            if (event.error !== "aborted") {
+            // "aborted"와 "no-speech"는 정상적인 동작이므로 무시
+            if (event.error !== "aborted" && event.error !== "no-speech") {
             setErrorMessage(`음성 인식 오류: ${event.error}`);
             }
             setIsListening(false);
@@ -231,23 +260,64 @@ export default function MenuPage() {
             setLastUser(transcript);
 
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
+            console.log("🎤 음성 인식 결과:", transcript, "normalized:", normalized);
+            
+            // 음성 인식 로그 추가
+            const logEntry = {
+                time: new Date().toLocaleTimeString('ko-KR'),
+                transcript: transcript,
+                normalized: normalized
+            };
+            setVoiceLogs((prev) => {
+                const newLogs = [logEntry, ...prev].slice(0, 10); // 최근 10개만 유지
+                return newLogs;
+            });
 
             // 메뉴 이름 직접 말하기 - 가장 먼저 체크 (부가 설명 없이 바로 담기)
-            const matchedMenu = MENU_ITEMS.find((item) => {
+            let matchedMenu = null;
+            
+            // 1. 정확한 메뉴 이름 매칭 (예: "불고기버거", "치킨버거")
+            matchedMenu = MENU_ITEMS.find((item) => {
                 const menuNameNormalized = item.name.replaceAll(" ", "").toLowerCase();
-                // 메뉴 이름이 포함되어 있는지 확인
-                if (normalized.includes(menuNameNormalized) || menuNameNormalized.includes(normalized)) {
+                // 정확히 일치하거나 메뉴 이름이 사용자 입력에 포함되어 있는지 확인
+                if (normalized === menuNameNormalized || normalized.includes(menuNameNormalized)) {
                     return true;
                 }
-                // 키워드로도 확인
-                return item.keywords && item.keywords.some((kw) => {
-                    const kwNormalized = kw.replaceAll(" ", "").toLowerCase();
-                    return normalized.includes(kwNormalized);
-                });
+                // 사용자 입력이 메뉴 이름에 포함되어 있는지 확인 (예: "불고기" -> "불고기버거")
+                if (menuNameNormalized.includes(normalized) && normalized.length >= 2) {
+                    return true;
+                }
+                return false;
             });
+
+            // 2. 키워드로 매칭 (예: "불고기" -> "불고기버거")
+            if (!matchedMenu) {
+                matchedMenu = MENU_ITEMS.find((item) => {
+                    if (item.keywords && item.keywords.some((kw) => {
+                        const kwNormalized = kw.replaceAll(" ", "").toLowerCase();
+                        // 키워드가 정확히 일치하거나 포함되어 있는지 확인
+                        return normalized === kwNormalized || normalized.includes(kwNormalized);
+                    })) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+
+            // 3. "버거"만 말했을 때 첫 번째 버거 메뉴 선택
+            if (!matchedMenu && normalized === "버거") {
+                matchedMenu = MENU_ITEMS.find((item) => item.name.includes("버거"));
+            }
 
             if (matchedMenu) {
                 console.log("✅ 메뉴 매칭됨:", matchedMenu.name, "사용자 입력:", transcript);
+                
+                // 음성 인식 중지 (페이지 이동 전)
+                try { 
+                    recognition.stop(); 
+                } catch (e) {
+                    console.log("음성 인식 중지 오류:", e);
+                }
                 
                 // 감자튀김은 사이즈 선택 모달 표시
                 if (/감자튀김/.test(matchedMenu.name)) {
@@ -259,22 +329,50 @@ export default function MenuPage() {
                 // 샐러드, 치킨텐더는 바로 담기
                 if (/샐러드|치킨텐더/.test(matchedMenu.name)) {
                     addToCart(matchedMenu);
+                    // 장바구니에 담은 후 음성 인식 재시작
+                    setTimeout(() => {
+                        if (mountedRef.current && shouldListenRef.current && !ordered) {
+                            try { 
+                                recognition.start(); 
+                            } catch (e) {
+                                console.log("음성 인식 재시작 오류:", e);
+                            }
+                        }
+                    }, 500);
                     return;
                 }
 
                 // 버거(새우버거 포함)나 음료는 옵션 선택 페이지로 이동
                 const cartData = encodeURIComponent(JSON.stringify(cartItems));
                 const orderType = searchParams.get("orderType") || "takeout";
-                console.log("🚀 menu-option으로 이동:", matchedMenu.name);
-                router.push(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}`);
+                console.log("🚀 menu-option으로 이동:", matchedMenu.name, "menuId:", matchedMenu.id);
+                
+                // 음성 안내
+                const msg = `${matchedMenu.name} 옵션을 선택해주세요.`;
+                setAssistantMessage(msg);
+                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+                
+                // 약간의 딜레이 후 페이지 이동
+                setTimeout(() => {
+                    router.push(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}`);
+                }, 800);
                 return;
             }
 
             // 주문하기 명령 감지
-            const orderPattern = /주문|결제|주문해|주문해줘|주문할래|주문하겠어|결제해|결제해줘|결제할래|결제하겠어/;
+            const orderPattern = /주문|결제|주문해|주문해줘|주문할래|주문하겠어|결제해|결제해줘|결제할래|결제하겠어|이대로주문|이대로주문할게|이대로주문할래|이대로결제/;
             if (orderPattern.test(normalized)) {
+                console.log("✅ 주문 명령 인식됨:", transcript, "normalized:", normalized);
+                // 음성 인식 먼저 중지
+                try { 
+                    recognition.stop(); 
+                } catch (e) {
+                    console.error("음성 인식 중지 오류:", e);
+                }
+                shouldListenRef.current = false; // 재시작 방지
+                
+                // 주문 처리
                 await handleOrder();
-                try { recognition.stop(); } catch { }
                 return;
             }
 
@@ -317,6 +415,13 @@ export default function MenuPage() {
             const newConversation = [...conversation, { role: "user", content: transcript }];
             setConversation(newConversation);
             try {
+                // 음성 인식 중지 (API 호출 중에는 음성 인식 중지)
+                try { 
+                    recognition.stop(); 
+                } catch (e) {
+                    console.log("음성 인식 중지 오류:", e);
+                }
+                
                 const res = await fetch("/api/voice-order", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -328,22 +433,62 @@ export default function MenuPage() {
                 setAssistantMessage(reply);
                 setConversation((prev) => [...prev, { role: "assistant", content: reply }]);
                 await speakKorean(reply);
+                
+                // 음성 안내 후 음성 인식 재시작 (더 긴 딜레이로 확실히 재시작)
+                if (mountedRef.current && shouldListenRef.current && !ordered) {
+                    setTimeout(() => {
+                        if (mountedRef.current && shouldListenRef.current && !ordered) {
+                            try { 
+                                console.log("🔄 음성 인식 재시작 시도");
+                                recognition.start(); 
+                            } catch (e) {
+                                console.log("음성 인식 재시작 오류:", e);
+                                // 재시작 실패 시 다시 시도
+                                setTimeout(() => {
+                                    if (mountedRef.current && shouldListenRef.current && !ordered) {
+                                        try { 
+                                            recognition.start(); 
+                                        } catch (e2) {
+                                            console.log("음성 인식 재시작 재시도 오류:", e2);
+                                        }
+                                    }
+                                }, 1000);
+                            }
+                        }
+                    }, 1500);
+                }
             } catch (e) {
                 setAssistantMessage("");
                 setErrorMessage(e.message || "네트워크 오류가 발생했습니다.");
+                // 에러 발생 시에도 음성 인식 재시작
+                if (mountedRef.current && shouldListenRef.current && !ordered) {
+                    setTimeout(() => {
+                        if (mountedRef.current && shouldListenRef.current && !ordered) {
+                            try { 
+                                recognition.start(); 
+                            } catch (e) {
+                                console.log("음성 인식 재시작 오류:", e);
+                            }
+                        }
+                    }, 500);
+                }
             }
         };
 
         recognitionRef.current = recognition;
 
         if (entry === "voice") {
-            try {
-                recognition.start();
-            } catch (e) {
-                setErrorMessage("마이크 사용 권한을 허용해 주세요.");
-            }
+            // 음성 인식 시작 (음성 안내는 onstart에서 재생)
+            setTimeout(() => {
+                if (mountedRef.current && shouldListenRef.current) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        setErrorMessage("마이크 사용 권한을 허용해 주세요.");
+                    }
+                }
+            }, 200);
         } else {
-
             shouldListenRef.current = false;
         }
 
@@ -374,7 +519,7 @@ export default function MenuPage() {
             document.removeEventListener("visibilitychange", handleVisibility);
             window.removeEventListener("pagehide", handlePageHide);
         };
-    }, [ordered, entry]);
+    }, [ordered, entry, searchParams]);
 
     return (
         <main
@@ -386,6 +531,57 @@ export default function MenuPage() {
                 backgroundColor: "#f9f9f9",
             }}
         >
+            {/* 음성 인식 로그창 - 항상 표시 */}
+            <div
+                style={{
+                    position: "fixed",
+                    top: "10px",
+                    right: "10px",
+                    width: "300px",
+                    maxHeight: "400px",
+                    backgroundColor: "#fff",
+                    border: "2px solid #1e7a39",
+                    borderRadius: "12px",
+                    padding: "12px",
+                    zIndex: 1000,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    overflowY: "auto",
+                }}
+            >
+                <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                    🎤 음성 인식 로그
+                </div>
+                {voiceLogs.length === 0 ? (
+                    <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                        음성 인식 대기 중...
+                    </div>
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {voiceLogs.map((log, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "8px",
+                                    backgroundColor: "#f5f5f5",
+                                    borderRadius: "6px",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                <div style={{ color: "#666", fontSize: "0.75rem", marginBottom: "4px" }}>
+                                    {log.time}
+                                </div>
+                                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {log.transcript}
+                                </div>
+                                <div style={{ color: "#888", fontSize: "0.75rem" }}>
+                                    (정규화: {log.normalized})
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
             {/* 상단 바 */}
             <div
                 style={{
