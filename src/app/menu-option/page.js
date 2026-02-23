@@ -13,6 +13,7 @@ export default function MenuOptionPage() {
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
+    const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const drinkSizeButtonRefs = useRef({});
@@ -65,6 +66,8 @@ export default function MenuOptionPage() {
         }
     }, [searchParams]);
 
+    // 페이지 진입 시 음성 안내는 음성 인식이 시작된 후에 재생
+
     // 음성 인식
     useEffect(() => {
         mountedRef.current = true;
@@ -82,16 +85,23 @@ export default function MenuOptionPage() {
 
         recognition.onstart = async () => {
             setIsListening(true);
-            // 음료인 경우 처음 시작 시 사이즈 선택 안내
-            if (isDrink) {
+            // 음성 인식이 시작된 후 음성 안내 재생
+            const currentMenuName = decodeURIComponent(searchParams.get("menuName") || menuName || "");
+            const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
+            const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
+            const isCurrentDrink = !isCurrentBurger &&
+                (["콜라", "제로콜라", "사이다", "커피", "coke", "zero", "soda", "coffee"].some(k =>
+                    currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
+                ));
+
+            if (isCurrentDrink) {
                 const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
                 setAssistantMessage(msg);
-                await speakKorean(msg);
+                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
             } else {
-                // 버거 등 음료가 아닌 경우 단품/세트/기본세트 선택 안내
                 const msg = "단품, 세트, 기본 세트 중 하나를 말씀해주세요.";
                 setAssistantMessage(msg);
-                await speakKorean(msg);
+                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
             }
         };
         recognition.onend = () => {
@@ -109,6 +119,17 @@ export default function MenuOptionPage() {
         recognition.onresult = async (event) => {
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
+
+            // 음성 인식 로그 추가
+            const logEntry = {
+                time: new Date().toLocaleTimeString('ko-KR'),
+                transcript: transcript,
+                normalized: normalized
+            };
+            setVoiceLogs((prev) => {
+                const newLogs = [logEntry, ...prev].slice(0, 10); // 최근 10개만 유지
+                return newLogs;
+            });
 
             // 현재 menuName으로 다시 확인 (클로저 문제 방지)
             const currentMenuName = searchParams.get("menuName") || menuName || "";
@@ -418,6 +439,53 @@ export default function MenuOptionPage() {
                 backgroundColor: "#f9f9f9",
             }}
         >
+            {/* 음성 인식 로그창 */}
+            {voiceLogs.length > 0 && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: "10px",
+                        right: "10px",
+                        width: "300px",
+                        maxHeight: "400px",
+                        backgroundColor: "#fff",
+                        border: "2px solid #1e7a39",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        zIndex: 1000,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        overflowY: "auto",
+                    }}
+                >
+                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                        🎤 음성 인식 로그
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {voiceLogs.map((log, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "8px",
+                                    backgroundColor: "#f5f5f5",
+                                    borderRadius: "6px",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                <div style={{ color: "#666", fontSize: "0.75rem", marginBottom: "4px" }}>
+                                    {log.time}
+                                </div>
+                                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {log.transcript}
+                                </div>
+                                <div style={{ color: "#888", fontSize: "0.75rem" }}>
+                                    (정규화: {log.normalized})
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* 상단 헤더 */}
             <div
                 style={{

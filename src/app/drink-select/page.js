@@ -16,6 +16,7 @@ export default function DrinkSelectPage() {
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [showAlert, setShowAlert] = useState(false);
+    const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
 
@@ -38,6 +39,29 @@ export default function DrinkSelectPage() {
                 console.error("Failed to load cart:", e);
             }
         }
+    }, [searchParams]);
+
+    // 페이지 진입 시 즉시 음성 안내
+    useEffect(() => {
+        // 이전 음성 안내 정리
+        if (typeof window !== "undefined") {
+            try {
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+            } catch (e) {
+                console.log("SpeechSynthesis 정리 중 오류:", e);
+            }
+        }
+
+        // 약간의 딜레이 후 음성 안내
+        const timer = setTimeout(() => {
+            const msg = "음료를 선택해주세요.";
+            setAssistantMessage(msg);
+            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+        }, 300);
+
+        return () => clearTimeout(timer);
     }, [searchParams]);
 
     // 음료와 사이즈가 모두 선택되면 자동으로 사이드 선택 페이지로 이동
@@ -74,7 +98,9 @@ export default function DrinkSelectPage() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        recognition.onstart = () => setIsListening(true);
+        recognition.onstart = () => {
+            setIsListening(true);
+        };
         recognition.onend = () => {
             setIsListening(false);
             if (mountedRef.current) {
@@ -90,19 +116,32 @@ export default function DrinkSelectPage() {
         recognition.onresult = async (event) => {
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
+            
+            // 음성 인식 로그 추가
+            const logEntry = {
+                time: new Date().toLocaleTimeString('ko-KR'),
+                transcript: transcript,
+                normalized: normalized
+            };
+            setVoiceLogs((prev) => {
+                const newLogs = [logEntry, ...prev].slice(0, 10);
+                return newLogs;
+            });
 
             // 음료 선택
             if (!selectedDrink) {
-                if (/콜라/.test(normalized)) {
-                    setSelectedDrink("콜라");
-                    const msg = "콜라를 선택하셨어요. 사이즈를 선택해주세요.";
+                // 제로콜라를 먼저 확인 (콜라보다 먼저 체크해야 함)
+                if (/제로|제로콜라/.test(normalized)) {
+                    setSelectedDrink("제로콜라");
+                    const msg = "제로콜라를 선택하셨어요. 사이즈를 선택해주세요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
                     return;
                 }
-                if (/제로|제로콜라/.test(normalized)) {
-                    setSelectedDrink("제로콜라");
-                    const msg = "제로콜라를 선택하셨어요. 사이즈를 선택해주세요.";
+                // 제로콜라가 아닌 경우에만 콜라 확인
+                if (/콜라/.test(normalized)) {
+                    setSelectedDrink("콜라");
+                    const msg = "콜라를 선택하셨어요. 사이즈를 선택해주세요.";
                     setAssistantMessage(msg);
                     await speakKorean(msg);
                     return;
@@ -195,6 +234,56 @@ export default function DrinkSelectPage() {
                 backgroundColor: "#f9f9f9",
             }}
         >
+            {/* 음성 인식 로그창 - 항상 표시 */}
+            <div
+                    style={{
+                        position: "fixed",
+                        top: "10px",
+                        right: "10px",
+                        width: "300px",
+                        maxHeight: "400px",
+                        backgroundColor: "#fff",
+                        border: "2px solid #1e7a39",
+                        borderRadius: "12px",
+                        padding: "12px",
+                        zIndex: 1000,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        overflowY: "auto",
+                    }}
+                >
+                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                        🎤 음성 인식 로그
+                    </div>
+                    {voiceLogs.length === 0 ? (
+                        <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                            음성 인식 대기 중...
+                        </div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            {voiceLogs.map((log, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    padding: "8px",
+                                    backgroundColor: "#f5f5f5",
+                                    borderRadius: "6px",
+                                    fontSize: "0.85rem",
+                                }}
+                            >
+                                <div style={{ color: "#666", fontSize: "0.75rem", marginBottom: "4px" }}>
+                                    {log.time}
+                                </div>
+                                <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {log.transcript}
+                                </div>
+                                <div style={{ color: "#888", fontSize: "0.75rem" }}>
+                                    (정규화: {log.normalized})
+                                </div>
+                            </div>
+                            ))}
+                        </div>
+                    )}
+            </div>
             {/* 상단 헤더 */}
             <div
                 style={{
