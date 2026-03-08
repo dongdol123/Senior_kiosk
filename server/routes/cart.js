@@ -1,8 +1,8 @@
-const express = require('express');
+const express = require('express'); // Express에서 라우터는 API주소를 관리하는 모듈
 const router = express.Router();
 
 module.exports = (pool) => {
-  // POST /api/cart - Save cart state
+  // POST /api/cart - Save cart state : 의존성 주입 구조 : DI -> pool 주입
   router.post('/', async (req, res) => {
     const { sessionId, items, total } = req.body;
 
