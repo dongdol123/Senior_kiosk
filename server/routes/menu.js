@@ -46,7 +46,7 @@ module.exports = (pool) => {
            ORDER BY id`,
           [`%${keyword}%`, `%${keyword}%`]
         );
-        
+        // depth 수정 -> 4x4로 바꾸기
         const menus = rows.map(row => ({
           id: row.id.toString(),
           name: row.name,

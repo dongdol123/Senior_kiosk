@@ -62,186 +62,181 @@ export default function Home() {
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
-        backgroundColor: "#f9f9f9",
-        padding: "20px",
+        backgroundColor: "#ffffff",
+        padding: 0,
+        margin: 0,
+      }}
+    >
+      {/* 상단 캐릭터 및 인사말 영역 */}
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          padding: "5px 60px",
+          backgroundColor: "#ffffff",
+          position: "relative",
         }}
       >
-      {/* 메인 컨텐츠 영역 */}
+        {/* 왼쪽 텍스트 영역 */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            flex: 1,
+            paddingBottom: "40px",
+          }}
+        >
+          <div style={{
+            fontSize: "2.4rem",
+            fontWeight: "600",
+            color: "#000000",
+            lineHeight: "1.4",
+          }}>
+            안녕하세요!
+          </div>
+          <div style={{
+            fontSize: "2.4rem",
+            fontWeight: "600",
+            lineHeight: "1.4",
+          }}>
+            <span style={{ color: "#1e7a39" }}>연두</span>
+            <span style={{ color: "#000000" }}>햄버거입니다.</span>
+          </div>
+        </div>
+
+        {/* 오른쪽 캐릭터 이미지 */}
+        <div
+          style={{
+            width: "300px",
+            height: "300px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <img
+            src="/c1.png"
+            alt="연두햄버거 캐릭터"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 회색 가로선 */}
+      <div
+        style={{
+          width: "100%",
+          height: "1px",
+          backgroundColor: "#cccccc",
+          margin: "0",
+        }}
+      />
+
+      {/* 중앙 안내 문구 */}
+      <div
+        style={{
+          width: "100%",
+          textAlign: "center",
+          padding: "60px 20px",
+          backgroundColor: "#ffffff",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <div style={{
+          fontSize: "2.8rem",
+          fontWeight: "700",
+          color: "#000000",
+          lineHeight: "1.4",
+          maxWidth: "724px",
+          width: "100%",
+        }}>
+          원하시는 항목을 선택해주세요
+        </div>
+      </div>
+
+      {/* 하단 버튼 영역 */}
       <div
         style={{
           flex: 1,
           display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
+          gap: "24px",
+          padding: "0px 80px 60px 80px",
           justifyContent: "center",
-          padding: "40px 20px",
-          gap: "40px",
+          alignItems: "center",
           backgroundColor: "#ffffff",
         }}
       >
-        {/* 상단 문구 */}
-        <div
+        {/* 여기서 먹기 버튼 */}
+        <button
+          onClick={() => handleOrderType("dinein")}
           style={{
-            width: "100%",
-            maxWidth: "500px",
-            textAlign: "center",
-            padding: "0 20px",
-        }}
-      >
-          <h1 style={{ 
-            fontSize: "2.5rem", 
-            fontWeight: "600", 
-            color: "#333",
-            lineHeight: "1.4",
-            margin: 0,
-          }}>
-            키오스크와 <span style={{ color: "#ff0000", fontSize: "2.9rem", fontWeight: "700" }}>대화</span>하면서<br />
-            편리하게 주문해보세요
-          </h1>
-        </div>
-
-        {/* 가운데 이미지 영역 */}
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "500px",
-            height: "auto",
+            width: "350px",
+            height: "450px",
+            backgroundColor: "#1e7a39",
+            color: "#ffffff",
+            border: "none",
+            borderRadius: "16px",
+            cursor: "pointer",
+            fontSize: "2.5rem",
+            fontWeight: "700",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "all 0.2s",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.02)";
+            e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
           }}
         >
-          <img
-            src="/main_char.png"
-            alt="메인 캐릭터"
-            style={{
-              width: "100%",
-              maxWidth: "500px",
-              height: "auto",
-              display: "block",
-              objectFit: "contain",
-          }}
-          />
-        </div>
+          여기서 먹기
+        </button>
 
-        {/* 포장/매장 선택 버튼 */}
-        <div
+        {/* 포장하기 버튼 */}
+        <button
+          onClick={() => handleOrderType("takeout")}
           style={{
-            display: "flex",
-            gap: 0,
-            width: "100%",
-            maxWidth: "800px",
-            height: "200px",
+            width: "350px",
+            height: "450px",
+            backgroundColor: "#1e7a39",
+            color: "#ffffff",
+            border: "none",
             borderRadius: "16px",
-            overflow: "hidden",
-            border: "2px solid #000000",
+            cursor: "pointer",
+            fontSize: "2.5rem",
+            fontWeight: "700",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.2s",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.02)";
+            e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
           }}
         >
-          {/* 여기서 먹기 버튼 (매장) - 왼쪽 */}
-          <button
-            onClick={() => handleOrderType("dinein")}
-            style={{
-              flex: "1 1 0",
-              minWidth: 0,
-              position: "relative",
-              padding: 0,
-              height: "100%",
-              width: "100%",
-              backgroundColor: "#ffffff",
-              border: "none",
-              borderRight: "1px solid #000000",
-              borderRadius: 0,
-              cursor: "pointer",
-              overflow: "hidden",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "scale(1.02)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.12)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
-            }}
-          >
-            <img
-              src="/dinein-button.png"
-              alt="여기서 먹기"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                display: "block",
-                objectPosition: "center",
-                position: "absolute",
-                top: 0,
-                left: 0,
-              }}
-              onError={(e) => {
-                // 이미지가 없을 경우 대체 텍스트 표시
-                e.target.style.display = "none";
-                const fallback = e.target.nextSibling;
-                if (fallback) fallback.style.display = "flex";
-              }}
-            />
-          </button>
-
-          {/* 집에 가져가기 버튼 (포장) - 오른쪽 */}
-          <button
-            onClick={() => handleOrderType("takeout")}
-            style={{
-              flex: "1 1 0",
-              minWidth: 0,
-              position: "relative",
-              padding: 0,
-              height: "100%",
-              width: "100%",
-              backgroundColor: "#ffffff",
-              border: "none",
-              borderRadius: 0,
-              cursor: "pointer",
-              overflow: "hidden",
-              transition: "transform 0.2s, box-shadow 0.2s",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "scale(1.02)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.12)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "scale(1)";
-              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)";
-            }}
-          >
-            <img
-              src="/takeout-button.png"
-              alt="집에 가져가기"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                display: "block",
-                objectPosition: "center",
-                position: "absolute",
-                top: 0,
-                left: 0,
-              }}
-              onError={(e) => {
-                // 이미지가 없을 경우 대체 텍스트 표시
-                e.target.style.display = "none";
-                const fallback = e.target.nextSibling;
-                if (fallback) fallback.style.display = "flex";
-              }}
-            />
-          </button>
-        </div>
+          포장하기
+        </button>
       </div>
 
       {errorMessage ? (

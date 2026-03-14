@@ -214,6 +214,24 @@ export default function PhoneInputPage() {
         return `${value.slice(0, 3)}-${value.slice(3, 7)}-${value.slice(7, 11)}`;
     }
 
+    function handleNumberClick(num) {
+        if (phoneNumber.length < 11) {
+            setPhoneNumber(prev => prev + String(num));
+        }
+    }
+
+    function handleDelete() {
+        setPhoneNumber(prev => prev.slice(0, -1));
+    }
+
+    function handle010() {
+        if (phoneNumber.length === 0) {
+            setPhoneNumber("010");
+        } else if (phoneNumber.length < 8) {
+            setPhoneNumber(prev => prev + "010");
+        }
+    }
+
     function handleConfirm() {
         if (phoneNumber.length < 10) {
             alert("올바른 핸드폰 번호를 입력해주세요.");
@@ -236,36 +254,36 @@ export default function PhoneInputPage() {
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100vh",
-                backgroundColor: "#f9f9f9",
+                backgroundColor: "#ffffff",
             }}
         >
             {/* 음성 인식 로그창 - 항상 표시 */}
             <div
-                    style={{
-                        position: "fixed",
-                        top: "10px",
-                        right: "10px",
-                        width: "300px",
-                        maxHeight: "400px",
-                        backgroundColor: "#fff",
-                        border: "2px solid #1e7a39",
-                        borderRadius: "12px",
-                        padding: "12px",
-                        zIndex: 1000,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                        overflowY: "auto",
-                    }}
-                >
-                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
-                        🎤 음성 인식 로그
+                style={{
+                    position: "fixed",
+                    top: "10px",
+                    right: "10px",
+                    width: "300px",
+                    maxHeight: "400px",
+                    backgroundColor: "#fff",
+                    border: "2px solid #1e7a39",
+                    borderRadius: "12px",
+                    padding: "12px",
+                    zIndex: 1000,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    overflowY: "auto",
+                }}
+            >
+                <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                    🎤 음성 인식 로그
+                </div>
+                {voiceLogs.length === 0 ? (
+                    <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                        음성 인식 대기 중...
                     </div>
-                    {voiceLogs.length === 0 ? (
-                        <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
-                            음성 인식 대기 중...
-                        </div>
-                    ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                            {voiceLogs.map((log, index) => (
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {voiceLogs.map((log, index) => (
                             <div
                                 key={index}
                                 style={{
@@ -285,70 +303,178 @@ export default function PhoneInputPage() {
                                     (정규화: {log.normalized})
                                 </div>
                             </div>
-                            ))}
-                        </div>
-                    )}
+                        ))}
+                    </div>
+                )}
             </div>
+
             {/* 상단 헤더 */}
             <div
                 style={{
+                    flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "16px",
+                    padding: "10px 24px",
                     backgroundColor: "#fff",
-                    borderBottom: "2px solid #e5e5e5",
+                    zIndex: 50,
                 }}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <h2 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>핸드폰 번호 입력</h2>
-                    <div
-                        style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            backgroundColor: isListening ? "#e6f4ea" : "#eee",
-                            color: isListening ? "#1e7a39" : "#777",
-                            border: isListening ? "1px solid #bfe3ca" : "1px solid #ddd",
-                            borderRadius: "999px",
-                            padding: "6px 12px",
-                            fontWeight: "bold",
-                            fontSize: "0.9rem",
-                        }}
-                    >
-                        <span style={{ width: 8, height: 8, background: isListening ? "#34c759" : "#bbb", borderRadius: "50%" }} />
-                        {isListening ? "음성 인식 중" : "대화로 입력 가능"}
-                    </div>
-                </div>
+                {/* 왼쪽: 처음으로 버튼 */}
                 <button
-                    onClick={handleBack}
-                    style={{
-                        backgroundColor: "#ffffff",
-                        border: "1px solid #ddd",
-                        padding: "8px 14px",
-                        borderRadius: "8px",
-                        cursor: "pointer",
+                    onClick={() => {
+                        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
+                        try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
+                        router.push("/");
                     }}
-                >
-                    뒤로 가기
-                </button>
-            </div>
-
-            {/* 음성 안내 메시지 */}
-            {assistantMessage && (
-                <div
                     style={{
-                        padding: "12px 16px",
-                        backgroundColor: "#fff",
-                        borderBottom: "1px solid #e5e5e5",
-                        textAlign: "center",
-                        color: "#1e7a39",
+                        backgroundColor: "#000000",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "10px 20px",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "16px",
                         fontWeight: "600",
                     }}
                 >
-                    {assistantMessage}
+                    처음으로
+                </button>
+
+                {/* 중앙: 연두햄버거 제목 */}
+                <div style={{ 
+                    fontSize: "24px", 
+                    fontWeight: "700", 
+                    color: "#1e7a39",
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                }}>
+                    연두햄버거
                 </div>
-            )}
+
+                {/* 오른쪽: 빈 공간 */}
+                <div style={{ width: "100px" }}></div>
+            </div>
+
+            {/* Progress Bar */}
+            <div
+                style={{
+                    flexShrink: 0,
+                    backgroundColor: "#f5f5f5",
+                    padding: "12px 24px",
+                    borderBottom: "1px solid #e5e5e5",
+                }}
+            >
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "30px",
+                    position: "relative",
+                }}>
+                    {/* 가로선 */}
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "15%",
+                        right: "15%",
+                        height: "2px",
+                        backgroundColor: "#999",
+                        zIndex: 0,
+                    }} />
+                    
+                    {/* 진행된 부분의 가로선 (1단계에서 2단계까지) */}
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "15%",
+                        width: "calc(30% - 15%)",
+                        height: "2px",
+                        backgroundColor: "#333",
+                        zIndex: 1,
+                    }} />
+                    
+                    {/* 1 메뉴 선택 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "2px solid #999",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            1
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>메뉴 선택</div>
+                    </div>
+
+                    {/* 2 포인트 적립 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#000000",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            2
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#000" }}>포인트 적립</div>
+                    </div>
+
+                    {/* 3 결제하기 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "2px solid #999",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            3
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>결제하기</div>
+                    </div>
+
+                    {/* 4 완료 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "2px solid #999",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            4
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>완료</div>
+                    </div>
+                </div>
+            </div>
 
             {/* 메인 컨텐츠 */}
             <div
@@ -357,113 +483,417 @@ export default function PhoneInputPage() {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    padding: "40px 20px",
-                    gap: "30px",
-                    maxWidth: "800px",
-                    width: "100%",
-                    margin: "0 auto",
+                    justifyContent: "flex-start",
+                    padding: "60px 40px 40px 40px",
+                    gap: "40px",
+                    backgroundColor: "#ffffff",
                 }}
             >
-                <div
-                    style={{
-                        background: "#fff",
-                        border: "1px solid #e5e5e5",
-                        borderRadius: "16px",
-                        padding: "40px",
-                        width: "100%",
-                    }}
-                >
-                    <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "20px", textAlign: "center" }}>
-                        핸드폰 번호를 입력해주세요
-                    </h3>
-                    
-                    <div style={{ marginBottom: "30px" }}>
-                        <input
-                            ref={inputRef}
-                            type="tel"
-                            value={formatPhoneNumber(phoneNumber)}
-                            onChange={handlePhoneChange}
-                            placeholder="010-1234-5678"
-                            style={{
-                                width: "100%",
-                                padding: "20px",
-                                fontSize: "1.5rem",
-                                textAlign: "center",
-                                border: "2px solid #ddd",
-                                borderRadius: "12px",
-                                outline: "none",
-                            }}
-                            onFocus={(e) => e.target.style.borderColor = "#1e7a39"}
-                            onBlur={(e) => e.target.style.borderColor = "#ddd"}
-                        />
-                    </div>
-
-                    <div style={{ textAlign: "center", color: "#777", marginBottom: "30px" }}>
-                        포인트 적립 후 결제 금액: <strong style={{ color: "#1e7a39" }}>{total.toLocaleString()}원</strong>
-                    </div>
-
-                    <button
-                        onClick={handleConfirm}
-                        disabled={phoneNumber.length < 10}
-                        style={{
-                            width: "100%",
-                            padding: "20px",
-                            fontSize: "1.5rem",
-                            fontWeight: "bold",
-                            backgroundColor: phoneNumber.length >= 10 ? "#1e7a39" : "#ccc",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "12px",
-                            cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed",
-                            boxShadow: phoneNumber.length >= 10 ? "0 4px 12px rgba(0,0,0,0.15)" : "none",
-                        }}
-                    >
-                        적립하고 결제하기
-                    </button>
+                {/* 안내 문구 */}
+                <div style={{
+                    fontSize: "2rem",
+                    fontWeight: "700",
+                    color: "#000000",
+                    textAlign: "center",
+                    marginBottom: "20px",
+                }}>
+                    포인트 적립을 위해 전화번호를 입력해주세요
                 </div>
 
-                {/* 숫자 키패드 */}
-                <div
-                    style={{
+                {/* 입력 필드 */}
+                <div style={{
+                    width: "100%",
+                    maxWidth: "600px",
+                    position: "relative",
+                    marginBottom: "20px",
+                    display: "flex",
+                    justifyContent: "center",
+                }}>
+                    <div style={{
+                        borderBottom: "2px solid #333",
+                        paddingBottom: "12px",
+                        position: "relative",
+                        width: "100%",
+                        textAlign: "center",
+                    }}>
+                        {phoneNumber.length === 0 ? (
+                            <div style={{
+                                position: "absolute",
+                                top: "0",
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                color: "#999",
+                                fontSize: "1.4rem",
+                                pointerEvents: "none",
+                            }}>
+                                전화번호 입력
+                            </div>
+                        ) : null}
+                        <div style={{
+                            fontSize: "2rem",
+                            fontWeight: "600",
+                            color: "#000",
+                            minHeight: "40px",
+                            paddingTop: phoneNumber.length === 0 ? "0" : "0",
+                            textAlign: "center",
+                        }}>
+                            {formatPhoneNumber(phoneNumber)}
+                        </div>
+                    </div>
+                </div>
+
+                {/* 숫자 키패드 영역 */}
+                <div style={{
+                    width: "100%",
+                    maxWidth: "600px",
+                    display: "flex",
+                    gap: "16px",
+                }}>
+                    {/* 왼쪽: 숫자 키패드 */}
+                    <div style={{
+                        flex: 1,
                         display: "grid",
                         gridTemplateColumns: "repeat(3, 1fr)",
                         gap: "12px",
-                        width: "100%",
-                        maxWidth: "400px",
-                    }}
-                >
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0, "삭제"].map((item, idx) => (
+                    }}>
+                        {/* 첫 번째 줄: 7, 8, 9 */}
                         <button
-                            key={idx}
-                            onClick={() => {
-                                if (item === "삭제") {
-                                    setPhoneNumber(prev => prev.slice(0, -1));
-                                } else if (item !== "") {
-                                    if (phoneNumber.length < 11) {
-                                        setPhoneNumber(prev => prev + String(item));
-                                    }
-                                }
-                            }}
-                            disabled={item === ""}
+                            onClick={() => handleNumberClick(7)}
                             style={{
-                                height: "70px",
-                                fontSize: "1.5rem",
-                                fontWeight: "bold",
-                                backgroundColor: item === "" ? "transparent" : "#fff",
-                                color: item === "삭제" ? "#b00020" : "#333",
-                                border: item === "" ? "none" : "2px solid #ddd",
-                                borderRadius: "12px",
-                                cursor: item === "" ? "default" : "pointer",
-                                boxShadow: item === "" ? "none" : "0 2px 6px rgba(0,0,0,0.1)",
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
                             }}
                         >
-                            {item === "" ? "" : item}
+                            7
                         </button>
-                    ))}
+                        <button
+                            onClick={() => handleNumberClick(8)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            8
+                        </button>
+                        <button
+                            onClick={() => handleNumberClick(9)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            9
+                        </button>
+
+                        {/* 두 번째 줄: 4, 5, 6 */}
+                        <button
+                            onClick={() => handleNumberClick(4)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            4
+                        </button>
+                        <button
+                            onClick={() => handleNumberClick(5)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            5
+                        </button>
+                        <button
+                            onClick={() => handleNumberClick(6)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            6
+                        </button>
+
+                        {/* 세 번째 줄: 1, 2, 3 */}
+                        <button
+                            onClick={() => handleNumberClick(1)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            1
+                        </button>
+                        <button
+                            onClick={() => handleNumberClick(2)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            2
+                        </button>
+                        <button
+                            onClick={() => handleNumberClick(3)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            3
+                        </button>
+
+                        {/* 네 번째 줄: 0, 010 */}
+                        <button
+                            onClick={() => handleNumberClick(0)}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.8rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            0
+                        </button>
+                        <button
+                            onClick={handle010}
+                            style={{
+                                height: "80px",
+                                fontSize: "1.2rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                gridColumn: "span 2",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            010
+                        </button>
+                    </div>
+
+                    {/* 오른쪽: 지움 및 확인 버튼 */}
+                    <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                        width: "120px",
+                    }}>
+                        <button
+                            onClick={handleDelete}
+                            style={{
+                                width: "100%",
+                                height: "80px",
+                                fontSize: "1.2rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ffffff",
+                                color: "#000000",
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = "#f5f5f5";
+                                e.currentTarget.style.borderColor = "#999";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ffffff";
+                                e.currentTarget.style.borderColor = "#ddd";
+                            }}
+                        >
+                            지움
+                        </button>
+                        <button
+                            onClick={handleConfirm}
+                            disabled={phoneNumber.length < 10}
+                            style={{
+                                width: "100%",
+                                flex: 1,
+                                fontSize: "1.5rem",
+                                fontWeight: "700",
+                                backgroundColor: "#ff0000",
+                                color: "#ffffff",
+                                border: "none",
+                                borderRadius: "8px",
+                                cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed",
+                                transition: "all 0.2s",
+                                opacity: phoneNumber.length >= 10 ? 1 : 0.6,
+                            }}
+                            onMouseEnter={(e) => {
+                                if (phoneNumber.length >= 10) {
+                                    e.currentTarget.style.backgroundColor = "#cc0000";
+                                    e.currentTarget.style.opacity = "1";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "#ff0000";
+                                e.currentTarget.style.opacity = phoneNumber.length >= 10 ? "1" : "0.6";
+                            }}
+                        >
+                            확인
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
     );
 }
-
