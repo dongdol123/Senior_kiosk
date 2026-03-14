@@ -37,7 +37,7 @@ export default function PaymentPage() {
 
     // 뒤로가기 처리
     const handleBack = () => {
-        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}`);
+        router.push(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}`);
     };
 
     // 카드 결제 처리
@@ -236,53 +236,42 @@ export default function PaymentPage() {
         };
     }, []);
 
-    const formatPhoneNumber = (phone) => {
-        if (!phone || phone.length < 10) return phone;
-        if (phone.length === 10) {
-            return `${phone.slice(0, 3)}-${phone.slice(3, 6)}-${phone.slice(6)}`;
-        } else if (phone.length === 11) {
-            return `${phone.slice(0, 3)}-${phone.slice(3, 7)}-${phone.slice(7)}`;
-        }
-        return phone;
-    };
-
     return (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100vh",
-                backgroundColor: "#f9f9f9",
-                padding: "20px",
+                backgroundColor: "#ffffff",
             }}
         >
             {/* 음성 인식 로그창 - 항상 표시 */}
             <div
-                    style={{
-                        position: "fixed",
-                        top: "10px",
-                        right: "10px",
-                        width: "300px",
-                        maxHeight: "400px",
-                        backgroundColor: "#fff",
-                        border: "2px solid #1e7a39",
-                        borderRadius: "12px",
-                        padding: "12px",
-                        zIndex: 1000,
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                        overflowY: "auto",
-                    }}
-                >
-                    <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
-                        🎤 음성 인식 로그
+                style={{
+                    position: "fixed",
+                    top: "10px",
+                    right: "10px",
+                    width: "300px",
+                    maxHeight: "400px",
+                    backgroundColor: "#fff",
+                    border: "2px solid #1e7a39",
+                    borderRadius: "12px",
+                    padding: "12px",
+                    zIndex: 1000,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    overflowY: "auto",
+                }}
+            >
+                <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
+                    🎤 음성 인식 로그
+                </div>
+                {voiceLogs.length === 0 ? (
+                    <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
+                        음성 인식 대기 중...
                     </div>
-                    {voiceLogs.length === 0 ? (
-                        <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
-                            음성 인식 대기 중...
-                        </div>
-                    ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                            {voiceLogs.map((log, index) => (
+                ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {voiceLogs.map((log, index) => (
                             <div
                                 key={index}
                                 style={{
@@ -302,41 +291,173 @@ export default function PaymentPage() {
                                     (정규화: {log.normalized})
                                 </div>
                             </div>
-                            ))}
-                        </div>
-                    )}
+                        ))}
+                    </div>
+                )}
             </div>
-            {/* 상단 바 */}
+
+            {/* 상단 헤더 */}
             <div
                 style={{
+                    flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "16px 20px",
+                    padding: "10px 24px",
                     backgroundColor: "#fff",
-                    borderRadius: "12px",
-                    marginBottom: "20px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    zIndex: 50,
                 }}
             >
+                {/* 왼쪽: 뒤로가기 버튼 */}
                 <button
                     onClick={handleBack}
                     style={{
-                        padding: "12px 16px",
-                        backgroundColor: "#6c757d",
-                        color: "#fff",
+                        backgroundColor: "#000000",
+                        color: "#ffffff",
                         border: "none",
-                        borderRadius: "8px",
-                        fontSize: "1rem",
+                        padding: "10px 20px",
+                        borderRadius: "4px",
                         cursor: "pointer",
+                        fontSize: "16px",
+                        fontWeight: "600",
                     }}
                 >
                     ← 뒤로가기
                 </button>
-                <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                    결제하기
+
+                {/* 중앙: 연두햄버거 제목 */}
+                <div style={{ 
+                    fontSize: "24px", 
+                    fontWeight: "700", 
+                    color: "#1e7a39",
+                    position: "absolute",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                }}>
+                    연두햄버거
                 </div>
-                <div style={{ width: "100px" }}></div> {/* 균형 맞춤용 */}
+
+                {/* 오른쪽: 빈 공간 */}
+                <div style={{ width: "120px" }}></div>
+            </div>
+
+            {/* Progress Bar */}
+            <div
+                style={{
+                    flexShrink: 0,
+                    backgroundColor: "#f5f5f5",
+                    padding: "12px 24px",
+                    borderBottom: "1px solid #e5e5e5",
+                }}
+            >
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "30px",
+                    position: "relative",
+                }}>
+                    {/* 가로선 */}
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "15%",
+                        right: "15%",
+                        height: "2px",
+                        backgroundColor: "#999",
+                        zIndex: 0,
+                    }} />
+                    
+                    {/* 진행된 부분의 가로선 (1단계에서 3단계까지) */}
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "15%",
+                        width: "calc(60% - 15%)",
+                        height: "2px",
+                        backgroundColor: "#333",
+                        zIndex: 1,
+                    }} />
+                    
+                    {/* 1 메뉴 선택 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "2px solid #999",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            1
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>메뉴 선택</div>
+                    </div>
+
+                    {/* 2 포인트 적립 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "2px solid #999",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            2
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>포인트 적립</div>
+                    </div>
+
+                    {/* 3 결제하기 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#000000",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            3
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#000" }}>결제하기</div>
+                    </div>
+
+                    {/* 4 완료 */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
+                        <div style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "2px solid #999",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "16px",
+                            fontWeight: "700",
+                        }}>
+                            4
+                        </div>
+                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>완료</div>
+                    </div>
+                </div>
             </div>
 
             {/* 메인 컨텐츠 */}
@@ -346,116 +467,185 @@ export default function PaymentPage() {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
+                    justifyContent: "flex-start",
+                    padding: "60px 40px 40px 40px",
                     gap: "40px",
+                    backgroundColor: "#ffffff",
                 }}
             >
-                {/* 주문 정보 */}
-                <div
-                    style={{
-                        backgroundColor: "#fff",
-                        padding: "24px",
-                        borderRadius: "16px",
-                        boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                        width: "100%",
-                        maxWidth: "500px",
-                    }}
-                >
-                    <h2 style={{ margin: "0 0 16px 0", textAlign: "center" }}>
-                        결제 정보
-                    </h2>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span>총 금액:</span>
-                        <span style={{ fontWeight: "bold", fontSize: "1.2rem" }}>
-                            {total.toLocaleString()}원
-                        </span>
-                    </div>
-                    {phoneNumber && (
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                            <span>적립 번호:</span>
-                            <span>{formatPhoneNumber(phoneNumber)}</span>
-                        </div>
-                    )}
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>주문 유형:</span>
-                        <span>{orderType === "dinein" ? "매장" : "포장"}</span>
+                {/* 안내 문구 */}
+                <div style={{
+                    fontSize: "2rem",
+                    fontWeight: "700",
+                    color: "#000000",
+                    textAlign: "center",
+                    marginBottom: "20px",
+                }}>
+                    결제 방법을 선택해주세요
+                </div>
+
+                {/* 총 결제금액 바 */}
+                <div style={{
+                    width: "100%",
+                    maxWidth: "600px",
+                    backgroundColor: "#1e7a39",
+                    padding: "28px 24px",
+                    borderRadius: "8px",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}>
+                    <div style={{
+                        fontSize: "2rem",
+                        fontWeight: "700",
+                        color: "#ffffff",
+                        textAlign: "center",
+                    }}>
+                        총 결제금액 | {total.toLocaleString()} 원
                     </div>
                 </div>
 
-                {/* 결제 방법 선택 */}
-                <div
-                    style={{
-                        display: "flex",
-                        gap: "20px",
-                        width: "100%",
-                        maxWidth: "500px",
-                    }}
-                >
+                {/* 결제 방법 선택 버튼 */}
+                <div style={{
+                    width: "100%",
+                    maxWidth: "600px",
+                    display: "flex",
+                    gap: "20px",
+                }}>
+                    {/* 신용카드 버튼 */}
                     <button
                         onClick={handleCardPayment}
                         style={{
                             flex: 1,
                             padding: "40px 20px",
-                            backgroundColor: "#007bff",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "16px",
-                            fontSize: "1.5rem",
-                            fontWeight: "bold",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "1px solid #ddd",
+                            borderRadius: "12px",
+                            fontSize: "1.8rem",
+                            fontWeight: "700",
                             cursor: "pointer",
-                            transition: "transform 0.2s",
+                            transition: "all 0.2s",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "16px",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "scale(1.02)";
+                            e.currentTarget.style.backgroundColor = "#f5f5f5";
+                            e.currentTarget.style.borderColor = "#999";
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "scale(1)";
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#ddd";
                         }}
                     >
-                        💳 카드결제
+                        {/* 카드 아이콘 */}
+                        <div style={{
+                            width: "80px",
+                            height: "60px",
+                            border: "2px solid #000",
+                            borderRadius: "8px",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "4px",
+                            padding: "8px",
+                        }}>
+                            <div style={{
+                                width: "100%",
+                                height: "20px",
+                                border: "1px solid #000",
+                                borderRadius: "2px",
+                            }}></div>
+                            <div style={{
+                                width: "60%",
+                                height: "2px",
+                                backgroundColor: "#000",
+                            }}></div>
+                            <div style={{
+                                width: "60%",
+                                height: "2px",
+                                backgroundColor: "#000",
+                            }}></div>
+                        </div>
+                        <div>신용카드</div>
                     </button>
 
+                    {/* 페이 버튼 */}
                     <button
                         onClick={handlePayPayment}
                         style={{
                             flex: 1,
                             padding: "40px 20px",
-                            backgroundColor: "#28a745",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "16px",
-                            fontSize: "1.5rem",
-                            fontWeight: "bold",
+                            backgroundColor: "#ffffff",
+                            color: "#000000",
+                            border: "1px solid #ddd",
+                            borderRadius: "12px",
+                            fontSize: "1.8rem",
+                            fontWeight: "700",
                             cursor: "pointer",
-                            transition: "transform 0.2s",
+                            transition: "all 0.2s",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "16px",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = "scale(1.02)";
+                            e.currentTarget.style.backgroundColor = "#f5f5f5";
+                            e.currentTarget.style.borderColor = "#999";
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = "scale(1)";
+                            e.currentTarget.style.backgroundColor = "#ffffff";
+                            e.currentTarget.style.borderColor = "#ddd";
                         }}
                     >
-                        📱 페이결제
+                        {/* 페이 로고들 */}
+                        <div style={{
+                            display: "flex",
+                            gap: "16px",
+                            alignItems: "center",
+                        }}>
+                            {/* 네이버페이 스타일 */}
+                            <div style={{
+                                width: "80px",
+                                height: "80px",
+                                backgroundColor: "#03C75A",
+                                borderRadius: "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#ffffff",
+                                fontSize: "12px",
+                                fontWeight: "700",
+                            }}>
+                                <div style={{ fontSize: "32px", fontWeight: "800" }}>N</div>
+                                <div style={{ fontSize: "12px" }}>pay</div>
+                            </div>
+                            {/* 카카오페이 스타일 */}
+                            <div style={{
+                                width: "80px",
+                                height: "80px",
+                                backgroundColor: "#FEE500",
+                                borderRadius: "10px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#000000",
+                                fontSize: "12px",
+                                fontWeight: "700",
+                            }}>
+                                <div style={{ fontSize: "36px" }}>💬</div>
+                                <div style={{ fontSize: "12px" }}>pay</div>
+                            </div>
+                        </div>
+                        <div>페이</div>
                     </button>
-                </div>
-
-                {/* 음성 안내 메시지 - 고정 */}
-                <div
-                    style={{
-                        backgroundColor: "#fff",
-                        padding: "16px 24px",
-                        borderRadius: "12px",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        maxWidth: "500px",
-                        width: "100%",
-                        textAlign: "center",
-                        border: "2px solid #1e7a39",
-                    }}
-                >
-                    <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: "600", color: "#1e7a39" }}>
-                        {isListening && "🎤 "} {assistantMessage || "카드결제, 페이결제 중 선택해주세요."}
-                    </p>
                 </div>
             </div>
         </main>

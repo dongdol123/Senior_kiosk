@@ -86,7 +86,7 @@ export default function MenuOptionPage() {
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
-            } catch (e) {}
+            } catch (e) { }
         }
         shouldListenRef.current = false; // 자동 재시작 방지
 
@@ -110,7 +110,7 @@ export default function MenuOptionPage() {
                 setAssistantMessage(msg);
                 await speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
             }
-            
+
             // 음성 안내가 완료된 후 충분한 딜레이를 두고 플래그 해제 및 음성 인식 재시작
             setTimeout(() => {
                 isSpeakingRef.current = false; // 플래그 해제
@@ -170,16 +170,16 @@ export default function MenuOptionPage() {
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 restartingRef.current = true;
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                     restartingRef.current = false;
                                 } catch (e) {
                                     restartingRef.current = false;
                                     // 재시작 실패 시 다시 시도
                                     setTimeout(() => {
                                         if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                            try { 
-                                                recognition.start(); 
+                                            try {
+                                                recognition.start();
                                             } catch (e2) {
                                                 console.log("음성 인식 재시작 재시도 실패:", e2);
                                             }
@@ -190,16 +190,16 @@ export default function MenuOptionPage() {
                         }, 2000);
                         return;
                     }
-                    try { 
-                        recognition.start(); 
+                    try {
+                        recognition.start();
                         restartingRef.current = false;
                     } catch (e) {
                         restartingRef.current = false;
                         // 재시작 실패 시 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                 } catch (e2) {
                                     console.log("음성 인식 재시작 재시도 실패:", e2);
                                 }
@@ -224,8 +224,8 @@ export default function MenuOptionPage() {
                         restartingRef.current = false;
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                 } catch (e) {
                                     console.log("음성 인식 재시작 오류:", e);
                                 }
@@ -233,8 +233,8 @@ export default function MenuOptionPage() {
                         }, 2000);
                         return;
                     }
-                    try { 
-                        recognition.start(); 
+                    try {
+                        recognition.start();
                         restartingRef.current = false;
                     } catch (e) {
                         console.log("음성 인식 재시작 오류:", e);
@@ -242,8 +242,8 @@ export default function MenuOptionPage() {
                         // 재시작 실패 시 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                 } catch (e2) {
                                     console.log("음성 인식 재시작 재시도 실패:", e2);
                                 }
@@ -260,7 +260,7 @@ export default function MenuOptionPage() {
                 console.log("🔇 음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
                 return;
             }
-            
+
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
 
@@ -324,17 +324,17 @@ export default function MenuOptionPage() {
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
-                } catch (e) {}
+                } catch (e) { }
                 isSpeakingRef.current = true;
                 await speakKorean(msg);
-                setTimeout(() => { 
+                setTimeout(() => {
                     isSpeakingRef.current = false;
                     if (mountedRef.current && shouldListenRef.current) {
                         setTimeout(() => {
                             if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
                                 try {
                                     recognitionRef.current.start();
-                                } catch (e) {}
+                                } catch (e) { }
                             }
                         }, 2000);
                     }
@@ -398,17 +398,17 @@ export default function MenuOptionPage() {
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
-                } catch (e) {}
+                } catch (e) { }
                 isSpeakingRef.current = true;
                 await speakKorean(msg);
-                setTimeout(() => { 
+                setTimeout(() => {
                     isSpeakingRef.current = false;
                     if (mountedRef.current && shouldListenRef.current) {
                         setTimeout(() => {
                             if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
                                 try {
                                     recognitionRef.current.start();
-                                } catch (e) {}
+                                } catch (e) { }
                             }
                         }, 2000);
                     }
@@ -419,17 +419,17 @@ export default function MenuOptionPage() {
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
-                } catch (e) {}
+                } catch (e) { }
                 isSpeakingRef.current = true;
                 await speakKorean(msg);
-                setTimeout(() => { 
+                setTimeout(() => {
                     isSpeakingRef.current = false;
                     if (mountedRef.current && shouldListenRef.current) {
                         setTimeout(() => {
                             if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
                                 try {
                                     recognitionRef.current.start();
-                                } catch (e) {}
+                                } catch (e) { }
                             }
                         }, 2000);
                     }
@@ -780,16 +780,16 @@ export default function MenuOptionPage() {
                                     height: "120px",
                                     fontSize: "2rem",
                                     fontWeight: "bold",
-                                    backgroundColor: "#1e7a39",
-                                    color: "#fff",
-                                    border: "none",
+                                    backgroundColor: "#fff",
+                                    color: "#000",
+                                    border: "2px solid #ddd",
                                     borderRadius: "16px",
                                     cursor: "pointer",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                                 }}
                             >
                                 단품
-                                <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9 }}>
+                                <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
                                     {menuPrice.toLocaleString()}원
                                 </div>
                             </button>
@@ -802,16 +802,16 @@ export default function MenuOptionPage() {
                                     height: "120px",
                                     fontSize: "2rem",
                                     fontWeight: "bold",
-                                    backgroundColor: "#ff6b35",
-                                    color: "#fff",
-                                    border: "none",
+                                    backgroundColor: "#fff",
+                                    color: "#000",
+                                    border: "2px solid #ddd",
                                     borderRadius: "16px",
                                     cursor: "pointer",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                                 }}
                             >
                                 세트
-                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9 }}>
+                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
                                     음료+사이드 선택
                                 </div>
                             </button>
@@ -827,16 +827,16 @@ export default function MenuOptionPage() {
                                 height: "80px",
                                 fontSize: "1.5rem",
                                 fontWeight: "bold",
-                                backgroundColor: "#4a90e2",
-                                color: "#fff",
-                                border: "none",
+                                backgroundColor: "#fff",
+                                color: "#000",
+                                border: "2px solid #ddd",
                                 borderRadius: "16px",
                                 cursor: "pointer",
                                 boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                             }}
                         >
                             기본 세트 적용 (콜라 M / 감자튀김 M)
-                            <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9 }}>
+                            <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
                                 {(menuPrice + 2000 + 3000).toLocaleString()}원
                             </div>
                         </button>
