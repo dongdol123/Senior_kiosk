@@ -54,7 +54,21 @@ async function playNext() {
                     currentAudio = null;
                     rejectAudio(e);
                 };
-                currentAudio.play().catch(rejectAudio);
+                currentAudio.play().catch(async (err) => {
+                    // 사용자 상호작용 전 autoplay 정책으로 막히는 경우
+                    if (isNotAllowedPlaybackError(err)) {
+                        URL.revokeObjectURL(audioUrl);
+                        currentAudio = null;
+                        try {
+                            await fallbackSpeakKorean(text);
+                        } catch (_) {
+                            // fallback도 막히면 조용히 종료
+                        }
+                        resolveAudio();
+                        return;
+                    }
+                    rejectAudio(err);
+                });
             });
         }
         resolve();
@@ -147,6 +161,13 @@ function base64ToBlob(base64, mimeType) {
     }
     const byteArray = new Uint8Array(byteNumbers);
     return new Blob([byteArray], { type: mimeType });
+}
+
+function isNotAllowedPlaybackError(err) {
+    if (!err) return false;
+    const name = String(err.name || "");
+    const message = String(err.message || "");
+    return name === "NotAllowedError" || message.includes("user didn't interact");
 }
 
 

@@ -288,6 +288,27 @@ export default function MenuPage() {
         }
     }
 
+    function handleMenuCardClick(menu) {
+        const name = menu.name;
+        const cartData = encodeURIComponent(JSON.stringify(cartItems));
+        const orderType = searchParams.get("orderType") || "takeout";
+
+        // 감자튀김: 사이즈 선택 모달
+        if (/감자튀김/.test(name)) {
+            setSelectedFries(menu);
+            setShowFriesModal(true);
+            return;
+        }
+
+        // 샐러드, 치킨텐더: 바로 담기
+        if (/샐러드|치킨텐더/.test(name)) {
+            addToCart(menu);
+            return;
+        }
+
+        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}`);
+    }
+
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
 
     // cartItems와 router를 ref로 업데이트
@@ -1175,6 +1196,7 @@ export default function MenuPage() {
                                 {currentItems.map((m) => (
                                     <div
                                         key={m.id}
+                                        onClick={() => handleMenuCardClick(m)}
                                         style={{
                                             display: "flex",
                                             flexDirection: "column",
@@ -1333,50 +1355,6 @@ export default function MenuPage() {
                                             <div style={{ fontWeight: 800, fontSize: 24, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#333", lineHeight: "1.1" }}>{m.name}</div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                                 <div style={{ color: "#1e7a39", fontSize: 22, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const name = m.name;
-                                                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                                                        const orderType = searchParams.get("orderType") || "takeout";
-
-                                                        // 감자튀김: 사이즈 선택 모달
-                                                        if (/감자튀김/.test(name)) {
-                                                            setSelectedFries(m);
-                                                            setShowFriesModal(true);
-                                                            return;
-                                                        }
-
-                                                        // 샐러드, 치킨텐더: 바로 담기
-                                                        if (/샐러드|치킨텐더/.test(name)) {
-                                                            addToCart(m);
-                                                            return;
-                                                        }
-
-                                                        router.push(`/menu-option?menuId=${m.id}&menuName=${encodeURIComponent(name)}&price=${m.price}&cart=${cartData}&orderType=${orderType}`);
-                                                    }}
-                                                    style={{ 
-                                                        background: "#FF6B35", 
-                                                        color: "#fff", 
-                                                        border: "none", 
-                                                        borderRadius: 10, 
-                                                        padding: "8px 16px", 
-                                                        cursor: "pointer", 
-                                                        fontWeight: 800, 
-                                                        fontSize: 14,
-                                                        transition: "all 0.2s",
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = "#FF5722";
-                                                        e.currentTarget.style.transform = "scale(1.05)";
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.background = "#FF6B35";
-                                                        e.currentTarget.style.transform = "scale(1)";
-                                                    }}
-                                                >
-                                                    담기
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1435,8 +1413,38 @@ export default function MenuPage() {
                                 position: "relative",
                             }}
                         >
-                            {/* 왼쪽: 빈 공간 (다음 버튼과 균형 맞추기) */}
-                            <div style={{ width: "100px" }}></div>
+                            {/* 왼쪽: 이전 버튼 */}
+                            <button
+                                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                style={{
+                                    padding: "10px 20px",
+                                    borderRadius: "4px",
+                                    border: "none",
+                                    background: currentPage === 1 ? "#ccc" : "#1e7a39",
+                                    color: "#ffffff",
+                                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                                    fontSize: "16px",
+                                    fontWeight: "600",
+                                    transition: "all 0.2s",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (currentPage !== 1) {
+                                        e.currentTarget.style.background = "#1a6b2e";
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (currentPage !== 1) {
+                                        e.currentTarget.style.background = "#1e7a39";
+                                    }
+                                }}
+                            >
+                                <span style={{ fontSize: "14px" }}>◀</span>
+                                이전
+                            </button>
 
                             {/* 가운데: 페이지 번호 */}
                             <div style={{ 

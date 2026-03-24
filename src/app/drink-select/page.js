@@ -11,29 +11,35 @@ export default function DrinkSelectPage() {
     const [menuPrice, setMenuPrice] = useState(0);
     const [menuId, setMenuId] = useState("");
     const [selectedDrink, setSelectedDrink] = useState("");
-    const [selectedSize, setSelectedSize] = useState("");
+    const [selectedDrinkSize, setSelectedDrinkSize] = useState("");
+    const [selectedSide, setSelectedSide] = useState("");
+    const [selectedSideSize, setSelectedSideSize] = useState("");
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
-    const [showAlert, setShowAlert] = useState(false);
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
-    const isSpeakingRef = useRef(false); // 음성 안내 재생 중인지 추적
-    const shouldListenRef = useRef(true); // 자동 재시작 제어
-    const restartingRef = useRef(false); // 재시작 중인지 추적
+    const isSpeakingRef = useRef(false);
+    const shouldListenRef = useRef(true);
+    const restartingRef = useRef(false);
 
     const drinks = ["콜라", "제로콜라", "사이다", "커피"];
-    const sizes = [
+    const drinkSizes = [
         { name: "미디움", price: 2000 },
-        { name: "라지", price: 2500 }, // +500원
+        { name: "라지", price: 2500 },
+    ];
+    const sides = ["감자튀김", "치킨텐더", "샐러드"];
+    const sideSizes = [
+        { name: "미디움", price: 3000 },
+        { name: "라지", price: 4000 },
     ];
 
     useEffect(() => {
         setMenuName(decodeURIComponent(searchParams.get("menuName") || ""));
         setMenuPrice(parseInt(searchParams.get("price") || "0"));
         setMenuId(searchParams.get("menuId") || "");
-        
+
         const cartParam = searchParams.get("cart");
         if (cartParam) {
             try {
@@ -44,9 +50,7 @@ export default function DrinkSelectPage() {
         }
     }, [searchParams]);
 
-    // 페이지 진입 시 즉시 음성 안내
     useEffect(() => {
-        // 이전 음성 안내 정리
         if (typeof window !== "undefined") {
             try {
                 if (window.speechSynthesis) {
@@ -57,25 +61,22 @@ export default function DrinkSelectPage() {
             }
         }
 
-        // 음성 인식 중지
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
-            } catch (e) {}
+            } catch (e) { }
         }
-        shouldListenRef.current = false; // 자동 재시작 방지
+        shouldListenRef.current = false;
 
-        // 약간의 딜레이 후 음성 안내 (더 긴 딜레이로 이전 페이지 안내가 완전히 정리된 후 재생)
         const timer = setTimeout(async () => {
             isSpeakingRef.current = true;
-            const msg = "음료를 선택해주세요.";
+            const msg = "음료와 사이드를 선택해주세요.";
             setAssistantMessage(msg);
             await speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
-            
-            // 음성 안내가 완료된 후 충분한 딜레이를 두고 플래그 해제 및 음성 인식 재시작
+
             setTimeout(() => {
-                isSpeakingRef.current = false; // 플래그 해제
-                shouldListenRef.current = true; // 자동 재시작 허용
+                isSpeakingRef.current = false;
+                shouldListenRef.current = true;
                 if (mountedRef.current) {
                     setTimeout(() => {
                         if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
@@ -85,34 +86,43 @@ export default function DrinkSelectPage() {
                                 console.log("음성 인식 재시작 오류:", e);
                             }
                         }
-                    }, 2000); // 추가 딜레이 (2초)
+                    }, 2000);
                 }
-            }, 1000); // 안내 완료 후 1초 대기
+            }, 1000);
         }, 800);
 
         return () => clearTimeout(timer);
     }, [searchParams]);
 
-    // 음료와 사이즈가 모두 선택되면 자동으로 사이드 선택 페이지로 이동
     useEffect(() => {
-        if (selectedDrink && selectedSize) {
-            const selectedSizeObj = sizes.find(s => s.name === selectedSize);
-            if (selectedSizeObj) {
+        if (selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {
+            const selectedDrinkSizeObj = drinkSizes.find((s) => s.name === selectedDrinkSize);
+            const selectedSideSizeObj = sideSizes.find((s) => s.name === selectedSideSize);
+            if (selectedDrinkSizeObj && selectedSideSizeObj) {
                 const timer = setTimeout(() => {
-                    const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                    const totalPrice = menuPrice + selectedDrinkSizeObj.price + selectedSideSizeObj.price;
+                    const newCartItems = [...cartItems];
+                    newCartItems.push({
+                        id: `${menuId}_set_${Date.now()}`,
+                        name: menuName ? `${menuName} 세트` : "세트",
+                        price: totalPrice,
+                        qty: 1,
+                        type: "set",
+                        items: [
+                            { name: menuName, price: menuPrice },
+                            { name: selectedDrink, size: selectedDrinkSize, price: selectedDrinkSizeObj.price },
+                            { name: selectedSide, size: selectedSideSize, price: selectedSideSizeObj.price },
+                        ],
+                    });
+                    const cartData = encodeURIComponent(JSON.stringify(newCartItems));
                     const orderType = searchParams.get("orderType") || "takeout";
-                    router.push(
-                        `/side-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
-                        `&drink=${encodeURIComponent(selectedDrink)}&drinkSize=${encodeURIComponent(selectedSize)}&drinkPrice=${selectedSizeObj.price}` +
-                        `&cart=${cartData}&orderType=${orderType}`
-                    );
+                    router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
                 }, 800);
                 return () => clearTimeout(timer);
             }
         }
-    }, [selectedDrink, selectedSize]);
+    }, [selectedDrink, selectedDrinkSize, selectedSide, selectedSideSize, menuId, menuName, menuPrice, cartItems, searchParams, router]);
 
-    // 음성 인식
     useEffect(() => {
         mountedRef.current = true;
         shouldListenRef.current = true;
@@ -133,33 +143,28 @@ export default function DrinkSelectPage() {
         };
         recognition.onend = () => {
             setIsListening(false);
-            // 자동 재시작 (키오스크 시스템이므로 지속적으로 작동해야 함)
-            // 음성 안내 재생 중이어도 일정 시간 후 재시작 시도
             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                 restartingRef.current = true;
-                const delay = isSpeakingRef.current ? 2000 : 500; // 음성 안내 중이면 더 긴 딜레이
+                const delay = isSpeakingRef.current ? 2000 : 500;
                 setTimeout(() => {
                     if (!mountedRef.current || !shouldListenRef.current) {
                         restartingRef.current = false;
                         return;
                     }
-                    // isSpeakingRef가 여전히 true면 더 기다림
                     if (isSpeakingRef.current) {
                         restartingRef.current = false;
-                        // 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 restartingRef.current = true;
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                     restartingRef.current = false;
                                 } catch (e) {
                                     restartingRef.current = false;
-                                    // 재시작 실패 시 다시 시도
                                     setTimeout(() => {
                                         if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                            try { 
-                                                recognition.start(); 
+                                            try {
+                                                recognition.start();
                                             } catch (e2) {
                                                 console.log("음성 인식 재시작 재시도 실패:", e2);
                                             }
@@ -170,16 +175,15 @@ export default function DrinkSelectPage() {
                         }, 2000);
                         return;
                     }
-                    try { 
-                        recognition.start(); 
+                    try {
+                        recognition.start();
                         restartingRef.current = false;
                     } catch (e) {
                         restartingRef.current = false;
-                        // 재시작 실패 시 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                 } catch (e2) {
                                     console.log("음성 인식 재시작 재시도 실패:", e2);
                                 }
@@ -191,7 +195,6 @@ export default function DrinkSelectPage() {
         };
         recognition.onerror = (event) => {
             setIsListening(false);
-            // 에러 발생 시에도 재시작 시도 (키오스크 시스템이므로 지속적으로 작동해야 함)
             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                 restartingRef.current = true;
                 setTimeout(() => {
@@ -199,13 +202,12 @@ export default function DrinkSelectPage() {
                         restartingRef.current = false;
                         return;
                     }
-                    // isSpeakingRef가 true면 더 기다림
                     if (isSpeakingRef.current) {
                         restartingRef.current = false;
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                 } catch (e) {
                                     console.log("음성 인식 재시작 오류:", e);
                                 }
@@ -213,17 +215,16 @@ export default function DrinkSelectPage() {
                         }, 2000);
                         return;
                     }
-                    try { 
-                        recognition.start(); 
+                    try {
+                        recognition.start();
                         restartingRef.current = false;
                     } catch (e) {
                         console.log("음성 인식 재시작 오류:", e);
                         restartingRef.current = false;
-                        // 재시작 실패 시 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
+                                try {
+                                    recognition.start();
                                 } catch (e2) {
                                     console.log("음성 인식 재시작 재시도 실패:", e2);
                                 }
@@ -235,16 +236,14 @@ export default function DrinkSelectPage() {
         };
 
         recognition.onresult = async (event) => {
-            // 음성 안내 재생 중이면 음성 인식 결과를 무시
             if (isSpeakingRef.current) {
                 console.log("🔇 음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
                 return;
             }
-            
+
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
-            
-            // 음성 인식 로그 추가
+
             const logEntry = {
                 time: new Date().toLocaleTimeString('ko-KR'),
                 transcript: transcript,
@@ -255,131 +254,74 @@ export default function DrinkSelectPage() {
                 return newLogs;
             });
 
-            // 음료 선택
-            if (!selectedDrink) {
-                // 제로콜라를 먼저 확인 (콜라보다 먼저 체크해야 함)
-                if (/제로|제로콜라/.test(normalized)) {
-                    try {
-                        recognition.stop();
-                    } catch (e) {}
-                    setSelectedDrink("제로콜라");
-                    const msg = "제로콜라를 선택하셨어요. 사이즈를 선택해주세요.";
-                    setAssistantMessage(msg);
-                    isSpeakingRef.current = true;
-                    await speakKorean(msg);
-                    setTimeout(() => { 
-                        isSpeakingRef.current = false;
-                        if (mountedRef.current && shouldListenRef.current) {
-                            setTimeout(() => {
-                                if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                    try {
-                                        recognitionRef.current.start();
-                                    } catch (e) {}
-                                }
-                            }, 2000);
-                        }
-                    }, 1000);
-                    return;
-                }
-                // 제로콜라가 아닌 경우에만 콜라 확인
-                if (/콜라/.test(normalized)) {
-                    try {
-                        recognition.stop();
-                    } catch (e) {}
-                    setSelectedDrink("콜라");
-                    const msg = "콜라를 선택하셨어요. 사이즈를 선택해주세요.";
-                    setAssistantMessage(msg);
-                    isSpeakingRef.current = true;
-                    await speakKorean(msg);
-                    setTimeout(() => { 
-                        isSpeakingRef.current = false;
-                        if (mountedRef.current && shouldListenRef.current) {
-                            setTimeout(() => {
-                                if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                    try {
-                                        recognitionRef.current.start();
-                                    } catch (e) {}
-                                }
-                            }, 2000);
-                        }
-                    }, 1000);
-                    return;
-                }
-                if (/사이다/.test(normalized)) {
-                    try {
-                        recognition.stop();
-                    } catch (e) {}
-                    setSelectedDrink("사이다");
-                    const msg = "사이다를 선택하셨어요. 사이즈를 선택해주세요.";
-                    setAssistantMessage(msg);
-                    isSpeakingRef.current = true;
-                    await speakKorean(msg);
-                    setTimeout(() => { 
-                        isSpeakingRef.current = false;
-                        if (mountedRef.current && shouldListenRef.current) {
-                            setTimeout(() => {
-                                if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                    try {
-                                        recognitionRef.current.start();
-                                    } catch (e) {}
-                                }
-                            }, 2000);
-                        }
-                    }, 1000);
-                    return;
-                }
-                if (/커피|coffee/.test(normalized)) {
-                    try {
-                        recognition.stop();
-                    } catch (e) {}
-                    setSelectedDrink("커피");
-                    const msg = "커피를 선택하셨어요. 사이즈를 선택해주세요.";
-                    setAssistantMessage(msg);
-                    isSpeakingRef.current = true;
-                    await speakKorean(msg);
-                    setTimeout(() => { 
-                        isSpeakingRef.current = false;
-                        if (mountedRef.current && shouldListenRef.current) {
-                            setTimeout(() => {
-                                if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                    try {
-                                        recognitionRef.current.start();
-                                    } catch (e) {}
-                                }
-                            }, 2000);
-                        }
-                    }, 1000);
-                    return;
-                }
+            let reply = "";
+
+            if (/제로|제로콜라/.test(normalized)) {
+                setSelectedDrink("제로콜라");
+                setSelectedDrinkSize("");
+                reply = "제로콜라를 선택했어요. 음료 사이즈를 선택해주세요.";
+            } else if (/콜라/.test(normalized)) {
+                setSelectedDrink("콜라");
+                setSelectedDrinkSize("");
+                reply = "콜라를 선택했어요. 음료 사이즈를 선택해주세요.";
+            } else if (/사이다/.test(normalized)) {
+                setSelectedDrink("사이다");
+                setSelectedDrinkSize("");
+                reply = "사이다를 선택했어요. 음료 사이즈를 선택해주세요.";
+            } else if (/커피|coffee/.test(normalized)) {
+                setSelectedDrink("커피");
+                setSelectedDrinkSize("");
+                reply = "커피를 선택했어요. 음료 사이즈를 선택해주세요.";
             }
 
-            // 사이즈 선택
-            if (selectedDrink && !selectedSize) {
+            if (/감자|감자튀김|프라이/.test(normalized)) {
+                setSelectedSide("감자튀김");
+                setSelectedSideSize("");
+                reply = "감자튀김을 선택했어요. 사이드 사이즈를 선택해주세요.";
+            } else if (/치킨|치킨텐더|텐더/.test(normalized)) {
+                setSelectedSide("치킨텐더");
+                setSelectedSideSize("");
+                reply = "치킨텐더를 선택했어요. 사이드 사이즈를 선택해주세요.";
+            } else if (/샐러드/.test(normalized)) {
+                setSelectedSide("샐러드");
+                setSelectedSideSize("");
+                reply = "샐러드를 선택했어요. 사이드 사이즈를 선택해주세요.";
+            }
+
+            if (!reply) {
                 if (/미디움|미디엄|중간/.test(normalized)) {
-                    setSelectedSize("미디움");
-                    return;
-                }
-                if (/라지|큰거|큰사이즈/.test(normalized)) {
-                    setSelectedSize("라지");
-                    return;
+                    if (selectedSide && !selectedSideSize) {
+                        setSelectedSideSize("미디움");
+                        reply = `${selectedSide} 미디움으로 선택했어요.`;
+                    } else if (selectedDrink && !selectedDrinkSize) {
+                        setSelectedDrinkSize("미디움");
+                        reply = `${selectedDrink} 미디움으로 선택했어요.`;
+                    }
+                } else if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
+                    if (selectedSide && !selectedSideSize) {
+                        setSelectedSideSize("라지");
+                        reply = `${selectedSide} 라지로 선택했어요.`;
+                    } else if (selectedDrink && !selectedDrinkSize) {
+                        setSelectedDrinkSize("라지");
+                        reply = `${selectedDrink} 라지로 선택했어요.`;
+                    }
                 }
             }
 
-            const msg = selectedDrink ? "미디움 또는 라지 사이즈를 말씀해주세요." : "콜라, 제로콜라, 사이다, 커피 중 하나를 말씀해주세요.";
-            setAssistantMessage(msg);
-            try {
-                recognition.stop();
-            } catch (e) {}
+            if (!reply) {
+                reply = "음료와 사이드를 고르고, 각각 미디움 또는 라지를 선택해주세요.";
+            }
+
+            setAssistantMessage(reply);
+            try { recognition.stop(); } catch (e) { }
             isSpeakingRef.current = true;
-            await speakKorean(msg);
-            setTimeout(() => { 
+            await speakKorean(reply);
+            setTimeout(() => {
                 isSpeakingRef.current = false;
                 if (mountedRef.current && shouldListenRef.current) {
                     setTimeout(() => {
                         if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                            try {
-                                recognitionRef.current.start();
-                            } catch (e) {}
+                            try { recognitionRef.current.start(); } catch (e) { }
                         }
                     }, 2000);
                 }
@@ -391,7 +333,6 @@ export default function DrinkSelectPage() {
         try {
             recognition.start();
         } catch (e) {
-            // 권한 오류는 무시
         }
 
         return () => {
@@ -407,30 +348,7 @@ export default function DrinkSelectPage() {
             } catch { }
             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
         };
-    }, [selectedDrink, selectedSize]);
-
-    function handleNext() {
-        if (!selectedDrink) {
-            setShowAlert(true);
-            setTimeout(() => setShowAlert(false), 3000);
-            return;
-        }
-        if (!selectedSize) {
-            setShowAlert(true);
-            setTimeout(() => setShowAlert(false), 3000);
-            return;
-        }
-
-        const selectedSizeObj = sizes.find(s => s.name === selectedSize);
-        const cartData = encodeURIComponent(JSON.stringify(cartItems));
-        const orderType = searchParams.get("orderType") || "takeout";
-        
-        router.push(
-            `/side-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}` +
-            `&drink=${encodeURIComponent(selectedDrink)}&drinkSize=${encodeURIComponent(selectedSize)}&drinkPrice=${selectedSizeObj.price}` +
-            `&cart=${cartData}&orderType=${orderType}`
-        );
-    }
+    }, [selectedDrink, selectedDrinkSize, selectedSide, selectedSideSize]);
 
     return (
         <main
@@ -503,7 +421,7 @@ export default function DrinkSelectPage() {
                 }}
             >
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                    <h2 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>음료 선택</h2>
+                    <h2 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>음료/사이드 선택</h2>
                     <div
                         style={{
                             display: "inline-flex",
@@ -571,9 +489,16 @@ export default function DrinkSelectPage() {
             >
                 {/* 음료 선택 */}
                 <div>
-                    <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "20px" }}>
-                        음료를 선택하세요
-                    </h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                        <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", margin: 0 }}>
+                            음료를 선택하세요
+                        </h3>
+                        {selectedDrink && selectedDrinkSize && (
+                            <div style={{ fontSize: "1rem", fontWeight: "700", color: "#1e7a39" }}>
+                                {selectedDrink} : {drinkSizes.find((s) => s.name === selectedDrinkSize)?.price.toLocaleString() || "0"}원
+                            </div>
+                        )}
+                    </div>
                     <div
                         style={{
                             display: "grid",
@@ -584,7 +509,10 @@ export default function DrinkSelectPage() {
                         {drinks.map((drink) => (
                             <button
                                 key={drink}
-                                onClick={() => setSelectedDrink(drink)}
+                                onClick={() => {
+                                    setSelectedDrink(drink);
+                                    setSelectedDrinkSize("");
+                                }}
                                 style={{
                                     height: "90px",
                                     fontSize: "1.1rem",
@@ -599,15 +527,15 @@ export default function DrinkSelectPage() {
                             >
                                 {drink}
                                 <div style={{ fontSize: "0.9rem", marginTop: 6, opacity: 0.85 }}>
-                                    M {sizes[0].price.toLocaleString()}원
+                                    M {drinkSizes[0].price.toLocaleString()}원
                                 </div>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* 사이즈 선택 카드 */}
-                {selectedDrink && (
+                {/* 음료 사이즈 선택 */}
+                {selectedDrink && !selectedDrinkSize && (
                     <div
                         style={{
                             display: "grid",
@@ -684,22 +612,22 @@ export default function DrinkSelectPage() {
                             <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
                                 {selectedDrink} 사이즈를 선택하세요
                             </div>
-                            {sizes.map((size) => (
+                            {drinkSizes.map((size) => (
                                 <button
                                     key={size.name}
                                     onClick={() => {
-                                        setSelectedSize(size.name);
+                                        setSelectedDrinkSize(size.name);
                                     }}
                                     style={{
                                         height: "70px",
                                         fontSize: "1.1rem",
                                         fontWeight: "bold",
-                                        backgroundColor: selectedSize === size.name ? "#4a90e2" : "#f7f9fc",
-                                        color: selectedSize === size.name ? "#fff" : "#333",
-                                        border: selectedSize === size.name ? "2px solid #4a90e2" : "1px solid #d7dfef",
+                                        backgroundColor: selectedDrinkSize === size.name ? "#4a90e2" : "#f7f9fc",
+                                        color: selectedDrinkSize === size.name ? "#fff" : "#333",
+                                        border: selectedDrinkSize === size.name ? "2px solid #4a90e2" : "1px solid #d7dfef",
                                         borderRadius: "10px",
                                         cursor: "pointer",
-                                        boxShadow: selectedSize === size.name ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+                                        boxShadow: selectedDrinkSize === size.name ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "space-between",
@@ -721,57 +649,96 @@ export default function DrinkSelectPage() {
                     </div>
                 )}
 
-                {/* 다음 버튼 - 우측 하단 고정 */}
-                {selectedDrink && (
+                {/* 사이드 선택 */}
+                <div>
+                    <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "20px" }}>
+                        사이드를 선택하세요
+                    </h3>
                     <div
                         style={{
-                            position: "fixed",
-                            bottom: "20px",
-                            right: "20px",
-                            zIndex: 100,
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, 1fr)",
+                            gap: "12px",
                         }}
                     >
-                    <button
-                        onClick={handleNext}
+                        {sides.map((side) => (
+                            <button
+                                key={side}
+                                onClick={() => setSelectedSide(side)}
+                                style={{
+                                    height: "90px",
+                                    fontSize: "1.1rem",
+                                    fontWeight: "bold",
+                                    backgroundColor: selectedSide === side ? "#1e7a39" : "#fff",
+                                    color: selectedSide === side ? "#fff" : "#333",
+                                    border: selectedSide === side ? "3px solid #1e7a39" : "2px solid #ddd",
+                                    borderRadius: "12px",
+                                    cursor: "pointer",
+                                    boxShadow: selectedSide === side ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
+                                }}
+                            >
+                                {side}
+                                <div style={{ fontSize: "0.9rem", marginTop: 6, opacity: 0.85 }}>
+                                    M {sideSizes[0].price.toLocaleString()}원
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* 사이드 사이즈 선택 */}
+                {selectedSide && (
+                    <div
                         style={{
-                                padding: "16px 32px",
-                                fontSize: "1.3rem",
-                            fontWeight: "bold",
-                            backgroundColor: "#1e7a39",
-                            color: "#fff",
-                            border: "none",
-                                borderRadius: "12px",
-                            cursor: "pointer",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                            background: "#fff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: 14,
+                            padding: 16,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 12,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
                         }}
                     >
-                            다음
-                    </button>
+                        <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                            {selectedSide} 사이즈를 선택하세요
+                        </div>
+                        {sideSizes.map((size) => (
+                            <button
+                                key={size.name}
+                                onClick={() => setSelectedSideSize(size.name)}
+                                style={{
+                                    height: "70px",
+                                    fontSize: "1.1rem",
+                                    fontWeight: "bold",
+                                    backgroundColor: selectedSideSize === size.name ? "#4a90e2" : "#f7f9fc",
+                                    color: selectedSideSize === size.name ? "#fff" : "#333",
+                                    border: selectedSideSize === size.name ? "2px solid #4a90e2" : "1px solid #d7dfef",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    boxShadow: selectedSideSize === size.name ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    padding: "0 14px",
+                                }}
+                            >
+                                <div>
+                                    <div style={{ fontSize: "1rem", fontWeight: 700, lineHeight: 1.2 }}>
+                                        {size.name === "미디움" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기 (+1,000원)"}
+                                    </div>
+                                    <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>
+                                        {size.price.toLocaleString()}원
+                                    </div>
+                                </div>
+                                <span style={{ fontWeight: 800, fontSize: "1rem" }}>
+                                    {size.name === "라지" ? "+1,000원" : "M"}
+                                </span>
+                            </button>
+                        ))}
                     </div>
                 )}
             </div>
-
-            {/* 팝업 알림 */}
-            {showAlert && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        backgroundColor: "#fff",
-                        padding: "30px 40px",
-                        borderRadius: "16px",
-                        boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
-                        zIndex: 1000,
-                        border: "2px solid #b00020",
-                    }}
-                >
-                    <div style={{ fontSize: "1.3rem", fontWeight: "bold", color: "#b00020", textAlign: "center" }}>
-                        음료 선택을 진행해주세요
-                    </div>
-                </div>
-            )}
         </main>
     );
 }

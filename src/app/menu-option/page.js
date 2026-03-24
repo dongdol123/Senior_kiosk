@@ -763,13 +763,60 @@ export default function MenuOptionPage() {
             >
                 {!isDrink ? (
                     <>
-                        {/* 단품/세트 선택 버튼 */}
+                        {/* 중앙 메뉴 이미지 */}
+                        <div
+                            style={{
+                                width: "100%",
+                                maxWidth: "720px",
+                                height: "300px",
+                                background: "#fff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: "20px",
+                                boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                overflow: "hidden",
+                                padding: "20px",
+                            }}
+                        >
+                            {(() => {
+                                const n = (menuName || "").replace(/\s+/g, "").toLowerCase();
+                                if (/칠리/.test(n)) {
+                                    return (
+                                        <img
+                                            src="/C_srp.png"
+                                            alt={menuName}
+                                            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                                        />
+                                    );
+                                }
+                                if (/트러플/.test(n)) {
+                                    return (
+                                        <img
+                                            src="/T_srp.png"
+                                            alt={menuName}
+                                            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                                        />
+                                    );
+                                }
+                                return (
+                                    <img
+                                        src="/burger.png"
+                                        alt={menuName}
+                                        style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                                    />
+                                );
+                            })()}
+                        </div>
+
+                        {/* 단품/세트/기본세트 버튼 - 동일 크기 한 줄 정렬 */}
                         <div
                             style={{
                                 display: "flex",
                                 gap: "24px",
                                 width: "100%",
-                                maxWidth: "600px",
+                                maxWidth: "960px",
                             }}
                         >
                             <button
@@ -777,8 +824,8 @@ export default function MenuOptionPage() {
                                 onClick={handleSingle}
                                 style={{
                                     flex: 1,
-                                    height: "120px",
-                                    fontSize: "2rem",
+                                    height: "130px",
+                                    fontSize: "1.8rem",
                                     fontWeight: "bold",
                                     backgroundColor: "#fff",
                                     color: "#000",
@@ -799,8 +846,8 @@ export default function MenuOptionPage() {
                                 onClick={handleSet}
                                 style={{
                                     flex: 1,
-                                    height: "120px",
-                                    fontSize: "2rem",
+                                    height: "130px",
+                                    fontSize: "1.8rem",
                                     fontWeight: "bold",
                                     backgroundColor: "#fff",
                                     color: "#000",
@@ -815,31 +862,33 @@ export default function MenuOptionPage() {
                                     음료+사이드 선택
                                 </div>
                             </button>
-                        </div>
 
-                        {/* 기본 세트 적용 버튼 */}
-                        <button
-                            ref={defaultSetButtonRef}
-                            onClick={handleDefaultSet}
-                            style={{
-                                width: "100%",
-                                maxWidth: "600px",
-                                height: "80px",
-                                fontSize: "1.5rem",
-                                fontWeight: "bold",
-                                backgroundColor: "#fff",
-                                color: "#000",
-                                border: "2px solid #ddd",
-                                borderRadius: "16px",
-                                cursor: "pointer",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                            }}
-                        >
-                            기본 세트 적용 (콜라 M / 감자튀김 M)
-                            <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
-                                {(menuPrice + 2000 + 3000).toLocaleString()}원
-                            </div>
-                        </button>
+                            <button
+                                ref={defaultSetButtonRef}
+                                onClick={handleDefaultSet}
+                                style={{
+                                    flex: 1,
+                                    height: "130px",
+                                    fontSize: "1.4rem",
+                                    fontWeight: "bold",
+                                    backgroundColor: "#fff",
+                                    color: "#000",
+                                    border: "2px solid #ddd",
+                                    borderRadius: "16px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                    padding: "0 10px",
+                                }}
+                            >
+                                기본 세트
+                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
+                                    콜라 M + 감자튀김 M
+                                </div>
+                                <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
+                                    {(menuPrice + 2000 + 3000).toLocaleString()}원
+                                </div>
+                            </button>
+                        </div>
                     </>
                 ) : (
                     <div
