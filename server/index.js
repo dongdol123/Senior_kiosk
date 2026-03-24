@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
 const path = require('path');
+// .env.local 우선, 없으면 .env 사용
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') });
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const app = express();
