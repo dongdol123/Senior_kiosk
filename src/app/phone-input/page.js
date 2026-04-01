@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
 
-export default function PhoneInputPage() {
+function PhoneInputPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [phoneNumber, setPhoneNumber] = useState("");
@@ -895,5 +895,13 @@ export default function PhoneInputPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+export default function PhoneInputPage() {
+    return (
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#ffffff" }} />}>
+            <PhoneInputPageContent />
+        </Suspense>
     );
 }

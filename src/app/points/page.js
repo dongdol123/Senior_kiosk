@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
 
-export default function PointsPage() {
+function PointsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [total, setTotal] = useState(0);
@@ -800,6 +800,14 @@ export default function PointsPage() {
                 </div>
             )}
         </main>
+    );
+}
+
+export default function PointsPage() {
+    return (
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#f9f9f9" }} />}>
+            <PointsPageContent />
+        </Suspense>
     );
 }
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakKorean } from "../utils/speakKorean";
 
-export default function OrderConfirmPage() {
+function OrderConfirmPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [cartItems, setCartItems] = useState([]);
@@ -632,6 +632,14 @@ export default function OrderConfirmPage() {
                 <div style={{ color: "#b00020", padding: "16px", textAlign: "center" }}>{errorMessage}</div>
             ) : null}
         </main>
+    );
+}
+
+export default function OrderConfirmPage() {
+    return (
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#f9f9f9" }} />}>
+            <OrderConfirmPageContent />
+        </Suspense>
     );
 }
 
