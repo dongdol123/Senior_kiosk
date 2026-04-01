@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
 
-export default function PaymentPage() {
+function PaymentPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [total, setTotal] = useState(0);
@@ -649,5 +649,13 @@ export default function PaymentPage() {
                 </div>
             </div>
         </main>
+    );
+}
+
+export default function PaymentPage() {
+    return (
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#ffffff" }} />}>
+            <PaymentPageContent />
+        </Suspense>
     );
 }

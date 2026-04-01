@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
 
-export default function DrinkSelectPage() {
+function DrinkSelectPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [menuName, setMenuName] = useState("");
@@ -740,6 +740,14 @@ export default function DrinkSelectPage() {
                 )}
             </div>
         </main>
+    );
+}
+
+export default function DrinkSelectPage() {
+    return (
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#f9f9f9" }} />}>
+            <DrinkSelectPageContent />
+        </Suspense>
     );
 }
 
