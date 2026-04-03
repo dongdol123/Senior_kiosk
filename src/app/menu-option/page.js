@@ -69,9 +69,10 @@ function MenuOptionPageContent() {
         }
     }, [searchParams]);
 
-    // 페이지 진입 시 즉시 음성 안내
+    // 페이지 진입 직후 음성 안내 → 안내 종료 후 1초 뒤 음성 인식 시작 (인식은 이 타이밍까지 시작하지 않음)
     useEffect(() => {
-        // 이전 음성 안내 정리
+        let cancelled = false;
+
         if (typeof window !== "undefined") {
             try {
                 if (window.speechSynthesis) {
@@ -82,16 +83,15 @@ function MenuOptionPageContent() {
             }
         }
 
-        // 음성 인식 중지
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
             } catch (e) { }
         }
-        shouldListenRef.current = false; // 자동 재시작 방지
+        shouldListenRef.current = false;
+        isSpeakingRef.current = true;
 
-        // 약간의 딜레이 후 음성 안내
-        const timer = setTimeout(async () => {
+        const runIntro = async () => {
             const currentMenuName = decodeURIComponent(searchParams.get("menuName") || menuName || "");
             const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
@@ -100,42 +100,41 @@ function MenuOptionPageContent() {
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
-            isSpeakingRef.current = true;
-            if (isCurrentDrink) {
-                const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
+            const msg = isCurrentDrink
+                ? "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?"
+                : "단품, 세트, 기본 세트 중 선택해 주세요.";
+            if (!cancelled) {
                 setAssistantMessage(msg);
-                await speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
-            } else {
-                const msg = "단품, 세트, 기본 세트 중 하나를 말씀해주세요.";
-                setAssistantMessage(msg);
-                await speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
             }
+            await speakKorean(msg).catch((err) => console.error("음성 안내 오류:", err));
+            if (cancelled || !mountedRef.current) return;
 
-            // 음성 안내가 완료된 후 충분한 딜레이를 두고 플래그 해제 및 음성 인식 재시작
+            // 안내가 끝난 뒤 1초 대기 후에만 음성 인식 시작
             setTimeout(() => {
-                isSpeakingRef.current = false; // 플래그 해제
-                shouldListenRef.current = true; // 자동 재시작 허용
-                if (mountedRef.current) {
-                    setTimeout(() => {
-                        if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                            try {
-                                recognitionRef.current.start();
-                            } catch (e) {
-                                console.log("음성 인식 재시작 오류:", e);
-                            }
-                        }
-                    }, 2000); // 추가 딜레이 (2초)
+                if (cancelled || !mountedRef.current) return;
+                isSpeakingRef.current = false;
+                shouldListenRef.current = true;
+                if (recognitionRef.current && shouldListenRef.current) {
+                    try {
+                        recognitionRef.current.start();
+                    } catch (e) {
+                        console.log("음성 인식 시작 오류:", e);
+                    }
                 }
-            }, 1000); // 안내 완료 후 1초 대기
-        }, 300);
+            }, 1000);
+        };
 
-        return () => clearTimeout(timer);
+        runIntro();
+
+        return () => {
+            cancelled = true;
+        };
     }, [searchParams, menuName]);
 
-    // 음성 인식
+    // 음성 인식 (진입 안내가 끝날 때까지 시작하지 않음 — shouldListenRef는 intro effect에서 true로 전환)
     useEffect(() => {
         mountedRef.current = true;
-        shouldListenRef.current = true;
+        shouldListenRef.current = false;
 
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -346,6 +345,36 @@ function MenuOptionPageContent() {
             if (isCurrentBurger) {
                 console.log("🔍 음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
 
+                const hasDefaultSetWord = /기본\s*세트|기본세트/.test(normalized);
+                const hasQuestion =
+                    /뭐야|뭐에요|뭔데|뭔지|무엇|뭐니|뭐죠|뭐임|뭔가요|설명|알려줘|알려|뭐인지|어떤거야|어떤건지|뭔말|무슨말/.test(
+                        normalized
+                    );
+                const asksWhatIsDefaultSet = hasDefaultSetWord && hasQuestion;
+
+                // "기본 세트가 뭐야?" (질문) — 선택과 구분: 질문일 때만 안내
+                if (asksWhatIsDefaultSet) {
+                    try {
+                        recognition.stop();
+                    } catch (e) { }
+                    const explain = "가장 인기 있는 세트 조합입니다.";
+                    setAssistantMessage(explain);
+                    isSpeakingRef.current = true;
+                    await speakKorean(explain).catch((err) => console.error("음성 안내 오류:", err));
+                    if (!mountedRef.current) return;
+                    isSpeakingRef.current = false;
+                    if (mountedRef.current && shouldListenRef.current) {
+                        setTimeout(() => {
+                            if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
+                                try {
+                                    recognitionRef.current.start();
+                                } catch (e) { }
+                            }
+                        }, 1000);
+                    }
+                    return;
+                }
+
                 // 단품 선택 - 먼저 체크
                 if (/단품|단품으로|단품주문/.test(normalized)) {
                     console.log("✅ 단품 인식됨! normalized:", normalized);
@@ -365,8 +394,8 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 기본 세트 선택
-                if (/기본|기본세트|기본적용/.test(normalized)) {
+                // 기본 세트 선택 ("기본세트가 뭐야?" 같은 질문은 위에서 처리)
+                if (/기본세트|기본적용|기본으로|기본세트로|기본세트주문|기본으로할게/.test(normalized) || (/기본/.test(normalized) && /세트/.test(normalized) && !hasQuestion)) {
                     console.log("✅ 기본세트 인식됨! normalized:", normalized);
                     try {
                         recognition.stop();
@@ -393,8 +422,8 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // AI 도움말 (버거인 경우)
-                const msg = "단품, 세트, 기본 세트 중 하나를 말씀해주세요.";
+                // 도움말 (버거인 경우)
+                const msg = "단품, 세트, 기본 세트 중 선택해 주세요.";
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
@@ -438,12 +467,6 @@ function MenuOptionPageContent() {
         };
 
         recognitionRef.current = recognition;
-
-        try {
-            recognition.start();
-        } catch (e) {
-            // 권한 오류는 무시
-        }
 
         return () => {
             mountedRef.current = false;

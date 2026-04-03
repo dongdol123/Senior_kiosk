@@ -35,8 +35,8 @@ module.exports = () => {
         try {
             // OpenAI TTS API 호출
             const response = await openai.audio.speech.create({
-                model: 'tts-1', // 또는 'tts-1-hd' (더 고품질, 비용 높음)
-                voice: 'nova', // 'alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer' 중 선택
+                model: 'tts-1-hd',
+                voice: 'alloy',
                 input: text,
                 speed: 0.95, // 0.25 ~ 4.0
             });
