@@ -3,10 +3,13 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function OrderConfirmPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [cartItems, setCartItems] = useState([]);
     const [total, setTotal] = useState(0);
     const [orderType, setOrderType] = useState("takeout");
@@ -23,6 +26,12 @@ function OrderConfirmPageContent() {
     const cartItemsRef = useRef([]);
     const totalRef = useRef(0);
     const orderTypeRef = useRef("takeout");
+
+    const entryRef = useRef(entry);
+
+    useEffect(() => {
+        entryRef.current = getOrderFlowEntry(searchParams);
+    }, [searchParams]);
 
     // 메뉴 데이터 (메뉴 페이지와 동일)
     const MENU_ITEMS = [
@@ -90,7 +99,9 @@ function OrderConfirmPageContent() {
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
         if (!SpeechRecognition) {
-            setErrorMessage("이 브라우저는 음성 인식을 지원하지 않습니다.");
+            if (getOrderFlowEntry(searchParams) === "voice") {
+                setErrorMessage("이 브라우저는 음성 인식을 지원하지 않습니다.");
+            }
             return;
         }
 
@@ -160,7 +171,7 @@ function OrderConfirmPageContent() {
                 // 1초 후에 강제로 페이지 이동
                 setTimeout(() => {
                     console.log("페이지 이동 실행");
-                    router.push(`/points?cart=${cartData}&total=${totalRef.current}&orderType=${orderTypeRef.current}`);
+                    router.push(`/points?cart=${cartData}&total=${totalRef.current}&orderType=${orderTypeRef.current}&${entryQuery(entryRef.current)}`);
                 }, 1000);
                 
                 return;
@@ -190,7 +201,7 @@ function OrderConfirmPageContent() {
                 // 1초 후에 강제로 페이지 이동
                 setTimeout(() => {
                     console.log("페이지 이동 실행");
-                    router.push(`/points?cart=${cartData}&total=${totalRef.current}&orderType=${orderTypeRef.current}`);
+                    router.push(`/points?cart=${cartData}&total=${totalRef.current}&orderType=${orderTypeRef.current}&${entryQuery(entryRef.current)}`);
                 }, 1000);
                 
                 return;
@@ -220,7 +231,7 @@ function OrderConfirmPageContent() {
                 // 1초 후에 강제로 페이지 이동
                 setTimeout(() => {
                     console.log("페이지 이동 실행");
-                    router.push(`/menu?entry=voice&orderType=${orderTypeRef.current}&cart=${cartData}`);
+                    router.push(`/menu?${entryQuery(entryRef.current)}&orderType=${orderTypeRef.current}&cart=${cartData}`);
                 }, 1000);
                 
                 return;
@@ -312,9 +323,8 @@ function OrderConfirmPageContent() {
                     recognitionRef.current.stop();
                 }
             } catch { }
-            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
         };
-    }, []);
+    }, [searchParams]);
 
     // 총액 계산
     useEffect(() => {
@@ -350,12 +360,13 @@ function OrderConfirmPageContent() {
         });
     }
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#f9f9f9",
             }}
         >
@@ -440,7 +451,7 @@ function OrderConfirmPageContent() {
                 <button
                     onClick={() => {
                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
                     }}
                     style={{
                         backgroundColor: "#ffffff",
@@ -605,7 +616,7 @@ function OrderConfirmPageContent() {
                         }
                         // 적립 페이지로 이동
                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}`);
+                        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
                     }}
                     disabled={cartItems.length === 0}
                     style={{
@@ -633,6 +644,7 @@ function OrderConfirmPageContent() {
             ) : null}
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function OrderConfirmPage() {

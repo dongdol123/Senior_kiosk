@@ -3,10 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function DrinkSelectPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [menuName, setMenuName] = useState("");
     const [menuPrice, setMenuPrice] = useState(0);
     const [menuId, setMenuId] = useState("");
@@ -116,7 +119,7 @@ function DrinkSelectPageContent() {
                     });
                     const cartData = encodeURIComponent(JSON.stringify(newCartItems));
                     const orderType = searchParams.get("orderType") || "takeout";
-                    router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                    router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
                 }, 800);
                 return () => clearTimeout(timer);
             }
@@ -350,12 +353,13 @@ function DrinkSelectPageContent() {
         };
     }, [selectedDrink, selectedDrinkSize, selectedSide, selectedSideSize]);
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#f9f9f9",
             }}
         >
@@ -444,7 +448,7 @@ function DrinkSelectPageContent() {
                     onClick={() => {
                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
                         const orderType = searchParams.get("orderType") || "takeout";
-                        router.push(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}`);
+                        router.push(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
                     }}
                     style={{
                         backgroundColor: "#ffffff",
@@ -741,6 +745,7 @@ function DrinkSelectPageContent() {
             </div>
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function DrinkSelectPage() {

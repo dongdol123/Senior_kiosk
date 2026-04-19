@@ -3,10 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function PhoneInputPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [total, setTotal] = useState(0);
     const [orderType, setOrderType] = useState("takeout");
@@ -240,20 +243,21 @@ function PhoneInputPageContent() {
 
         // 결제 페이지로 이동
         const cartData = searchParams.get("cart");
-        router.push(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${phoneNumber}`);
+        router.push(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${phoneNumber}&${entryQuery(entry)}`);
     }
 
     function handleBack() {
         const cartData = searchParams.get("cart");
-        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}`);
+        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#ffffff",
             }}
         >
@@ -325,7 +329,7 @@ function PhoneInputPageContent() {
                     onClick={() => {
                         try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
                         try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
-                        router.push("/");
+                        router.push(entry === "qr" ? "/qr-order" : "/");
                     }}
                     style={{
                         backgroundColor: "#000000",
@@ -896,6 +900,7 @@ function PhoneInputPageContent() {
             </div>
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function PhoneInputPage() {
