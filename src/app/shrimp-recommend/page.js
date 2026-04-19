@@ -3,10 +3,13 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function ShrimpRecommendPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [cartItems, setCartItems] = useState([]);
     const [shrimpMenus, setShrimpMenus] = useState([]);
     const [isListening, setIsListening] = useState(false);
@@ -150,22 +153,23 @@ function ShrimpRecommendPageContent() {
     function handleBack() {
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
     }
 
     async function handleSelectMenu(menu) {
         // 세트/단품 선택 페이지로 이동
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(menu.name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}`);
+        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(menu.name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#f9f9f9",
             }}
         >
@@ -384,6 +388,7 @@ function ShrimpRecommendPageContent() {
             </div>
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function ShrimpRecommendPage() {

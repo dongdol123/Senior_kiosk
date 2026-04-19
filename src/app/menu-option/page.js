@@ -3,10 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function MenuOptionPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [menuName, setMenuName] = useState("");
     const [menuPrice, setMenuPrice] = useState(0);
     const [menuId, setMenuId] = useState("");
@@ -518,7 +521,7 @@ function MenuOptionPageContent() {
         const orderType = searchParams.get("orderType") || "takeout";
         console.log("handleDrinkSize - cartData:", cartData, "size:", size);
         // 바로 메뉴 페이지로 이동
-        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
     }
 
     // 단품 추가 함수 (새로 작성)
@@ -564,7 +567,8 @@ function MenuOptionPageContent() {
 
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         console.log("단품 추가 완료:", { currentMenuId, currentMenuName, currentCartItems });
-        currentRouter.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+        const entSingle = getOrderFlowEntry(currentSearchParams);
+        currentRouter.push(`/menu?${entryQuery(entSingle)}&orderType=${orderType}&cart=${cartData}`);
     }, []);
 
     function handleSingle() {
@@ -582,7 +586,7 @@ function MenuOptionPageContent() {
         // 세트 선택 시 음료 선택 페이지로
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}`);
+        router.push(`/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     // 기본세트 추가 함수 (새로 작성)
@@ -637,7 +641,8 @@ function MenuOptionPageContent() {
 
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         console.log("기본세트 추가 완료:", { currentMenuId, currentMenuName, currentCartItems });
-        currentRouter.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+        const entSet = getOrderFlowEntry(currentSearchParams);
+        currentRouter.push(`/menu?${entryQuery(entSet)}&orderType=${orderType}&cart=${cartData}`);
     }, []);
 
     function handleDefaultSet() {
@@ -651,12 +656,13 @@ function MenuOptionPageContent() {
         addDefaultSetToCart();
     }
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#f9f9f9",
             }}
         >
@@ -742,7 +748,7 @@ function MenuOptionPageContent() {
                     onClick={() => {
                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
                         const orderType = searchParams.get("orderType") || "takeout";
-                        router.push(`/menu?entry=voice&orderType=${orderType}&cart=${cartData}`);
+                        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
                     }}
                     style={{
                         backgroundColor: "#ffffff",
@@ -1038,6 +1044,7 @@ function MenuOptionPageContent() {
             </div>
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function MenuOptionPage() {

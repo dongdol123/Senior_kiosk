@@ -3,10 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function PaymentPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [total, setTotal] = useState(0);
     const [cartData, setCartData] = useState("");
     const [orderType, setOrderType] = useState("takeout");
@@ -37,7 +40,7 @@ function PaymentPageContent() {
 
     // 뒤로가기 처리
     const handleBack = () => {
-        router.push(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}`);
+        router.push(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
     };
 
     // 카드 결제 처리
@@ -55,7 +58,7 @@ function PaymentPageContent() {
         // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
             console.log("타임아웃으로 페이지 이동");
-            router.push("/");
+            router.push(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
 
         // 음성이 끝나면 즉시 페이지 이동 시도
@@ -83,7 +86,7 @@ function PaymentPageContent() {
         // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
             console.log("타임아웃으로 페이지 이동");
-            router.push("/");
+            router.push(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
 
         // 음성이 끝나면 즉시 페이지 이동 시도
@@ -236,12 +239,13 @@ function PaymentPageContent() {
         };
     }, []);
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#ffffff",
             }}
         >
@@ -650,6 +654,7 @@ function PaymentPageContent() {
             </div>
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function PaymentPage() {

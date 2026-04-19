@@ -14,15 +14,27 @@ app.use(cors());
 app.use(express.json());
 
 // MySQL connection pool
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'senior_kiosk',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-});
+// Mac 등: Node에서 localhost 가 소켓으로 가면 실패할 때 → DB_HOST=127.0.0.1 또는 DB_SOCKET_PATH 사용
+function buildMysqlPoolConfig() {
+    const base = {
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD ?? '',
+        database: process.env.DB_NAME || 'senior_kiosk',
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+    };
+    if (process.env.DB_SOCKET_PATH) {
+        return { ...base, socketPath: process.env.DB_SOCKET_PATH };
+    }
+    return {
+        ...base,
+        host: process.env.DB_HOST || '127.0.0.1',
+        port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+    };
+}
+
+const pool = mysql.createPool(buildMysqlPoolConfig());
 
 // Test DB connection
 pool.getConnection()
@@ -32,6 +44,12 @@ pool.getConnection()
     })
     .catch((err) => {
         console.error('❌ MySQL connection error:', err.message);
+        console.error(
+            '   → 로컬(Mac): MySQL 실행 여부 확인, DB/유저 생성(`server/db/schema.sql`) 확인, .env 의 DB_USER/DB_PASSWORD 확인.'
+        );
+        console.error(
+            '   → 여전히 실패 시 .env 에 DB_HOST=127.0.0.1 또는 Homebrew면 DB_SOCKET_PATH=/tmp/mysql.sock 등을 지정해 보세요.'
+        );
     });
 
 // Routes

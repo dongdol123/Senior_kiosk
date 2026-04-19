@@ -3,10 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function PointsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const entry = getOrderFlowEntry(searchParams);
     const [total, setTotal] = useState(0);
     const [orderType, setOrderType] = useState("takeout");
     const [cartData, setCartData] = useState("");
@@ -145,7 +148,7 @@ function PointsPageContent() {
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
-            router.push("/");
+            router.push(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
     }
 
@@ -154,7 +157,7 @@ function PointsPageContent() {
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
-            router.push("/");
+            router.push(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
     }
 
@@ -275,15 +278,17 @@ function PointsPageContent() {
     }, []);
 
     function handleBack() {
-        router.push(`/order-confirm?cart=${cartData}&total=${total}&orderType=${orderType}`);
+        const enc = encodeURIComponent(JSON.stringify(cartItems));
+        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${enc}`);
     }
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                minHeight: "100vh",
+                minHeight: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#f9f9f9",
             }}
         >
@@ -801,6 +806,7 @@ function PointsPageContent() {
             )}
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function PointsPage() {

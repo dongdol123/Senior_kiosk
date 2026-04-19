@@ -3,11 +3,14 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakKorean } from "../utils/speakKorean";
+import KioskAspectFrame from "../../components/KioskAspectFrame";
+import { getOrderFlowEntry, entryQuery, qrRequiresOrderTypeRedirect } from "../utils/orderFlowEntry";
 
 function MenuPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const entry = (searchParams.get("entry") || "voice").toLowerCase();
+    const entry = getOrderFlowEntry(searchParams);
+    const voiceOrderMode = entry === "voice" || entry === "qr";
 
     const [errorMessage, setErrorMessage] = useState("");
     const [isListening, setIsListening] = useState(false);
@@ -26,6 +29,12 @@ function MenuPageContent() {
     const routerRef = useRef(null);
     const searchParamsRef = useRef(null);
     const isSpeakingRef = useRef(false); // 음성 안내 재생 중인지 추적
+
+    useEffect(() => {
+        if (qrRequiresOrderTypeRedirect(searchParams)) {
+            router.replace("/qr-order");
+        }
+    }, [searchParams, router]);
 
     // cart state
     const STATIC_MENU = [
@@ -284,7 +293,8 @@ function MenuPageContent() {
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         const orderType = searchParamsRef.current?.get("orderType") || "takeout";
         if (routerRef.current) {
-            routerRef.current.push(`/order-confirm?cart=${cartData}&total=${cartTotal}&orderType=${orderType}`);
+            const ent = getOrderFlowEntry(searchParamsRef.current);
+            routerRef.current.push(`/points?cart=${cartData}&total=${cartTotal}&orderType=${orderType}&${entryQuery(ent)}`);
         }
     }
 
@@ -306,7 +316,7 @@ function MenuPageContent() {
             return;
         }
 
-        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}`);
+        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
@@ -351,7 +361,11 @@ function MenuPageContent() {
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
         if (!SpeechRecognition) {
-            setErrorMessage("이 브라우저는 음성 인식을 지원하지 않습니다. 크롬을 권장합니다.");
+            // QR·간편 모드 등: 터치만으로 주문 가능해야 하므로 음성 미지원이어도 계속 진행
+            if (entry === "voice") {
+                setErrorMessage("이 브라우저는 음성 인식을 지원하지 않습니다. 크롬을 권장합니다.");
+            }
+            shouldListenRef.current = false;
             return;
         }
 
@@ -620,7 +634,7 @@ function MenuPageContent() {
                 
                 // 약간의 딜레이 후 페이지 이동
                 setTimeout(() => {
-                    router.push(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}`);
+                    router.push(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
                 }, 800);
                 return;
             }
@@ -646,7 +660,7 @@ function MenuPageContent() {
             const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)/;
             if (shrimpRecommendPattern.test(normalized)) {
                 const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                router.push(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}`);
+                router.push(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}&${entryQuery(entry)}`);
                 try { recognition.stop(); } catch { }
                 return;
             }
@@ -776,7 +790,7 @@ function MenuPageContent() {
 
         recognitionRef.current = recognition;
 
-        if (entry === "voice") {
+        if (voiceOrderMode) {
             // 음성 인식 시작 (음성 안내는 onstart에서 재생)
             setTimeout(() => {
                 if (mountedRef.current && shouldListenRef.current) {
@@ -818,14 +832,16 @@ function MenuPageContent() {
             document.removeEventListener("visibilitychange", handleVisibility);
             window.removeEventListener("pagehide", handlePageHide);
         };
-    }, [ordered, entry, searchParams]);
+    }, [ordered, entry, searchParams, voiceOrderMode]);
 
-    return (
+    const shell = (
         <main
             style={{
                 display: "flex",
                 flexDirection: "column",
-                height: "100vh",
+                height: entry === "qr" ? "100%" : "100vh",
+                flex: entry === "qr" ? 1 : undefined,
+                minHeight: entry === "qr" ? 0 : undefined,
                 overflow: "hidden",
                 backgroundColor: "#f9f9f9",
             }}
@@ -899,7 +915,7 @@ function MenuPageContent() {
                         shouldListenRef.current = false;
                         try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
                         try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
-                        router.push("/");
+                        router.push(entry === "qr" ? "/qr-order" : "/");
                     }}
                     style={{
                         backgroundColor: "#000000",
@@ -933,17 +949,17 @@ function MenuPageContent() {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "8px",
-                        backgroundColor: entry === "voice" ? "#e6f4ea" : "#eee",
-                        color: entry === "voice" ? "#1e7a39" : "#777",
-                        border: entry === "voice" ? "1px solid #bfe3ca" : "1px solid #ddd",
+                        backgroundColor: voiceOrderMode ? "#e6f4ea" : "#eee",
+                        color: voiceOrderMode ? "#1e7a39" : "#777",
+                        border: voiceOrderMode ? "1px solid #bfe3ca" : "1px solid #ddd",
                         borderRadius: "999px",
                         padding: "8px 14px",
                         fontWeight: "bold",
-                        opacity: entry === "voice" ? (isListening ? 1 : 0.85) : 1,
+                        opacity: voiceOrderMode ? (isListening ? 1 : 0.85) : 1,
                     }}
                 >
-                    <span style={{ width: 10, height: 10, borderRadius: "50%", opacity: 1, background: entry === "voice" ? "#34c759" : "#bbb" }} />
-                    {entry === "voice" ? "음성 주문중" : "간편 모드"}
+                    <span style={{ width: 10, height: 10, borderRadius: "50%", opacity: 1, background: voiceOrderMode ? "#34c759" : "#bbb" }} />
+                    {voiceOrderMode ? "음성 주문중" : "간편 모드"}
                 </div>
             </div>
 
@@ -1899,6 +1915,7 @@ function MenuPageContent() {
             )}
         </main>
     );
+    return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
 }
 
 export default function MenuPage() {
