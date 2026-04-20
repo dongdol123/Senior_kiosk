@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
@@ -91,6 +91,9 @@ function ShrimpRecommendPageContent() {
         };
 
         recognition.onresult = async (event) => {
+            if (isTtsActive()) {
+                return;
+            }
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
             

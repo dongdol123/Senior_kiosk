@@ -2,12 +2,30 @@
 let audioQueue = [];
 let isPlaying = false;
 let currentAudio = null;
+let isTtsPlaybackActive = false;
+
+function setTtsPlaybackActive(active) {
+    isTtsPlaybackActive = active;
+    if (typeof window !== "undefined") {
+        window.__kioskTtsPlaybackActive = active;
+    }
+}
+
+export function isTtsActive() {
+    if (typeof window !== "undefined" && typeof window.__kioskTtsPlaybackActive === "boolean") {
+        return window.__kioskTtsPlaybackActive;
+    }
+    return isTtsPlaybackActive;
+}
 
 /**
  * 큐에 있는 다음 음성을 재생
  */
 async function playNext() {
     if (isPlaying || audioQueue.length === 0) {
+        if (!isPlaying && audioQueue.length === 0) {
+            setTtsPlaybackActive(false);
+        }
         return;
     }
 
@@ -121,6 +139,7 @@ export async function speakKorean(text) {
 
     // 새 음성을 큐에 추가하고 즉시 재생
     return new Promise((resolve, reject) => {
+        setTtsPlaybackActive(true);
         audioQueue.push({ text, resolve, reject });
         playNext();
     });

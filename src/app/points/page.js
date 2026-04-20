@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
-import { speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
@@ -25,10 +25,26 @@ function PointsPageContent() {
     const firstStartRef = useRef(true);
     const showPhoneModalRef = useRef(false);
     const phoneNumberRef = useRef("");
+    const shouldListenRef = useRef(true);
+    const isSpeakingRef = useRef(false);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current);
         router.push(path);
+    }
+
+    async function speakAndResume(msg) {
+        setAssistantMessage(msg);
+        shouldListenRef.current = false;
+        isSpeakingRef.current = true;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
+        await speakKorean(msg).catch(() => {});
+        isSpeakingRef.current = false;
+        shouldListenRef.current = true;
+        setTimeout(() => {
+            if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
+            try { recognitionRef.current && recognitionRef.current.start(); } catch {}
+        }, 1000);
     }
 
     useEffect(() => {
@@ -151,6 +167,8 @@ function PointsPageContent() {
 
     async function handleCardPayment() {
         const msg = "카드 결제를 선택하셨습니다. 결제가 완료되었습니다.";
+        shouldListenRef.current = false;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
@@ -160,6 +178,8 @@ function PointsPageContent() {
 
     async function handlePayPayment() {
         const msg = "페이 결제를 선택하셨습니다. 결제가 완료되었습니다.";
+        shouldListenRef.current = false;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
@@ -187,17 +207,17 @@ function PointsPageContent() {
             if (firstStartRef.current) {
                 firstStartRef.current = false;
                 const greeting = "핸드폰으로 적립하거나 결제 방법을 선택해주세요.";
-                setAssistantMessage(greeting);
-                await speakKorean(greeting);
+                await speakAndResume(greeting);
             }
         };
 
         recognition.onend = () => {
             setIsListening(false);
-            if (mountedRef.current) {
+            if (mountedRef.current && shouldListenRef.current && !isSpeakingRef.current) {
                 setTimeout(() => {
+                    if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
                     try { recognition.start(); } catch { }
-                }, 500);
+                }, 300);
             }
         };
 
@@ -206,6 +226,9 @@ function PointsPageContent() {
         };
 
         recognition.onresult = async (event) => {
+            if (isTtsActive()) {
+                return;
+            }
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
 
@@ -223,8 +246,7 @@ function PointsPageContent() {
             if (/적립|핸드폰|번호|포인트/.test(normalized)) {
                 setShowPhoneModal(true);
                 const msg = "번호를 입력해 적립할 수 있어요.";
-                setAssistantMessage(msg);
-                speakKorean(msg).catch(() => {});
+                await speakAndResume(msg);
                 return;
             }
 
@@ -245,8 +267,7 @@ function PointsPageContent() {
                 if (extracted.length > 0) {
                     setPhoneNumber((prev) => (prev + extracted).slice(0, 11));
                     const msg = `${extracted} 입력했습니다.`;
-                    setAssistantMessage(msg);
-                    speakKorean(msg).catch(() => {});
+                    await speakAndResume(msg);
                     return;
                 }
                 if (/확인|완료/.test(normalized)) {
@@ -256,8 +277,7 @@ function PointsPageContent() {
             }
 
             const msg = "핸드폰으로 적립하거나 카드, 페이를 선택해주세요.";
-            setAssistantMessage(msg);
-            speakKorean(msg).catch(() => {});
+            await speakAndResume(msg);
         };
 
         recognitionRef.current = recognition;

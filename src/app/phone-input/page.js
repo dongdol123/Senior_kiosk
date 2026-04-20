@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
-import { speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
@@ -21,10 +21,27 @@ function PhoneInputPageContent() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
+    const phoneNumberRef = useRef("");
+    const shouldListenRef = useRef(true);
+    const isSpeakingRef = useRef(false);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current);
         router.push(path);
+    }
+
+    async function speakAndResume(msg) {
+        setAssistantMessage(msg);
+        shouldListenRef.current = false;
+        isSpeakingRef.current = true;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
+        await speakKorean(msg).catch(() => {});
+        isSpeakingRef.current = false;
+        shouldListenRef.current = true;
+        setTimeout(() => {
+            if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
+            try { recognitionRef.current && recognitionRef.current.start(); } catch {}
+        }, 1000);
     }
 
     // 숫자 텍스트를 숫자로 변환 (예: "일공일" -> "010", "공일공" -> "010")
@@ -94,10 +111,15 @@ function PhoneInputPageContent() {
         }
     }, [searchParams]);
 
+    useEffect(() => {
+        phoneNumberRef.current = phoneNumber;
+    }, [phoneNumber]);
+
     // 음성 인식
     useEffect(() => {
         mountedRef.current = true;
         firstStartRef.current = true;
+        shouldListenRef.current = true;
 
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -116,17 +138,17 @@ function PhoneInputPageContent() {
             if (firstStartRef.current) {
                 firstStartRef.current = false;
                 const greeting = "핸드폰 번호를 눌러주세요";
-                setAssistantMessage(greeting);
-                await speakKorean(greeting);
+                await speakAndResume(greeting);
             }
         };
 
         recognition.onend = () => {
             setIsListening(false);
-            if (mountedRef.current) {
+            if (mountedRef.current && shouldListenRef.current && !isSpeakingRef.current) {
                 setTimeout(() => {
+                    if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
                     try { recognition.start(); } catch {}
-                }, 500);
+                }, 300);
             }
         };
 
@@ -135,6 +157,9 @@ function PhoneInputPageContent() {
         };
 
         recognition.onresult = async (event) => {
+            if (isTtsActive()) {
+                return;
+            }
             const transcript = event.results[0][0].transcript || "";
             
             // 음성 인식 로그 추가
@@ -160,28 +185,20 @@ function PhoneInputPageContent() {
                 });
                 
                 const msg = `${extractedNumbers} 입력했습니다.`;
-                setAssistantMessage(msg);
-                await speakKorean(msg);
+                await speakAndResume(msg);
             } else {
                 // "확인", "완료" 등의 명령 처리
                 const normalized = transcript.toLowerCase().replace(/\s/g, "");
                 if (/확인|완료|결제|적립/.test(normalized)) {
-                    if (phoneNumber.length >= 10) {
-                        const msg = "적립하고 결제하시겠어요?";
-                        setAssistantMessage(msg);
-                        await speakKorean(msg);
-                        setTimeout(() => {
-                            handleConfirm();
-                        }, 1500);
+                    if ((phoneNumberRef.current || "").length >= 10) {
+                        handleConfirm();
                     } else {
                         const msg = "핸드폰 번호를 모두 입력해주세요.";
-                        setAssistantMessage(msg);
-                        await speakKorean(msg);
+                        await speakAndResume(msg);
                     }
                 } else {
                     const msg = "번호를 말씀해주세요.";
-                    setAssistantMessage(msg);
-                    await speakKorean(msg);
+                    await speakAndResume(msg);
                 }
             }
         };
@@ -208,7 +225,7 @@ function PhoneInputPageContent() {
             } catch {}
             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch {}
         };
-    }, [phoneNumber]);
+    }, []);
 
     function handlePhoneChange(e) {
         const value = e.target.value.replace(/[^0-9]/g, "");
@@ -243,14 +260,15 @@ function PhoneInputPageContent() {
     }
 
     function handleConfirm() {
-        if (phoneNumber.length < 10) {
+        const currentPhone = phoneNumberRef.current || phoneNumber;
+        if (currentPhone.length < 10) {
             alert("올바른 핸드폰 번호를 입력해주세요.");
             return;
         }
 
         // 결제 페이지로 이동
         const cartData = searchParams.get("cart");
-        navigateTo(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${phoneNumber}&${entryQuery(entry)}`);
+        navigateTo(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${currentPhone}&${entryQuery(entry)}`);
     }
 
     function handleBack() {

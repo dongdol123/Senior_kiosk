@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
-import { speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
@@ -172,6 +172,9 @@ function PaymentPageContent() {
         };
 
         recognition.onresult = async (event) => {
+            if (isTtsActive()) {
+                return;
+            }
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
             

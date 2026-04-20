@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery, qrRequiresOrderTypeRedirect } from "../utils/orderFlowEntry";
@@ -493,6 +493,9 @@ function MenuPageContent() {
         };
 
         recognition.onresult = async (event) => {
+            if (isTtsActive()) {
+                return;
+            }
             // 음성 안내 재생 중이면 음성 인식 결과를 무시
             if (isSpeakingRef.current) {
                 console.log("🔇 음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
