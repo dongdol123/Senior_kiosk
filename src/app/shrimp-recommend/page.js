@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
@@ -18,6 +19,11 @@ function ShrimpRecommendPageContent() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
+
+    function navigateTo(path) {
+        stopVoiceSession(recognitionRef.current, shouldListenRef);
+        router.push(path);
+    }
 
     // 새우 관련 메뉴만 필터링 (칠리새우버거, 트러플새우버거)
     useEffect(() => {
@@ -48,6 +54,12 @@ function ShrimpRecommendPageContent() {
             console.error('Failed to load cart:', e);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        const message = "원하시는 메뉴를 골라주세요";
+        setAssistantMessage(message);
+        speakKorean(message).catch(() => {});
+    }, []);
 
     // 음성 인식으로 메뉴 선택
     useEffect(() => {
@@ -127,6 +139,7 @@ function ShrimpRecommendPageContent() {
         };
 
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         try {
             recognition.start();
@@ -153,14 +166,14 @@ function ShrimpRecommendPageContent() {
     function handleBack() {
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
     }
 
     async function handleSelectMenu(menu) {
         // 세트/단품 선택 페이지로 이동
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(menu.name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(menu.name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     const shell = (

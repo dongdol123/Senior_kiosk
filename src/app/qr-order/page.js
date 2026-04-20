@@ -4,12 +4,14 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { speakKorean } from "../utils/speakKorean";
+import { stopVoiceSession } from "../utils/voiceSession";
 
 export default function QrOrderEntryPage() {
     const router = useRouter();
     const spokeRef = useRef(false);
 
     useEffect(() => {
+        stopVoiceSession(null);
         if (spokeRef.current) return;
         spokeRef.current = true;
         const msg = "매장에서 드실지, 포장하실지 선택해 주세요.";
@@ -17,6 +19,7 @@ export default function QrOrderEntryPage() {
     }, []);
 
     function handleOrderType(type) {
+        stopVoiceSession(null);
         router.push(`/menu?entry=qr&orderType=${type}`);
     }
 

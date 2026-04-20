@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
@@ -28,6 +29,11 @@ function MenuOptionPageContent() {
     const isSpeakingRef = useRef(false); // 음성 안내 재생 중인지 추적
     const shouldListenRef = useRef(true); // 자동 재시작 제어
     const restartingRef = useRef(false); // 재시작 중인지 추적
+
+    function navigateTo(path) {
+        stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
+        router.push(path);
+    }
 
     // 최신 router와 searchParams 참조 유지
     useEffect(() => {
@@ -470,6 +476,7 @@ function MenuOptionPageContent() {
         };
 
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         return () => {
             mountedRef.current = false;
@@ -521,7 +528,7 @@ function MenuOptionPageContent() {
         const orderType = searchParams.get("orderType") || "takeout";
         console.log("handleDrinkSize - cartData:", cartData, "size:", size);
         // 바로 메뉴 페이지로 이동
-        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
     }
 
     // 단품 추가 함수 (새로 작성)
@@ -568,6 +575,7 @@ function MenuOptionPageContent() {
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         console.log("단품 추가 완료:", { currentMenuId, currentMenuName, currentCartItems });
         const entSingle = getOrderFlowEntry(currentSearchParams);
+        stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
         currentRouter.push(`/menu?${entryQuery(entSingle)}&orderType=${orderType}&cart=${cartData}`);
     }, []);
 
@@ -586,7 +594,7 @@ function MenuOptionPageContent() {
         // 세트 선택 시 음료 선택 페이지로
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        router.push(`/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     // 기본세트 추가 함수 (새로 작성)
@@ -642,6 +650,7 @@ function MenuOptionPageContent() {
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         console.log("기본세트 추가 완료:", { currentMenuId, currentMenuName, currentCartItems });
         const entSet = getOrderFlowEntry(currentSearchParams);
+        stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
         currentRouter.push(`/menu?${entryQuery(entSet)}&orderType=${orderType}&cart=${cartData}`);
     }, []);
 
@@ -748,7 +757,7 @@ function MenuOptionPageContent() {
                     onClick={() => {
                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
                         const orderType = searchParams.get("orderType") || "takeout";
-                        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+                        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
                     }}
                     style={{
                         backgroundColor: "#ffffff",

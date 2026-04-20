@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
@@ -20,6 +21,11 @@ function PhoneInputPageContent() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
+
+    function navigateTo(path) {
+        stopVoiceSession(recognitionRef.current);
+        router.push(path);
+    }
 
     // 숫자 텍스트를 숫자로 변환 (예: "일공일" -> "010", "공일공" -> "010")
     function convertKoreanNumberToDigit(text) {
@@ -181,6 +187,7 @@ function PhoneInputPageContent() {
         };
 
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         try {
             recognition.start();
@@ -243,12 +250,12 @@ function PhoneInputPageContent() {
 
         // 결제 페이지로 이동
         const cartData = searchParams.get("cart");
-        router.push(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${phoneNumber}&${entryQuery(entry)}`);
+        navigateTo(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${phoneNumber}&${entryQuery(entry)}`);
     }
 
     function handleBack() {
         const cartData = searchParams.get("cart");
-        router.push(`/points?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/points?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     const shell = (
@@ -329,7 +336,7 @@ function PhoneInputPageContent() {
                     onClick={() => {
                         try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
                         try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
-                        router.push(entry === "qr" ? "/qr-order" : "/");
+                        navigateTo(entry === "qr" ? "/qr-order" : "/");
                     }}
                     style={{
                         backgroundColor: "#000000",

@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
@@ -26,6 +27,11 @@ function DrinkSelectPageContent() {
     const isSpeakingRef = useRef(false);
     const shouldListenRef = useRef(true);
     const restartingRef = useRef(false);
+
+    function navigateTo(path) {
+        stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
+        router.push(path);
+    }
 
     const drinks = ["콜라", "제로콜라", "사이다", "커피"];
     const drinkSizes = [
@@ -119,7 +125,7 @@ function DrinkSelectPageContent() {
                     });
                     const cartData = encodeURIComponent(JSON.stringify(newCartItems));
                     const orderType = searchParams.get("orderType") || "takeout";
-                    router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+                    navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
                 }, 800);
                 return () => clearTimeout(timer);
             }
@@ -332,6 +338,7 @@ function DrinkSelectPageContent() {
         };
 
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         try {
             recognition.start();
@@ -448,7 +455,7 @@ function DrinkSelectPageContent() {
                     onClick={() => {
                         const cartData = encodeURIComponent(JSON.stringify(cartItems));
                         const orderType = searchParams.get("orderType") || "takeout";
-                        router.push(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                        navigateTo(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
                     }}
                     style={{
                         backgroundColor: "#ffffff",
