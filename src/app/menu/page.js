@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery, qrRequiresOrderTypeRedirect } from "../utils/orderFlowEntry";
 
@@ -24,7 +25,7 @@ function MenuPageContent() {
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
     const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-    const firstStartRef = useRef(true);
+    const hasPlayedInitialGreetingRef = useRef(false);
     const cartItemsRef = useRef([]);
     const routerRef = useRef(null);
     const searchParamsRef = useRef(null);
@@ -56,6 +57,11 @@ function MenuPageContent() {
     const [selectedFries, setSelectedFries] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState("burger"); // "burger", "drink", "side"
+
+    function navigateTo(path) {
+        stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
+        router.push(path);
+    }
 
     // DB에서 메뉴 로드
     useEffect(() => {
@@ -294,6 +300,7 @@ function MenuPageContent() {
         const orderType = searchParamsRef.current?.get("orderType") || "takeout";
         if (routerRef.current) {
             const ent = getOrderFlowEntry(searchParamsRef.current);
+            stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
             routerRef.current.push(`/points?cart=${cartData}&total=${cartTotal}&orderType=${orderType}&${entryQuery(ent)}`);
         }
     }
@@ -316,7 +323,7 @@ function MenuPageContent() {
             return;
         }
 
-        router.push(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
@@ -336,7 +343,7 @@ function MenuPageContent() {
     useEffect(() => {
         mountedRef.current = true;
         shouldListenRef.current = true;
-        firstStartRef.current = true; // 컴포넌트가 마운트될 때마다 리셋
+        hasPlayedInitialGreetingRef.current = false; // 컴포넌트가 마운트될 때마다 리셋
         
         // 음성 인식이 이미 실행 중이면 중지하고 재시작하여 인사말이 나오도록 함
         if (recognitionRef.current) {
@@ -374,46 +381,8 @@ function MenuPageContent() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        recognition.onstart = async () => {
+        recognition.onstart = () => {
             setIsListening(true);
-            // 음성 인식이 시작된 후 음성 안내 재생
-            if (firstStartRef.current) {
-                firstStartRef.current = false;
-                // 음성 안내 재생 전에 음성 인식을 완전히 중지
-                shouldListenRef.current = false; // 자동 재시작 방지
-                try {
-                    recognition.stop();
-                } catch (e) {
-                    console.log("음성 인식 중지 오류:", e);
-                }
-                
-                // 음성 안내 재생 중 플래그 설정
-                isSpeakingRef.current = true;
-                
-                const greeting = "무엇을 주문하시겠어요?";
-                setAssistantMessage(greeting);
-                
-                // 음성 안내 재생 (완전히 끝날 때까지 대기)
-                await speakKorean(greeting).catch(err => console.error("음성 안내 오류:", err));
-                
-                // 음성 안내가 완료된 후 충분한 딜레이를 두고 플래그 해제 및 음성 인식 재시작
-                // 안내 음성이 완전히 끝나고 나서도 추가 시간을 두어 인식되지 않도록 함
-                setTimeout(() => {
-                    isSpeakingRef.current = false; // 플래그 해제
-                    shouldListenRef.current = true; // 자동 재시작 허용
-                    if (mountedRef.current && !ordered) {
-                        setTimeout(() => {
-                            if (mountedRef.current && shouldListenRef.current && !ordered) {
-                                try {
-                                    recognition.start();
-                                } catch (e) {
-                                    console.log("음성 인식 재시작 오류:", e);
-                                }
-                            }
-                        }, 2000); // 추가 딜레이 (2초)
-                    }
-                }, 1000); // 안내 완료 후 1초 대기
-            }
         };
         recognition.onend = () => {
             setIsListening(false);
@@ -634,7 +603,7 @@ function MenuPageContent() {
                 
                 // 약간의 딜레이 후 페이지 이동
                 setTimeout(() => {
-                    router.push(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                    navigateTo(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
                 }, 800);
                 return;
             }
@@ -660,7 +629,7 @@ function MenuPageContent() {
             const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)/;
             if (shrimpRecommendPattern.test(normalized)) {
                 const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                router.push(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}&${entryQuery(entry)}`);
+                navigateTo(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}&${entryQuery(entry)}`);
                 try { recognition.stop(); } catch { }
                 return;
             }
@@ -789,18 +758,33 @@ function MenuPageContent() {
         };
 
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         if (voiceOrderMode) {
-            // 음성 인식 시작 (음성 안내는 onstart에서 재생)
-            setTimeout(() => {
-                if (mountedRef.current && shouldListenRef.current) {
+            const startVoiceFlow = async () => {
+                if (!mountedRef.current || !shouldListenRef.current) return;
+                if (!hasPlayedInitialGreetingRef.current) {
+                    hasPlayedInitialGreetingRef.current = true;
+                    const greeting = "무엇을 주문하시겠어요?";
+                    setAssistantMessage(greeting);
+                    isSpeakingRef.current = true;
                     try {
-                        recognition.start();
-                    } catch (e) {
-                        setErrorMessage("마이크 사용 권한을 허용해 주세요.");
+                        await speakKorean(greeting);
+                    } catch (err) {
+                        console.error("초기 음성 안내 오류:", err);
+                    } finally {
+                        isSpeakingRef.current = false;
                     }
                 }
-            }, 200);
+
+                if (!mountedRef.current || !shouldListenRef.current || ordered) return;
+                try {
+                    recognition.start();
+                } catch (e) {
+                    setErrorMessage("마이크 사용 권한을 허용해 주세요.");
+                }
+            };
+            startVoiceFlow();
         } else {
             shouldListenRef.current = false;
         }

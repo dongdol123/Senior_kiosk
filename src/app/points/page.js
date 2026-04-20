@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
@@ -24,6 +25,11 @@ function PointsPageContent() {
     const firstStartRef = useRef(true);
     const showPhoneModalRef = useRef(false);
     const phoneNumberRef = useRef("");
+
+    function navigateTo(path) {
+        stopVoiceSession(recognitionRef.current);
+        router.push(path);
+    }
 
     useEffect(() => {
         const totalParam = searchParams.get("total");
@@ -148,7 +154,7 @@ function PointsPageContent() {
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
-            router.push(entry === "qr" ? "/qr-order" : "/");
+            navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
     }
 
@@ -157,7 +163,7 @@ function PointsPageContent() {
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
-            router.push(entry === "qr" ? "/qr-order" : "/");
+            navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
     }
 
@@ -255,6 +261,7 @@ function PointsPageContent() {
         };
 
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         try {
             recognition.start();
@@ -279,7 +286,7 @@ function PointsPageContent() {
 
     function handleBack() {
         const enc = encodeURIComponent(JSON.stringify(cartItems));
-        router.push(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${enc}`);
+        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${enc}`);
     }
 
     const shell = (

@@ -33,12 +33,14 @@ module.exports = () => {
         }
 
         try {
+            const voice = process.env.OPENAI_TTS_VOICE || 'nova';
+            const speed = Number(process.env.OPENAI_TTS_SPEED || 0.95);
             // OpenAI TTS API 호출
             const response = await openai.audio.speech.create({
                 model: 'tts-1-hd',
-                voice: 'alloy',
+                voice,
                 input: text,
-                speed: 0.95, // 0.25 ~ 4.0
+                speed, // 0.25 ~ 4.0
             });
 
             // Buffer로 변환

@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef } from "react";
 import { speakKorean } from "../utils/speakKorean";
+import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
@@ -20,6 +21,11 @@ function PaymentPageContent() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
+
+    const navigateTo = (path) => {
+        stopVoiceSession(recognitionRef.current);
+        router.push(path);
+    };
 
     useEffect(() => {
         // URL 파라미터에서 데이터 로드
@@ -40,7 +46,7 @@ function PaymentPageContent() {
 
     // 뒤로가기 처리
     const handleBack = () => {
-        router.push(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
     };
 
     // 카드 결제 처리
@@ -58,7 +64,7 @@ function PaymentPageContent() {
         // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
             console.log("타임아웃으로 페이지 이동");
-            router.push(entry === "qr" ? "/qr-order" : "/");
+            navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
 
         // 음성이 끝나면 즉시 페이지 이동 시도
@@ -86,7 +92,7 @@ function PaymentPageContent() {
         // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
             console.log("타임아웃으로 페이지 이동");
-            router.push(entry === "qr" ? "/qr-order" : "/");
+            navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
 
         // 음성이 끝나면 즉시 페이지 이동 시도
@@ -138,6 +144,7 @@ function PaymentPageContent() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
         recognitionRef.current = recognition;
+        registerVoiceSession(recognition);
 
         recognition.onstart = async () => {
             setIsListening(true);
