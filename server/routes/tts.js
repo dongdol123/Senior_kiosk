@@ -37,7 +37,7 @@ module.exports = () => {
             const speed = Number(process.env.OPENAI_TTS_SPEED || 0.95);
             // OpenAI TTS API 호출
             const response = await openai.audio.speech.create({
-                model: 'tts-1-hd',
+                model: 'gpt-4o-mini-tts',
                 voice,
                 input: text,
                 speed, // 0.25 ~ 4.0
