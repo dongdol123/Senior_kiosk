@@ -21,11 +21,29 @@ function PaymentPageContent() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
+    const shouldListenRef = useRef(true);
+    const isSpeakingRef = useRef(false);
+    const lastHandledVoiceRef = useRef({ text: "", at: 0 });
 
     const navigateTo = (path) => {
+        shouldListenRef.current = false;
         stopVoiceSession(recognitionRef.current);
         router.push(path);
     };
+
+    async function speakAndResume(msg) {
+        setAssistantMessage(msg);
+        shouldListenRef.current = false;
+        isSpeakingRef.current = true;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
+        await speakKorean(msg).catch((err) => console.error("음성 안내 오류:", err));
+        isSpeakingRef.current = false;
+        shouldListenRef.current = true;
+        setTimeout(() => {
+            if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
+            try { recognitionRef.current && recognitionRef.current.start(); } catch {}
+        }, 1000);
+    }
 
     useEffect(() => {
         // URL 파라미터에서 데이터 로드
@@ -120,9 +138,7 @@ function PaymentPageContent() {
 
         // 약간의 딜레이 후 음성 안내
         const timer = setTimeout(() => {
-            const msg = "카드결제, 페이결제 중 선택해주세요.";
-            setAssistantMessage(msg);
-            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+            speakAndResume("카드결제, 페이결제 중 선택해주세요.");
         }, 300);
 
         return () => clearTimeout(timer);
@@ -132,6 +148,7 @@ function PaymentPageContent() {
     useEffect(() => {
         mountedRef.current = true;
         firstStartRef.current = true;
+        shouldListenRef.current = true;
 
         const SpeechRecognition =
             typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -152,14 +169,15 @@ function PaymentPageContent() {
 
         recognition.onend = () => {
             setIsListening(false);
-            if (mountedRef.current) {
+            if (mountedRef.current && shouldListenRef.current && !isSpeakingRef.current) {
                 setTimeout(() => {
+                    if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
                     try {
                         recognition.start();
                     } catch (e) {
                         console.log("음성인식 재시작 실패:", e);
                     }
-                }, 500);
+                }, 300);
             }
         };
 
@@ -177,6 +195,11 @@ function PaymentPageContent() {
             }
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
+            const now = Date.now();
+            if (lastHandledVoiceRef.current.text === normalized && now - lastHandledVoiceRef.current.at < 1500) {
+                return;
+            }
+            lastHandledVoiceRef.current = { text: normalized, at: now };
             
             // 음성 인식 로그 추가
             const logEntry = {
@@ -192,7 +215,7 @@ function PaymentPageContent() {
             console.log("🎤 결제 페이지 음성 인식:", transcript, "normalized:", normalized);
 
             // 카드결제 인식 - 더 정확한 키워드 매칭
-            if (/카드|카드결제|카드로|카드로결제|card/.test(normalized)) {
+            if (/카드|카드결제|카드로|카드로결제|신용카드|체크카드|카드할게|card/.test(normalized)) {
                 console.log("✅ 카드결제 인식됨");
                 try {
                     recognition.stop();
@@ -204,7 +227,7 @@ function PaymentPageContent() {
             }
             
             // 페이결제 인식 - 더 정확한 키워드 매칭
-            if (/페이|페이결제|페이로|페이로결제|pay|모바일페이/.test(normalized)) {
+            if (/페이|페이결제|페이로|페이로결제|네이버페이|카카오페이|모바일페이|간편결제|페이할게|pay/.test(normalized)) {
                 console.log("✅ 페이결제 인식됨");
                 try {
                     recognition.stop();
@@ -216,7 +239,7 @@ function PaymentPageContent() {
             }
             
             // 뒤로가기 인식
-            if (/뒤로|뒤로가기|back/.test(normalized)) {
+            if (/뒤로|뒤로가기|이전|이전으로|되돌아가|back/.test(normalized)) {
                 try {
                     recognition.stop();
                 } catch (e) {
@@ -228,8 +251,7 @@ function PaymentPageContent() {
             
             // 인식되지 않은 경우 안내 메시지 (안내만 하고 음성 인식은 계속)
             const msg = "카드결제 또는 페이결제를 말씀해주세요.";
-            setAssistantMessage(msg);
-            speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+            await speakAndResume(msg);
         };
 
         // 음성인식 시작
