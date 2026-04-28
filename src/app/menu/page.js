@@ -611,8 +611,27 @@ function MenuPageContent() {
                 return;
             }
 
+            const directPaymentPattern = /이대로\s*주문\s*해\s*줘|이대로\s*결제\s*해\s*줘|지금\s*결제\s*해\s*줘|바로\s*결제|결제\s*페이지\s*로|그대로\s*결제|지금\s*바로\s*결제|주문\s*마치고\s*결제/;
+            if (directPaymentPattern.test(normalized)) {
+                const currentCartItems = cartItemsRef.current;
+                if (currentCartItems.length === 0) {
+                    const msg = "장바구니가 비었어요.";
+                    setAssistantMessage(msg);
+                    isSpeakingRef.current = true;
+                    await speakKorean(msg);
+                    setTimeout(() => { isSpeakingRef.current = false; }, 1000);
+                    return;
+                }
+                const cartTotal = currentCartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+                const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
+                const orderType = searchParams.get("orderType") || "takeout";
+                stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
+                router.push(`/payment?cart=${cartData}&total=${cartTotal}&orderType=${orderType}&${entryQuery(entry)}`);
+                return;
+            }
+
             // 주문하기 명령 감지
-            const orderPattern = /주문|결제|주문해|주문해줘|주문할래|주문하겠어|결제해|결제해줘|결제할래|결제하겠어|이대로주문|이대로주문할게|이대로주문할래|이대로결제/;
+            const orderPattern = /주문|결제|주문해|주문해줘|주문할래|주문하겠어|주문진행|주문할게|이걸로주문|이걸로할게|결제해|결제해줘|결제할래|결제하겠어|결제할게|결제진행|이대로주문|이대로주문할게|이대로주문할래|이대로결제|그대로주문|그대로결제/;
             if (orderPattern.test(normalized)) {
                 console.log("✅ 주문 명령 인식됨:", transcript, "normalized:", normalized);
                 // 음성 인식 먼저 중지

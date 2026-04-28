@@ -27,6 +27,7 @@ function DrinkSelectPageContent() {
     const isSpeakingRef = useRef(false);
     const shouldListenRef = useRef(true);
     const restartingRef = useRef(false);
+    const sidePromptPlayedRef = useRef(false);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -60,48 +61,16 @@ function DrinkSelectPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            try {
-                if (window.speechSynthesis) {
-                    window.speechSynthesis.cancel();
-                }
-            } catch (e) {
-                console.log("SpeechSynthesis 정리 중 오류:", e);
-            }
-        }
-
-        if (recognitionRef.current) {
-            try {
-                recognitionRef.current.stop();
-            } catch (e) { }
-        }
-        shouldListenRef.current = false;
-
-        const timer = setTimeout(async () => {
-            isSpeakingRef.current = true;
-            const msg = "음료와 사이드를 선택해주세요.";
-            setAssistantMessage(msg);
-            await speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
-
-            setTimeout(() => {
-                isSpeakingRef.current = false;
-                shouldListenRef.current = true;
-                if (mountedRef.current) {
-                    setTimeout(() => {
-                        if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                            try {
-                                recognitionRef.current.start();
-                            } catch (e) {
-                                console.log("음성 인식 재시작 오류:", e);
-                            }
-                        }
-                    }, 2000);
-                }
-            }, 1000);
-        }, 800);
-
-        return () => clearTimeout(timer);
+        sidePromptPlayedRef.current = false;
     }, [searchParams]);
+
+    useEffect(() => {
+        if (!selectedDrinkSize || selectedSide || sidePromptPlayedRef.current) return;
+        sidePromptPlayedRef.current = true;
+        const msg = "사이드를 골라주세요.";
+        setAssistantMessage(msg);
+        speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
+    }, [selectedDrinkSize, selectedSide]);
 
     useEffect(() => {
         if (selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {

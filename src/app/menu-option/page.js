@@ -29,6 +29,7 @@ function MenuOptionPageContent() {
     const isSpeakingRef = useRef(false); // 음성 안내 재생 중인지 추적
     const shouldListenRef = useRef(true); // 자동 재시작 제어
     const restartingRef = useRef(false); // 재시작 중인지 추적
+    const lastHandledVoiceRef = useRef({ text: "", at: 0 });
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -274,6 +275,11 @@ function MenuOptionPageContent() {
 
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
+            const now = Date.now();
+            if (lastHandledVoiceRef.current.text === normalized && now - lastHandledVoiceRef.current.at < 1500) {
+                return;
+            }
+            lastHandledVoiceRef.current = { text: normalized, at: now };
 
             // 음성 인식 로그 추가
             const logEntry = {
@@ -299,7 +305,7 @@ function MenuOptionPageContent() {
 
             // 음료인 경우 사이즈 음성 선택
             if (isCurrentDrink) {
-                if (/미디움|미디엄|중간|중간사이즈/.test(normalized)) {
+                if (/미디움|미디엄|중간|중간사이즈|중자|미디움으로|중간으로|엠사이즈/.test(normalized)) {
                     try {
                         recognition.stop();
                     } catch (e) { }
@@ -315,7 +321,7 @@ function MenuOptionPageContent() {
                     }, 100);
                     return;
                 }
-                if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
+                if (/라지|큰거|큰사이즈|큰|라지로|대자|엘사이즈/.test(normalized)) {
                     try {
                         recognition.stop();
                     } catch (e) { }
@@ -388,7 +394,7 @@ function MenuOptionPageContent() {
                 }
 
                 // 단품 선택 - 먼저 체크
-                if (/단품|단품으로|단품주문/.test(normalized)) {
+                if (/단품|단품으로|단품주문|버거만|버거만줘|단품할게|단품으로할게/.test(normalized)) {
                     console.log("✅ 단품 인식됨! normalized:", normalized);
                     try {
                         recognition.stop();
@@ -407,7 +413,7 @@ function MenuOptionPageContent() {
                 }
 
                 // 기본 세트 선택 ("기본세트가 뭐야?" 같은 질문은 위에서 처리)
-                if (/기본세트|기본적용|기본으로|기본세트로|기본세트주문|기본으로할게/.test(normalized) || (/기본/.test(normalized) && /세트/.test(normalized) && !hasQuestion)) {
+                if (/기본세트|기본적용|기본으로|기본세트로|기본세트주문|기본으로할게|기본세트할게|기본으로줘/.test(normalized) || (/기본/.test(normalized) && /세트/.test(normalized) && !hasQuestion)) {
                     console.log("✅ 기본세트 인식됨! normalized:", normalized);
                     try {
                         recognition.stop();
@@ -426,7 +432,7 @@ function MenuOptionPageContent() {
                 }
 
                 // 세트 선택
-                if (/세트|세트로|세트주문/.test(normalized)) {
+                if (/세트|세트로|세트주문|세트할게|세트로줘|세트로할게/.test(normalized)) {
                     try {
                         recognition.stop();
                     } catch (e) { }
