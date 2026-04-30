@@ -7,6 +7,132 @@ import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery, qrRequiresOrderTypeRedirect } from "../utils/orderFlowEntry";
 
+function normalizeMenuKey(name) {
+    return (name || "").replace(/\s+/g, "").toLowerCase();
+}
+
+/** 키오스크 기본 메뉴(가격·이미지·카테고리). API와 병합 시 이름 기준으로 매칭됩니다. */
+const STATIC_MENU = [
+    {
+        id: "bur-bacon",
+        name: "베이컨 디럭스 버거",
+        price: 4600,
+        category: "burger",
+        image: "/tomato_bur.png",
+        keywords: ["베이컨", "디럭스", "bacon", "deluxe", "토마토"],
+    },
+    {
+        id: "bur-mozza",
+        name: "모짜렐라 치즈 불고기 버거 세트",
+        price: 4800,
+        category: "burger",
+        image: "/mozza_bulbur.png",
+        keywords: ["모짜렐라", "모짜", "불고기", "치즈"],
+    },
+    {
+        id: "bur-triple",
+        name: "트리플 불고기 버거",
+        price: 5500,
+        category: "burger",
+        image: "/triple_bur.png",
+        keywords: ["트리플", "triple"],
+    },
+    {
+        id: "bur-mush",
+        name: "머쉬룸 버거",
+        price: 6000,
+        category: "burger",
+        image: "/merss.png",
+        keywords: ["머쉬룸", "머시룸", "mushroom"],
+    },
+    {
+        id: "side-wing",
+        name: "치킨윙 4개",
+        price: 4000,
+        category: "side",
+        image: "/wing.png",
+        keywords: ["치킨윙", "윙", "wing"],
+    },
+    {
+        id: "side-hash",
+        name: "해쉬브라운",
+        price: 2500,
+        category: "side",
+        image: "/hash.png",
+        keywords: ["해쉬", "해시", "hash", "브라운", "해쉬브라운"],
+    },
+    {
+        id: "drink-latte",
+        name: "카페라떼",
+        price: 2500,
+        category: "drink",
+        image: "/latte.png",
+        keywords: ["카페라떼", "라떼", "latte", "카페"],
+    },
+    {
+        id: "drink-icedtea",
+        name: "아이스티",
+        price: 2500,
+        category: "drink",
+        image: "/icetea.png",
+        keywords: ["아이스티", "티", "iced", "icetea", "ice tea"],
+    },
+];
+
+function inferMenuCategory(item) {
+    if (item?.category) return item.category;
+    const n = normalizeMenuKey(item?.name);
+    if (/버거|burger/.test(n)) return "burger";
+    if (/카페라떼|라떼|아이스티|icetea|icedtea/.test(n)) return "drink";
+    if (/치킨윙|해쉬브라운|해시브라운/.test(n)) return "side";
+    return "";
+}
+
+function menuItemMatchesCategory(item, selectedCategory) {
+    return inferMenuCategory(item) === selectedCategory;
+}
+
+function isTapToAddSide(item) {
+    return inferMenuCategory(item) === "side";
+}
+
+function menuGridImageSrc(m) {
+    if (m?.image) return m.image;
+    const n = normalizeMenuKey(m?.name);
+    if (/칠리/.test(n)) return "/C_srp.png";
+    if (/트러플/.test(n)) return "/T_srp.png";
+    if (/버거/.test(n)) return "/burger.png";
+    if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
+    if (/사이다/.test(n)) return "/cider_main.png";
+    if (/커피/.test(n)) return "/coffee_main.png";
+    if (/감자튀김/.test(n)) return "/french_fries_main.png";
+    if (/샐러드/.test(n)) return "/salad_main.png";
+    if (/치킨텐더/.test(n)) return "/tender_main.png";
+    return null;
+}
+
+function cartItemImageSrc(it) {
+    if (it?.image) return it.image;
+    const raw = (it?.name || "").replace(/\s+/g, "").toLowerCase();
+    const n = raw.replace(/\(.*?\)/g, "");
+    if (/베이컨|디럭스|토마토/.test(n) && /버거/.test(n)) return "/tomato_bur.png";
+    if (/모짜렐라|모짜/.test(n) && /버거/.test(n)) return "/mozza_bulbur.png";
+    if (/트리플/.test(n) && /버거/.test(n)) return "/triple_bur.png";
+    if (/머쉬룸|머시룸/.test(n)) return "/merss.png";
+    if (/치킨윙|윙/.test(n)) return "/wing.png";
+    if (/해쉬|해시|hash/.test(n)) return "/hash.png";
+    if (/카페라떼|라떼|latte/.test(n)) return "/latte.png";
+    if (/아이스티|icetea/.test(n)) return "/icetea.png";
+    if (/불고기/.test(n) && /버거/.test(n)) return "/burger.png";
+    if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
+    if (/사이다/.test(n)) return "/cider_main.png";
+    if (/커피/.test(n)) return "/coffee_main.png";
+    if (/감자튀김/.test(n)) return "/french_fries_main.png";
+    if (/샐러드/.test(n)) return "/salad_main.png";
+    if (/치킨텐더|텐더/.test(n)) return "/tender_main.png";
+    return null;
+}
+
 function MenuPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -38,23 +164,10 @@ function MenuPageContent() {
     }, [searchParams, router]);
 
     // cart state
-    const STATIC_MENU = [
-        { id: "main-1", name: "불고기버거", price: 5000, keywords: ["불고기", "bulgogi"] },
-        { id: "main-2", name: "치킨버거", price: 4800, keywords: ["치킨", "chicken"] },
-        { id: "drink-1", name: "콜라", price: 2000, keywords: ["콜라", "coke"] },
-        { id: "drink-2", name: "제로콜라", price: 2000, keywords: ["제로", "제로콜라", "coke zero", "zero"] },
-        { id: "drink-3", name: "사이다", price: 2000, keywords: ["사이다", "soda"] },
-        { id: "drink-4", name: "커피", price: 2000, keywords: ["커피", "coffee"] },
-        { id: "side-1", name: "감자튀김", price: 3000, keywords: ["감자", "튀김", "감튀", "fries"] },
-        { id: "side-2", name: "샐러드", price: 3000, keywords: ["샐러드", "salad"] },
-        { id: "side-3", name: "치킨텐더", price: 3000, keywords: ["치킨", "텐더", "치킨텐더", "tender"] },
-    ];
     const [MENU_ITEMS, setMENU_ITEMS] = useState(STATIC_MENU);
     const [cartItems, setCartItems] = useState([]); // [{id, name, price, qty}]
     const [recommendedMenus, setRecommendedMenus] = useState([]);
     const [showRecommendation, setShowRecommendation] = useState(false);
-    const [showFriesModal, setShowFriesModal] = useState(false);
-    const [selectedFries, setSelectedFries] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState("burger"); // "burger", "drink", "side"
 
@@ -70,35 +183,36 @@ function MenuPageContent() {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/menu`);
                 const data = await res.json();
                 if (res.ok && data.menus && data.menus.length > 0) {
-                    const normalizeName = (name) => (name || "").replace(/\s+/g, "").toLowerCase();
-
-                    // API 데이터를 이름(공백 제거) 기준으로 중복 제거하고, 가격을 정정한 뒤 누락분을 STATIC_MENU로 보완
                     const uniqueByName = new Map();
                     data.menus.forEach((item) => {
                         if (!item?.name) return;
-                        const key = normalizeName(item.name);
+                        const key = normalizeMenuKey(item.name);
                         if (!uniqueByName.has(key)) uniqueByName.set(key, item);
                     });
 
+                    const staticByName = new Map(STATIC_MENU.map((m) => [normalizeMenuKey(m.name), m]));
+
                     const canonical = Array.from(uniqueByName.values()).map((item) => {
-                        const corrected = { ...item };
-                        const n = normalizeName(corrected.name);
-                        if (n === "불고기버거") corrected.price = 5000;
-                        if (n === "치킨버거") corrected.price = 4800;
-                        if (n === "감자튀김") corrected.price = 3000;
-                        if (n === "샐러드") corrected.price = 3000;
-                        if (n === "치킨텐더") corrected.price = 3000;
-                        if (["콜라", "제로콜라", "사이다", "커피"].includes(corrected.name)) corrected.price = 2000;
-                        return corrected;
+                        const st = staticByName.get(normalizeMenuKey(item.name));
+                        return {
+                            ...item,
+                            id: st?.id ?? item.id,
+                            price: st?.price ?? item.price,
+                            image: st?.image ?? item.image,
+                            category: st?.category ?? inferMenuCategory(item),
+                            keywords:
+                                st?.keywords?.length ? st.keywords : item.keywords ?? [],
+                        };
                     });
 
-                    // 누락된 필수 메뉴를 STATIC_MENU 기준으로 채워 넣기 (공백 제거 기준)
-                    const existingNames = new Set(canonical.map((m) => normalizeName(m.name)));
+                    const existingNames = new Set(canonical.map((m) => normalizeMenuKey(m.name)));
                     STATIC_MENU.forEach((item) => {
-                        if (!existingNames.has(normalizeName(item.name))) canonical.push(item);
+                        if (!existingNames.has(normalizeMenuKey(item.name))) {
+                            canonical.push({ ...item });
+                        }
                     });
 
-                    setMENU_ITEMS(canonical.slice(0, 16));
+                    setMENU_ITEMS(canonical);
                 }
             } catch (e) {
                 console.error('Failed to load menus:', e);
@@ -310,15 +424,7 @@ function MenuPageContent() {
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
 
-        // 감자튀김: 사이즈 선택 모달
-        if (/감자튀김/.test(name)) {
-            setSelectedFries(menu);
-            setShowFriesModal(true);
-            return;
-        }
-
-        // 샐러드, 치킨텐더: 바로 담기
-        if (/샐러드|치킨텐더/.test(name)) {
+        if (isTapToAddSide(menu)) {
             addToCart(menu);
             return;
         }
@@ -565,15 +671,7 @@ function MenuPageContent() {
                     console.log("음성 인식 중지 오류:", e);
                 }
                 
-                // 감자튀김은 사이즈 선택 모달 표시
-                if (/감자튀김/.test(matchedMenu.name)) {
-                    setSelectedFries(matchedMenu);
-                    setShowFriesModal(true);
-                    return;
-                }
-
-                // 샐러드, 치킨텐더는 바로 담기
-                if (/샐러드|치킨텐더/.test(matchedMenu.name)) {
+                if (isTapToAddSide(matchedMenu)) {
                     addToCart(matchedMenu);
                     // 장바구니에 담은 후 음성 인식 재시작
                     setTimeout(() => {
@@ -1196,16 +1294,9 @@ function MenuPageContent() {
                     >
                         {(() => {
                             // 카테고리별 메뉴 필터링
-                            const filteredItems = MENU_ITEMS.filter((item) => {
-                                if (selectedCategory === "burger") {
-                                    return /버거/.test(item.name);
-                                } else if (selectedCategory === "drink") {
-                                    return /콜라|제로콜라|사이다|커피/.test(item.name);
-                                } else if (selectedCategory === "side") {
-                                    return /감자튀김|샐러드|치킨텐더/.test(item.name);
-                                }
-                                return false;
-                            });
+                            const filteredItems = MENU_ITEMS.filter((item) =>
+                                menuItemMatchesCategory(item, selectedCategory)
+                            );
 
                             const itemsPerPage = 4;
                             const startIdx = (currentPage - 1) * itemsPerPage;
@@ -1261,108 +1352,25 @@ function MenuPageContent() {
                                                 padding: "0",
                                             }}
                                         >
-                                            {m.name && /칠리/.test(m.name) ? (
-                                                <img
-                                                    src="/C_srp.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /트러플/.test(m.name) ? (
-                                                <img
-                                                    src="/T_srp.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /버거/.test(m.name) ? (
-                                                <img
-                                                    src="/burger.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /콜라|제로콜라/.test(m.name) ? (
-                                                <img
-                                                    src="/coke_main.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /사이다/.test(m.name) ? (
-                                                <img
-                                                    src="/cider_main.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /커피/.test(m.name) ? (
-                                                <img
-                                                    src="/coffee_main.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /감자튀김/.test(m.name) ? (
-                                                <img
-                                                    src="/french_fries_main.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /샐러드/.test(m.name) ? (
-                                                <img
-                                                    src="/salad_main.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : m.name && /치킨텐더/.test(m.name) ? (
-                                                <img
-                                                    src="/tender_main.png"
-                                                    alt={m.name}
-                                                    style={{
-                                                        width: "100%",
-                                                        height: "100%",
-                                                        objectFit: "contain",
-                                                        display: "block",
-                                                    }}
-                                                />
-                                            ) : (
-                                                "메뉴 이미지"
-                                            )}
+                                            {(() => {
+                                                const src = menuGridImageSrc(m);
+                                                return src ? (
+                                                    <img
+                                                        src={src}
+                                                        alt={m.name}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            objectFit: "contain",
+                                                            display: "block",
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div style={{ color: "#8aa0c5", fontWeight: 700 }}>
+                                                        메뉴 이미지
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                         {/* 하단 정보 영역 - 이름, 가격, 버튼 (최소화) */}
                                         <div style={{ 
@@ -1411,16 +1419,9 @@ function MenuPageContent() {
                     {/* 페이지네이션 - 아래로 이동 */}
                     {(() => {
                         // 카테고리별 메뉴 필터링
-                        const filteredItems = MENU_ITEMS.filter((item) => {
-                            if (selectedCategory === "burger") {
-                                return /버거/.test(item.name);
-                            } else if (selectedCategory === "drink") {
-                                return /콜라|제로콜라|사이다|커피/.test(item.name);
-                            } else if (selectedCategory === "side") {
-                                return /감자튀김|샐러드|치킨텐더/.test(item.name);
-                            }
-                            return false;
-                        });
+                        const filteredItems = MENU_ITEMS.filter((item) =>
+                            menuItemMatchesCategory(item, selectedCategory)
+                        );
                         const itemsPerPage = 4;
                         const totalPages = Math.ceil(Math.max(filteredItems.length, 4) / itemsPerPage);
                     return (
@@ -1601,23 +1602,14 @@ function MenuPageContent() {
                                     justifyContent: "center",
                                     flexShrink: 0,
                                 }}>
-                                    {it.name && /불고기/.test(it.name) ? (
-                                        <img src="/burger.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : it.name && /콜라|제로콜라/.test(it.name) ? (
-                                        <img src="/coke_main.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : it.name && /사이다/.test(it.name) ? (
-                                        <img src="/cider_main.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : it.name && /커피/.test(it.name) ? (
-                                        <img src="/coffee_main.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : it.name && /감자튀김/.test(it.name) ? (
-                                        <img src="/french_fries_main.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : it.name && /샐러드/.test(it.name) ? (
-                                        <img src="/salad_main.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : it.name && /치킨텐더/.test(it.name) ? (
-                                        <img src="/tender_main.png" alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                                    ) : (
-                                        <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
-                                    )}
+                                    {(() => {
+                                        const src = cartItemImageSrc(it);
+                                        return src ? (
+                                            <img src={src} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                        ) : (
+                                            <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
+                                        );
+                                    })()}
                                 </div>
                                 
                                 {/* 메뉴 정보 */}
@@ -1843,82 +1835,6 @@ function MenuPageContent() {
                 </div>
             )}
 
-            {/* 감자튀김 사이즈 선택 모달 */}
-            {showFriesModal && selectedFries && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: "rgba(0,0,0,0.5)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1100,
-                    }}
-                    onClick={() => setShowFriesModal(false)}
-                >
-                    <div
-                        style={{
-                            background: "#fff",
-                            borderRadius: 16,
-                            padding: 20,
-                            width: "90%",
-                            maxWidth: 420,
-                            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                            <div style={{ fontSize: "1.3rem", fontWeight: 800 }}>감자튀김 사이즈 선택</div>
-                            <button
-                                onClick={() => setShowFriesModal(false)}
-                                style={{ background: "transparent", border: "none", fontSize: "1.4rem", cursor: "pointer", color: "#666" }}
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <button
-                                onClick={() => {
-                                    addToCart({ ...selectedFries, id: `${selectedFries.id}_M`, name: "감자튀김 (미디움)", price: 3000 });
-                                    setShowFriesModal(false);
-                                }}
-                                style={{
-                                    height: 60,
-                                    borderRadius: 12,
-                                    border: "1px solid #1e7a39",
-                                    background: "#f5fbf7",
-                                    color: "#1e7a39",
-                                    fontWeight: 800,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                미디움으로 담기 (3,000원)
-                            </button>
-                            <button
-                                onClick={() => {
-                                    addToCart({ ...selectedFries, id: `${selectedFries.id}_L`, name: "감자튀김 (라지)", price: 4000 });
-                                    setShowFriesModal(false);
-                                }}
-                                style={{
-                                    height: 60,
-                                    borderRadius: 12,
-                                    border: "1px solid #ff6b35",
-                                    background: "#fff7f3",
-                                    color: "#ff6b35",
-                                    fontWeight: 800,
-                                    cursor: "pointer",
-                                }}
-                            >
-                                라지로 담기 (4,000원)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </main>
     );
     return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;

@@ -52,7 +52,21 @@ function MenuOptionPageContent() {
         }
 
         // 음료 키워드 확인 (정확하게 매칭)
-        const drinkKeywords = ["콜라", "제로콜라", "사이다", "커피", "coke", "zero", "soda", "coffee"];
+        const drinkKeywords = [
+            "카페라떼",
+            "라떼",
+            "아이스티",
+            "콜라",
+            "제로콜라",
+            "사이다",
+            "커피",
+            "latte",
+            "icetea",
+            "coke",
+            "zero",
+            "soda",
+            "coffee",
+        ];
 
         // 음료 키워드와 정확히 일치하는지 확인
         const isDrinkMenu = drinkKeywords.some((k) => {
@@ -106,7 +120,7 @@ function MenuOptionPageContent() {
             const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
-                (["콜라", "제로콜라", "사이다", "커피", "coke", "zero", "soda", "coffee"].some(k =>
+                (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "커피", "latte", "icetea", "coke", "zero", "soda", "coffee"].some(k =>
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
@@ -299,7 +313,7 @@ function MenuOptionPageContent() {
             // 버거인지 음료인지 확인
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
-                (["콜라", "제로콜라", "사이다", "커피", "coke", "zero", "soda", "coffee"].some(k =>
+                (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "커피", "latte", "icetea", "coke", "zero", "soda", "coffee"].some(k =>
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
@@ -442,27 +456,6 @@ function MenuOptionPageContent() {
 
                 // 도움말 (버거인 경우)
                 const msg = "단품, 세트, 기본 세트 중 선택해 주세요.";
-                setAssistantMessage(msg);
-                try {
-                    recognition.stop();
-                } catch (e) { }
-                isSpeakingRef.current = true;
-                await speakKorean(msg);
-                setTimeout(() => {
-                    isSpeakingRef.current = false;
-                    if (mountedRef.current && shouldListenRef.current) {
-                        setTimeout(() => {
-                            if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                try {
-                                    recognitionRef.current.start();
-                                } catch (e) { }
-                            }
-                        }, 2000);
-                    }
-                }, 1000);
-            } else if (isCurrentDrink) {
-                // 음료인 경우 사이즈 선택 안내만
-                const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
@@ -633,8 +626,8 @@ function MenuOptionPageContent() {
             }
         }
 
-        // 기본세트 가격 계산 (메뉴 + 콜라 M + 감자튀김 M)
-        const setPrice = currentMenuPrice + 2000 + 3000;
+        // 기본세트: 메인 + 카페라떼 M + 해쉬브라운 M
+        const setPrice = currentMenuPrice + 2500 + 2500;
 
         // 장바구니에 기본세트 추가
         const setId = `${currentMenuId}_set_default`;
@@ -650,8 +643,8 @@ function MenuOptionPageContent() {
                 type: "set",
                 items: [
                     { name: currentMenuName, price: currentMenuPrice },
-                    { name: "콜라", size: "미디움", price: 2000 },
-                    { name: "감자튀김", size: "미디움", price: 3000 },
+                    { name: "카페라떼", size: "미디움", price: 2500 },
+                    { name: "해쉬브라운", size: "미디움", price: 2500 },
                 ],
             });
         }
@@ -929,10 +922,10 @@ function MenuOptionPageContent() {
                             >
                                 기본 세트
                                 <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
-                                    콜라 M + 감자튀김 M
+                                    카페라떼 M + 해쉬브라운 M
                                 </div>
                                 <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
-                                    {(menuPrice + 2000 + 3000).toLocaleString()}원
+                                    {(menuPrice + 2500 + 2500).toLocaleString()}원
                                 </div>
                             </button>
                         </div>
@@ -966,7 +959,31 @@ function MenuOptionPageContent() {
                                 const isCola = ["콜라", "제로콜라", "coke", "zero"].some((k) => n.includes(k));
                                 const isCider = ["사이다", "soda"].some((k) => n.includes(k));
                                 const isCoffee = ["커피", "coffee"].some((k) => n.includes(k));
-                                return isCola ? (
+                                const isLatte = ["카페라떼", "라떼", "latte"].some((k) => n.includes(k));
+                                const isIcedTea = ["아이스티", "icetea", "icedtea"].some((k) => n.includes(k));
+                                return isLatte ? (
+                                    <img
+                                        src="/latte.png"
+                                        alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : isIcedTea ? (
+                                    <img
+                                        src="/icetea.png"
+                                        alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : isCola ? (
                                     <img
                                         src="/coke_size.png"
                                         alt="사이즈 선택"

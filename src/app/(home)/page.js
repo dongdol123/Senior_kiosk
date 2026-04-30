@@ -1,58 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import QRCode from "react-qr-code";
-
-const QR_MODAL_MS = 10_000;
-
-/**
- * URL encoded in the QR. Scan opens this address (usually menu flow).
- * Deploy: NEXT_PUBLIC_QR_ORDER_URL=https://example.com/qr-order
- */
-function getDefaultQrOrderUrl() {
-  const fromEnv = process.env.NEXT_PUBLIC_QR_ORDER_URL;
-  if (typeof fromEnv === "string" && fromEnv.trim()) return fromEnv.trim();
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/qr-order`;
-  }
-  return "https://example.com/qr-order";
-}
-
-function QrMarkIcon({ color = "#6b7280" }) {
-  const stroke = color;
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-      stroke={stroke}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{
-        display: "block",
-        flexShrink: 0,
-        width: "min(88px, 14vmin)",
-        height: "min(88px, 14vmin)",
-      }}
-    >
-      <rect width="5" height="5" x="3" y="3" rx="1" />
-      <rect width="5" height="5" x="16" y="3" rx="1" />
-      <rect width="5" height="5" x="3" y="16" rx="1" />
-      <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
-      <path d="M21 21v.01" />
-      <path d="M12 7v3a2 2 0 0 1-2 2H7" />
-      <path d="M3 12h.01" />
-      <path d="M12 3h.01" />
-      <path d="M12 16v.01" />
-      <path d="M16 12h1" />
-      <path d="M21 12v.01" />
-      <path d="M12 21v-4" />
-    </svg>
-  );
-}
 
 const kioskIconBox = {
   display: "block",
@@ -115,12 +64,8 @@ function TakeoutWhiteIcon() {
 
 export default function HomePage() {
   const router = useRouter();
-  const mountedRef = useRef(true);
-  const [qrOpen, setQrOpen] = useState(false);
-  const [qrUrl, setQrUrl] = useState("");
 
   useEffect(() => {
-    mountedRef.current = true;
     if (typeof window !== "undefined") {
       try {
         const SpeechRecognition =
@@ -148,28 +93,13 @@ export default function HomePage() {
         console.log("SpeechSynthesis 정리 중 오류:", e);
       }
     }
-    return () => {
-      mountedRef.current = false;
-    };
   }, []);
-
-  const openQrModal = useCallback(() => {
-    setQrUrl(getDefaultQrOrderUrl());
-    setQrOpen(true);
-  }, []);
-
-  useEffect(() => {
-    if (!qrOpen) return;
-    const id = window.setTimeout(() => setQrOpen(false), QR_MODAL_MS);
-    return () => window.clearTimeout(id);
-  }, [qrOpen]);
 
   function goKioskVoice(orderType) {
     router.push(`/menu?entry=voice&orderType=${orderType}`);
   }
 
   const blue = "#2563eb";
-  const blueDark = "#1d4ed8";
   const squareSize = "min(27vmin, 188px)";
 
   const squareBase = {
@@ -330,27 +260,6 @@ export default function HomePage() {
       >
         <button
           type="button"
-          onClick={openQrModal}
-          style={{
-            ...squareBase,
-            flexDirection: "column",
-            gap: "8px",
-            padding: "14px 8px",
-            backgroundColor: "#ffffff",
-            color: blueDark,
-            border: `3px solid ${blue}`,
-            boxShadow: "0 8px 24px rgba(37, 99, 235, 0.12)",
-            fontSize: "clamp(1.05rem, 2.85vw, 1.65rem)",
-            whiteSpace: "nowrap",
-            cursor: "pointer",
-          }}
-        >
-          <QrMarkIcon color="#6b7280" />
-          QR로 주문하기
-        </button>
-
-        <button
-          type="button"
           onClick={() => goKioskVoice("dinein")}
           style={{
             ...squareBase,
@@ -383,77 +292,6 @@ export default function HomePage() {
           포장하기
         </button>
       </section>
-
-      {qrOpen ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="QR 주문"
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            backgroundColor: "rgba(0,0,0,0.5)",
-          }}
-          onClick={() => setQrOpen(false)}
-        >
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "20px",
-              padding: "clamp(20px, 4vw, 32px)",
-              maxWidth: "92vw",
-              boxShadow: "0 16px 48px rgba(0,0,0,0.25)",
-              textAlign: "center",
-              fontFamily:
-                'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p
-              style={{
-                margin: "0 0 16px",
-                fontSize: "clamp(1.1rem, 3vw, 1.45rem)",
-                fontWeight: 700,
-                color: "#1e293b",
-              }}
-            >
-              QR로 주문하기
-            </p>
-            <p
-              style={{
-                margin: "0 0 20px",
-                fontSize: "0.95rem",
-                color: "#64748b",
-              }}
-            >
-            휴대폰 카메라로 비추세요. ({QR_MODAL_MS / 1000}초 후 자동으로 닫힙니다)
-
-            </p>
-            <div
-              style={{
-                display: "inline-block",
-                padding: "12px",
-                backgroundColor: "#ffffff",
-                borderRadius: "12px",
-              }}
-            >
-              {qrUrl ? (
-                <QRCode
-                  value={qrUrl}
-                  size={256}
-                  level="M"
-                  fgColor="#0f172a"
-                />
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }
