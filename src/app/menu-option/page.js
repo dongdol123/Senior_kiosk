@@ -637,7 +637,7 @@ function MenuOptionPageContent() {
         } else {
             currentCartItems.push({
                 id: setId,
-                name: `${currentMenuName} 세트`,
+                name: `${currentMenuName} 기본 세트`,
                 price: setPrice,
                 qty: 1,
                 type: "set",

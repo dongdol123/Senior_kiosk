@@ -99,10 +99,17 @@ function DrinkSelectPageContent() {
                         ? []
                         : [{ name: selectedSide, size: selectedSideSize, price: sideP }]),
                 ];
+                // name 만들 변수
+                const selectedParts = [
+                    selectedDrink !== NONE_OPTION ? selectedDrink : null,
+                    selectedSide !== NONE_OPTION ? selectedSide : null,
+                ].filter(Boolean);
+
                 const newCartItems = [...cartItems];
+                const cartName = [menuName, ...selectedParts].join(" + ");
                 newCartItems.push({
                     id: `${menuId}_set_${Date.now()}`,
-                    name: menuName ? `${menuName} 세트` : "세트",
+                    name: cartName,
                     price: totalPrice,
                     qty: 1,
                     type: "set",
