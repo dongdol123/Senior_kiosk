@@ -20,6 +20,8 @@ function sideUnitPrice(sideName, size) {
     return size === "라지" ? base + 500 : base;
 }
 
+const NONE_OPTION = "None";
+
 function DrinkSelectPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -84,10 +86,19 @@ function DrinkSelectPageContent() {
 
     useEffect(() => {
         if (selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {
-            const drinkP = drinkUnitPrice(selectedDrinkSize);
-            const sideP = sideUnitPrice(selectedSide, selectedSideSize);
+            const drinkP = selectedDrink === NONE_OPTION ? 0 : drinkUnitPrice(selectedDrinkSize);
+            const sideP = selectedSide === NONE_OPTION ? 0 : sideUnitPrice(selectedSide, selectedSideSize);
             const timer = setTimeout(() => {
                 const totalPrice = menuPrice + drinkP + sideP;
+                const setItems = [
+                    { name: menuName, price: menuPrice },
+                    ...(selectedDrink === NONE_OPTION
+                        ? []
+                        : [{ name: selectedDrink, size: selectedDrinkSize, price: drinkP }]),
+                    ...(selectedSide === NONE_OPTION
+                        ? []
+                        : [{ name: selectedSide, size: selectedSideSize, price: sideP }]),
+                ];
                 const newCartItems = [...cartItems];
                 newCartItems.push({
                     id: `${menuId}_set_${Date.now()}`,
@@ -95,11 +106,7 @@ function DrinkSelectPageContent() {
                     price: totalPrice,
                     qty: 1,
                     type: "set",
-                    items: [
-                        { name: menuName, price: menuPrice },
-                        { name: selectedDrink, size: selectedDrinkSize, price: drinkP },
-                        { name: selectedSide, size: selectedSideSize, price: sideP },
-                    ],
+                    items: setItems,
                 });
                 const cartData = encodeURIComponent(JSON.stringify(newCartItems));
                 const orderType = searchParams.get("orderType") || "takeout";
@@ -472,7 +479,7 @@ function DrinkSelectPageContent() {
                         <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", margin: 0 }}>
                             음료를 선택하세요
                         </h3>
-                        {selectedDrink && selectedDrinkSize && (
+                        {selectedDrink && selectedDrinkSize && selectedDrink !== NONE_OPTION && selectedDrinkSize !== NONE_OPTION && (
                             <div style={{ fontSize: "1rem", fontWeight: "700", color: "#1e7a39" }}>
                                 {selectedDrink} : {drinkSizes.find((s) => s.name === selectedDrinkSize)?.price.toLocaleString() || "0"}원
                             </div>
@@ -481,10 +488,38 @@ function DrinkSelectPageContent() {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(2, 1fr)",
+                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                             gap: "12px",
+                            maxWidth: "720px",
+                            margin: "0 auto",
                         }}
                     >
+                        <button
+                            key={NONE_OPTION}
+                            onClick={() => {
+                                setSelectedDrink(NONE_OPTION);
+                                setSelectedDrinkSize(NONE_OPTION);
+                            }}
+                            style={{
+                                minHeight: "170px",
+                                fontSize: "1.1rem",
+                                fontWeight: "bold",
+                                backgroundColor: selectedDrink === NONE_OPTION ? "#1e7a39" : "#fff",
+                                color: selectedDrink === NONE_OPTION ? "#fff" : "#333",
+                                border: selectedDrink === NONE_OPTION ? "3px solid #1e7a39" : "2px solid #ddd",
+                                borderRadius: "12px",
+                                cursor: "pointer",
+                                boxShadow: selectedDrink === NONE_OPTION ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                                padding: "16px 12px",
+                            }}
+                        >
+                            <div style={{ fontSize: "1.4rem", fontWeight: "800" }}>선택 안 함</div>
+                        </button>
                         {drinks.map((drink) => (
                             <button
                                 key={drink}
@@ -493,7 +528,7 @@ function DrinkSelectPageContent() {
                                     setSelectedDrinkSize("");
                                 }}
                                 style={{
-                                    minHeight: "120px",
+                                    minHeight: "170px",
                                     fontSize: "1.1rem",
                                     fontWeight: "bold",
                                     backgroundColor: selectedDrink === drink ? "#1e7a39" : "#fff",
@@ -507,7 +542,7 @@ function DrinkSelectPageContent() {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     gap: 8,
-                                    padding: "12px",
+                                    padding: "16px 12px",
                                 }}
                             >
                                 <img
@@ -636,10 +671,38 @@ function DrinkSelectPageContent() {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(2, 1fr)",
+                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                             gap: "12px",
+                            maxWidth: "720px",
+                            margin: "0 auto",
                         }}
                     >
+                        <button
+                            key={NONE_OPTION}
+                            onClick={() => {
+                                setSelectedSide(NONE_OPTION);
+                                setSelectedSideSize(NONE_OPTION);
+                            }}
+                            style={{
+                                minHeight: "170px",
+                                fontSize: "1.1rem",
+                                fontWeight: "bold",
+                                backgroundColor: selectedSide === NONE_OPTION ? "#1e7a39" : "#fff",
+                                color: selectedSide === NONE_OPTION ? "#fff" : "#333",
+                                border: selectedSide === NONE_OPTION ? "3px solid #1e7a39" : "2px solid #ddd",
+                                borderRadius: "12px",
+                                cursor: "pointer",
+                                boxShadow: selectedSide === NONE_OPTION ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 8,
+                                padding: "16px 12px",
+                            }}
+                        >
+                            <div style={{ fontSize: "1.4rem", fontWeight: "800" }}>선택 안 함</div>
+                        </button>
                         {sides.map((side) => (
                             <button
                                 key={side}
@@ -648,7 +711,7 @@ function DrinkSelectPageContent() {
                                     setSelectedSideSize("");
                                 }}
                                 style={{
-                                    minHeight: "120px",
+                                    minHeight: "170px",
                                     fontSize: "1.1rem",
                                     fontWeight: "bold",
                                     backgroundColor: selectedSide === side ? "#1e7a39" : "#fff",
@@ -662,7 +725,7 @@ function DrinkSelectPageContent() {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     gap: 8,
-                                    padding: "12px",
+                                    padding: "16px 12px",
                                 }}
                             >
                                 <img

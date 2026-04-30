@@ -126,7 +126,7 @@ function MenuOptionPageContent() {
 
             const msg = isCurrentDrink
                 ? "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?"
-                : "단품, 세트, 기본 세트 중 선택해 주세요.";
+                : "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
             if (!cancelled) {
                 setAssistantMessage(msg);
             }
@@ -407,7 +407,7 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 단품 선택 - 먼저 체크
+                // 단품 선택 - 먼저 체크const [voiceLogs, setVoiceLogs] = useState([]);
                 if (/단품|단품으로|단품주문|버거만|버거만줘|단품할게|단품으로할게/.test(normalized)) {
                     console.log("✅ 단품 인식됨! normalized:", normalized);
                     try {
@@ -445,8 +445,8 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 세트 선택
-                if (/세트|세트로|세트주문|세트할게|세트로줘|세트로할게/.test(normalized)) {
+                // "세트 직접 선택" 선택
+                if (/세트직접선택|세트직접|직접선택|세트로|세트주문|세트할게|세트로줘|세트로할게|세트/.test(normalized)) {
                     try {
                         recognition.stop();
                     } catch (e) { }
@@ -455,7 +455,7 @@ function MenuOptionPageContent() {
                 }
 
                 // 도움말 (버거인 경우)
-                const msg = "단품, 세트, 기본 세트 중 선택해 주세요.";
+                const msg = "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
@@ -650,7 +650,7 @@ function MenuOptionPageContent() {
         }
 
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
-        console.log("기본세트 추가 완료:", { currentMenuId, currentMenuName, currentCartItems });
+        console.log("기본 세트 추가 완료:", { currentMenuId, currentMenuName, currentCartItems });
         const entSet = getOrderFlowEntry(currentSearchParams);
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
         currentRouter.push(`/menu?${entryQuery(entSet)}&orderType=${orderType}&cart=${cartData}`);
@@ -850,7 +850,7 @@ function MenuOptionPageContent() {
                             })()}
                         </div>
 
-                        {/* 단품/세트/기본세트 버튼 - 동일 크기 한 줄 정렬 */}
+                        {/* 단품/기본 세트/세트 직접 선택 버튼 - 동일 크기 한 줄 정렬 */}
                         <div
                             style={{
                                 display: "flex",
@@ -882,28 +882,6 @@ function MenuOptionPageContent() {
                             </button>
 
                             <button
-                                ref={setButtonRef}
-                                onClick={handleSet}
-                                style={{
-                                    flex: 1,
-                                    height: "130px",
-                                    fontSize: "1.8rem",
-                                    fontWeight: "bold",
-                                    backgroundColor: "#fff",
-                                    color: "#000",
-                                    border: "2px solid #ddd",
-                                    borderRadius: "16px",
-                                    cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                }}
-                            >
-                                세트
-                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
-                                    음료+사이드 선택
-                                </div>
-                            </button>
-
-                            <button
                                 ref={defaultSetButtonRef}
                                 onClick={handleDefaultSet}
                                 style={{
@@ -926,6 +904,28 @@ function MenuOptionPageContent() {
                                 </div>
                                 <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
                                     {(menuPrice + 2500 + 2500).toLocaleString()}원
+                                </div>
+                            </button>
+
+                            <button
+                                ref={setButtonRef}
+                                onClick={handleSet}
+                                style={{
+                                    flex: 1,
+                                    height: "130px",
+                                    fontSize: "1.8rem",
+                                    fontWeight: "bold",
+                                    backgroundColor: "#fff",
+                                    color: "#000",
+                                    border: "2px solid #ddd",
+                                    borderRadius: "16px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                }}
+                            >
+                                세트 직접 선택
+                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
+                                    음료 / 사이드 선택
                                 </div>
                             </button>
                         </div>
