@@ -23,7 +23,7 @@ const STATIC_MENU = [
     },
     {
         id: "bur-mozza",
-        name: "모짜렐라 치즈 불고기 버거 세트",
+        name: "모짜렐라 치즈 불고기 버거",
         price: 4800,
         category: "burger",
         image: "/mozza_bulbur.png",
