@@ -854,16 +854,18 @@ function MenuOptionPageContent() {
                         <div
                             style={{
                                 display: "flex",
-                                gap: "24px",
+                                flexDirection: "column",
+                                alignItems: "stretch",
+                                gap: "16px",
                                 width: "100%",
-                                maxWidth: "960px",
+                                maxWidth: "720px",
                             }}
                         >
                             <button
                                 ref={singleButtonRef}
                                 onClick={handleSingle}
                                 style={{
-                                    flex: 1,
+                                    width: "100%",
                                     height: "130px",
                                     fontSize: "1.8rem",
                                     fontWeight: "bold",
@@ -885,7 +887,7 @@ function MenuOptionPageContent() {
                                 ref={defaultSetButtonRef}
                                 onClick={handleDefaultSet}
                                 style={{
-                                    flex: 1,
+                                    width: "100%",
                                     height: "130px",
                                     fontSize: "1.4rem",
                                     fontWeight: "bold",
@@ -911,7 +913,7 @@ function MenuOptionPageContent() {
                                 ref={setButtonRef}
                                 onClick={handleSet}
                                 style={{
-                                    flex: 1,
+                                    width: "100%",
                                     height: "130px",
                                     fontSize: "1.8rem",
                                     fontWeight: "bold",
