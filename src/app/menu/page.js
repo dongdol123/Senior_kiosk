@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
+import KioskProgressBars from "../../components/KioskProgressBars";
 import { getOrderFlowEntry, entryQuery, qrRequiresOrderTypeRedirect } from "../utils/orderFlowEntry";
 
 function normalizeMenuKey(name) {
@@ -946,7 +947,7 @@ function MenuPageContent() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "12px 24px",
+                    padding: "16px 24px",
                     backgroundColor: "#fff",
                     zIndex: 50,
                 }}
@@ -1002,6 +1003,7 @@ function MenuPageContent() {
                             height: "64px",
                             objectFit: "contain",
                             display: "block",
+                            marginTop: "4px",
                         }}
                     />
                 </div>
@@ -1026,113 +1028,7 @@ function MenuPageContent() {
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div
-                style={{
-                    flexShrink: 0,
-                    backgroundColor: "#ffffff",
-                    padding: "12px 24px",
-                    borderBottom: "1px solid #e5e5e5",
-                }}
-            >
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "30px",
-                    position: "relative",
-                }}>
-                    {/* 가로선 */}
-                    <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "15%",
-                        right: "15%",
-                        height: "2px",
-                        backgroundColor: "#999",
-                        zIndex: 0,
-                    }} />
-                    
-                    {/* 1 메뉴 선택 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#000000",
-                            color: "#ffffff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            1
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#000" }}>메뉴 선택</div>
-                    </div>
-
-                    {/* 2 포인트 적립 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#ffffff",
-                            color: "#000000",
-                            border: "2px solid #999",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            2
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>포인트 적립</div>
-                    </div>
-
-                    {/* 3 결제하기 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#ffffff",
-                            color: "#000000",
-                            border: "2px solid #999",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            3
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>결제하기</div>
-                    </div>
-
-                    {/* 4 완료 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#ffffff",
-                            color: "#000000",
-                            border: "2px solid #999",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            4
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>완료</div>
-                    </div>
-                </div>
-            </div>
+            <KioskProgressBars activeIndex={1} />
 
             {/* 카테고리 탭 - 상단 가로 배치 */}
             <div
@@ -1646,7 +1542,7 @@ function MenuPageContent() {
                     )}
                 </div>
 
-                {/* 오른쪽: 취소 및 주문하기 버튼 */}
+                {/* 오른쪽: 전체 취소 및 결제하기 버튼 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0 }}>
                     <button
                         onClick={clearCart}
@@ -1674,7 +1570,7 @@ function MenuPageContent() {
                             }
                         }}
                     >
-                        취소
+                        전체 취소
                     </button>
                     <button
                         onClick={handleOrder}
@@ -1702,7 +1598,7 @@ function MenuPageContent() {
                             }
                         }}
                     >
-                        주문하기
+                        결제하기
                     </button>
                 </div>
                 </div>
