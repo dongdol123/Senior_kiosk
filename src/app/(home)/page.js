@@ -1,69 +1,11 @@
-"use client";
+﻿"use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-const kioskIconBox = {
-  display: "block",
-  flexShrink: 0,
-  width: "min(88px, 14vmin)",
-  height: "min(88px, 14vmin)",
-};
-
-const neonYellow = {
-  fontWeight: 400,
-  color: "#faff8f",
-};
-
-function DineInWhiteIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-      stroke="#ffffff"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={kioskIconBox}
-    >
-      <path
-        strokeWidth="1.5"
-        d="M 8 18.75 L 8 11.15 C 6.45 10.95 5.35 9.35 5.35 7.55 C 5.35 5.55 6.55 4.35 8 4.35 C 9.45 4.35 10.65 5.55 10.65 7.55 C 10.65 9.35 9.55 10.95 8 11.15 L 8 18.75"
-      />
-      <path
-        strokeWidth="1.25"
-        d="M 13.85 4.35 V 10.88 M 16 4.35 V 10.88 M 18.15 4.35 V 10.88"
-      />
-      <path strokeWidth="1.45" d="M 13.45 11.05 H 18.55" />
-      <path strokeWidth="1.5" d="M 16 11.15 V 18.75" />
-    </svg>
-  );
-}
-
-function TakeoutWhiteIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-      stroke="#ffffff"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={kioskIconBox}
-    >
-      <path d="M7 10h10l-1.2 10H8.2L7 10z" />
-      <path d="M9.5 10V8.5a2.5 2.5 0 0 1 5 0V10" />
-      <path d="M15.5 6.5h6" />
-      <path d="M19 4.5l2.5 2-2.5 2" />
-    </svg>
-  );
-}
 
 export default function HomePage() {
   const router = useRouter();
+  const [activeOrderType, setActiveOrderType] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -78,7 +20,7 @@ export default function HomePage() {
             window.currentRecognition.onerror = null;
             window.currentRecognition.onstart = null;
           } catch (e) {
-            console.log("음성인식 정리 중 오류:", e);
+            console.log("음성 인식 정리 중 오류:", e);
           }
           window.currentRecognition = null;
         }
@@ -96,30 +38,34 @@ export default function HomePage() {
   }, []);
 
   function goKioskVoice(orderType) {
-    router.push(`/menu?entry=voice&orderType=${orderType}`);
+    setActiveOrderType(orderType);
+    setTimeout(() => {
+      router.push(`/menu?entry=voice&orderType=${orderType}`);
+    }, 120);
   }
 
-  const blue = "#2563eb";
-  const squareSize = "min(27vmin, 188px)";
+  const blue = "#002e55";
+  const accent = "#fec315";
+  const squareSize = "min(45vw, 310px)";
 
   const squareBase = {
     width: squareSize,
-    height: squareSize,
-    aspectRatio: "1",
+    height: "min(57vw, 392px)",
     flexShrink: 0,
     border: "none",
     borderRadius: "24px",
     cursor: "pointer",
-    fontSize: "clamp(1.42rem, 3.65vw, 2.2rem)",
+    fontSize: "clamp(1.7rem, 4.4vw, 2.55rem)",
     fontWeight: 700,
     fontFamily:
       'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     textAlign: "center",
     lineHeight: 1.25,
-    padding: "10px",
+    padding: "34px 22px 30px",
   };
 
   return (
@@ -134,86 +80,26 @@ export default function HomePage() {
         overflow: "hidden",
         padding: 0,
         margin: 0,
-        backgroundColor: "#f1f5f9",
+        backgroundColor: "#002e55",
       }}
     >
       <section
         style={{
-          flex: "7 1 0",
+          flex: "1 1 auto",
           minHeight: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "14px 16px 8px",
+          justifyContent: "flex-start",
+          padding: "72px 16px 18px",
           backgroundColor: blue,
-          gap: "clamp(6px, 1.2vh, 14px)",
+          gap: "34px",
         }}
       >
         <div
           style={{
-            textAlign: "center",
-            maxWidth: "960px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.42em",
-            letterSpacing: "0.01em",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              fontSize: "clamp(1.82rem, 4.65vw, 3.15rem)",
-              fontWeight: 400,
-              color: "#ffffff",
-              lineHeight: 1.5,
-              textShadow: "0 1px 4px rgba(0,0,0,0.12)",
-            }}
-          >
-            AI{" "}
-            <span
-              style={{
-                ...neonYellow,
-                fontSize: "clamp(2.05rem, 5.35vw, 3.65rem)",
-              }}
-            >
-              대화형
-            </span>{" "}
-            키오스크에서
-          </div>
-          <div
-            style={{
-              fontSize: "clamp(1.82rem, 4.65vw, 3.15rem)",
-              fontWeight: 400,
-              color: "#ffffff",
-              lineHeight: 1.5,
-              textShadow: "0 1px 4px rgba(0,0,0,0.12)",
-            }}
-          >
-            <span
-              style={{
-                ...neonYellow,
-                fontSize: "clamp(2.05rem, 5.35vw, 3.65rem)",
-                textDecoration: "underline",
-                textDecorationColor: "#fffde7",
-                textDecorationThickness: "0.11em",
-                textUnderlineOffset: "0.05em",
-                textDecorationSkipInk: "none",
-              }}
-            >
-              대화하면서
-            </span>{" "}
-            편하게 주문해보세요!
-          </div>
-        </div>
-        <div
-          style={{
             position: "relative",
-            flex: "1 1 auto",
-            minHeight: 0,
-            width: "100%",
-            maxWidth: "min(100%, 980px)",
-            margin: "0 auto",
+            flexShrink: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -221,77 +107,135 @@ export default function HomePage() {
           }}
         >
           <img
-            src="/yeondu-home-poster.png"
-            alt="연두햄버거"
+            src="/main_logo.png"
+            alt="main logo"
             style={{
               display: "block",
-              width: "auto",
+              width: "min(100%, 320px)",
               height: "auto",
               maxWidth: "100%",
-              maxHeight: "100%",
+              maxHeight: "194px",
               objectFit: "contain",
               objectPosition: "center",
             }}
           />
+        </div>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "30px",
+          }}
+        >
           <div
-            aria-hidden
             style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              boxShadow: `inset 0 0 50px 28px ${blue}`,
+              color: "#ffffff",
+              fontSize: "clamp(1.9rem, 5vw, 3rem)",
+              fontWeight: 700,
+              fontFamily:
+                'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
+              textAlign: "center",
+              lineHeight: 1.15,
+              padding: "18px 0",
             }}
-          />
+          >
+            식사 방법을 선택해주세요.
+          </div>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "680px",
+              display: "flex",
+              alignItems: "stretch",
+              justifyContent: "center",
+              gap: "58px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => goKioskVoice("dinein")}
+              style={{
+                ...squareBase,
+                backgroundColor: activeOrderType === "dinein" ? accent : "#ffffff",
+                color: "#111111",
+                boxShadow: "0 16px 36px rgba(0, 12, 29, 0.22)",
+              }}
+            >
+              <img
+                src="/dinein-button.png"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  width: "78%",
+                  maxWidth: "170px",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+              <span>여기서 먹기</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => goKioskVoice("takeout")}
+              style={{
+                ...squareBase,
+                backgroundColor: activeOrderType === "takeout" ? accent : "#ffffff",
+                color: "#111111",
+                boxShadow: "0 16px 36px rgba(0, 12, 29, 0.16)",
+              }}
+            >
+              <img
+                src="/takeout-button.png"
+                alt=""
+                aria-hidden="true"
+                style={{
+                  width: "68%",
+                  maxWidth: "150px",
+                  height: "auto",
+                  objectFit: "contain",
+                }}
+              />
+              <span>포장하기</span>
+            </button>
+          </div>
         </div>
       </section>
-
-      <section
+      <img
+        src="/main_hamburger.png"
+        alt=""
+        aria-hidden="true"
         style={{
-          flex: "3 1 0",
-          minHeight: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          gap: "clamp(10px, 2.5vw, 22px)",
-          padding: "10px 16px 14px",
-          backgroundColor: "#ffffff",
+          position: "absolute",
+          left: "50%",
+          bottom: "12px",
+          transform: "translateX(-50%)",
+          width: "min(78vw, 360px)",
+          height: "auto",
+          objectFit: "contain",
+          pointerEvents: "none",
+          zIndex: 1,
         }}
-      >
-        <button
-          type="button"
-          onClick={() => goKioskVoice("dinein")}
-          style={{
-            ...squareBase,
-            flexDirection: "column",
-            gap: "8px",
-            padding: "14px 10px",
-            backgroundColor: blue,
-            color: "#ffffff",
-            boxShadow: "0 10px 28px rgba(37, 99, 235, 0.35)",
-          }}
-        >
-          <DineInWhiteIcon />
-          먹고가기
-        </button>
-
-        <button
-          type="button"
-          onClick={() => goKioskVoice("takeout")}
-          style={{
-            ...squareBase,
-            flexDirection: "column",
-            gap: "8px",
-            padding: "14px 10px",
-            backgroundColor: blue,
-            color: "#ffffff",
-            boxShadow: "0 10px 28px rgba(37, 99, 235, 0.35)",
-          }}
-        >
-          <TakeoutWhiteIcon />
-          포장하기
-        </button>
-      </section>
+      />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: "-145px",
+          transform: "translateX(-50%)",
+          width: "150vw",
+          height: "360px",
+          backgroundColor: accent,
+          borderRadius: "50%",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
     </main>
   );
 }
