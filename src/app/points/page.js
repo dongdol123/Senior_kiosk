@@ -398,14 +398,23 @@ function PointsPageContent() {
                 </button>
 
                 <div style={{
-                    fontSize: "24px",
-                    fontWeight: "700",
-                    color: "#1e7a39",
                     position: "absolute",
                     left: "50%",
                     transform: "translateX(-50%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                 }}>
-                    연두햄버거
+                    <img
+                        src="/logo.png"
+                        alt="logo"
+                        style={{
+                            width: "72px",
+                            height: "72px",
+                            objectFit: "contain",
+                            display: "block",
+                        }}
+                    />
                 </div>
 
                 <div
