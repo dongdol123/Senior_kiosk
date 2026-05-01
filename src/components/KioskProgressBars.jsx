@@ -9,7 +9,6 @@ export default function KioskProgressBars({ activeIndex = 1 }) {
         flexShrink: 0,
         backgroundColor: "#ffffff",
         padding: "10px 24px 14px",
-        borderBottom: "1px solid #e5e5e5",
       }}
     >
       <div
