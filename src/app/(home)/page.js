@@ -46,26 +46,28 @@ export default function HomePage() {
 
   const blue = "#002e55";
   const accent = "#fec315";
+  const mainFontFamily =
+    '"NanumSquareNeoExtraBold", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif';
   const squareSize = "min(45vw, 310px)";
 
   const squareBase = {
     width: squareSize,
-    height: "min(57vw, 392px)",
+    height: "min(59vw, 410px)",
     flexShrink: 0,
     border: "none",
     borderRadius: "24px",
     cursor: "pointer",
-    fontSize: "clamp(1.7rem, 4.4vw, 2.55rem)",
+    fontSize: "clamp(1.95rem, 4.9vw, 2.9rem)",
     fontWeight: 700,
-    fontFamily:
-      'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
+    fontFamily: mainFontFamily,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     textAlign: "center",
     lineHeight: 1.25,
-    padding: "34px 22px 30px",
+    padding: "60px 22px 20px",
+    gap: "22px",
   };
 
   return (
@@ -136,14 +138,13 @@ export default function HomePage() {
               color: "#ffffff",
               fontSize: "clamp(1.9rem, 5vw, 3rem)",
               fontWeight: 700,
-              fontFamily:
-                'system-ui, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
+              fontFamily: mainFontFamily,
               textAlign: "center",
               lineHeight: 1.15,
               padding: "18px 0",
             }}
           >
-            식사 방법을 선택해주세요.
+            식사 방법을 선택해주세요
           </div>
           <div
             style={{
@@ -160,23 +161,27 @@ export default function HomePage() {
               onClick={() => goKioskVoice("dinein")}
               style={{
                 ...squareBase,
-                backgroundColor: activeOrderType === "dinein" ? accent : "#ffffff",
-                color: "#111111",
-                boxShadow: "0 16px 36px rgba(0, 12, 29, 0.22)",
+                backgroundColor: "#ffffff",
+                color: blue,
+                boxShadow:
+                  activeOrderType === "dinein"
+                    ? `inset 0 0 0 10px ${accent}, 0 16px 36px rgba(0, 12, 29, 0.22)`
+                    : "0 16px 36px rgba(0, 12, 29, 0.22)",
               }}
             >
               <img
-                src="/dinein-button.png"
+                src="/main_in.png"
                 alt=""
                 aria-hidden="true"
                 style={{
-                  width: "78%",
-                  maxWidth: "170px",
+                  width: "96%",
+                  maxWidth: "242px",
                   height: "auto",
                   objectFit: "contain",
+                  marginTop: "12px",
                 }}
               />
-              <span>여기서 먹기</span>
+              <span style={{ marginTop: "5px", display: "block" }}>여기서 먹기</span>
             </button>
 
             <button
@@ -184,20 +189,24 @@ export default function HomePage() {
               onClick={() => goKioskVoice("takeout")}
               style={{
                 ...squareBase,
-                backgroundColor: activeOrderType === "takeout" ? accent : "#ffffff",
-                color: "#111111",
-                boxShadow: "0 16px 36px rgba(0, 12, 29, 0.16)",
+                backgroundColor: "#ffffff",
+                color: blue,
+                boxShadow:
+                  activeOrderType === "takeout"
+                    ? `inset 0 0 0 10px ${accent}, 0 16px 36px rgba(0, 12, 29, 0.16)`
+                    : "0 16px 36px rgba(0, 12, 29, 0.16)",
               }}
             >
               <img
-                src="/takeout-button.png"
+                src="/main_out.png"
                 alt=""
                 aria-hidden="true"
                 style={{
-                  width: "68%",
-                  maxWidth: "150px",
+                  width: "82%",
+                  maxWidth: "190px",
                   height: "auto",
                   objectFit: "contain",
+                  marginTop: "12px",
                 }}
               />
               <span>포장하기</span>
@@ -236,6 +245,14 @@ export default function HomePage() {
           zIndex: 0,
         }}
       />
+      <style jsx global>{`
+        @font-face {
+          font-family: "NanumSquareNeoExtraBold";
+          src: url("/NanumSquareNeo-eHv.ttf") format("truetype");
+          font-weight: 400 700;
+          font-style: normal;
+        }
+      `}</style>
     </main>
   );
 }
