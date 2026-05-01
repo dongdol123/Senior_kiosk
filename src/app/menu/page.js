@@ -1231,13 +1231,13 @@ function MenuPageContent() {
                                             flexDirection: "column", 
                                             gap: 2, 
                                             flexShrink: 0,
-                                            padding: "8px 12px",
+                                            padding: "10px 16px 14px 16px",
                                             background: "#fff",
                                             borderRadius: "0 0 24px 24px",
                                         }}>
                                             <div style={{ fontWeight: 800, fontSize: 24, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#333", lineHeight: "1.1" }}>{m.name}</div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                <div style={{ color: "#1e7a39", fontSize: 22, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
+                                                <div style={{ color: "#002e55", fontSize: 22, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
                                             </div>
                                         </div>
                                     </div>
@@ -1385,24 +1385,6 @@ function MenuPageContent() {
                 }}
             >
                 {/* Order Summary Bar - 고정 검정색 바 */}
-                <div
-                    style={{
-                        flexShrink: 0,
-                        background: "#000000",
-                        padding: "12px 24px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <div style={{ fontSize: "16px", fontWeight: "600", color: "#ffffff" }}>
-                        총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
-                    </div>
-                    <div style={{ fontSize: "16px", fontWeight: "600", color: "#ffffff" }}>
-                        총 금액 | {cartTotal.toLocaleString()}원
-                    </div>
-                </div>
-
                 {/* Cart and Action Buttons Area */}
                 <div
                     style={{
@@ -1542,62 +1524,72 @@ function MenuPageContent() {
 
                 {/* 오른쪽: 전체 취소 및 결제하기 버튼 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0 }}>
-                    <button
-                        onClick={clearCart}
-                        disabled={cartItems.length === 0}
-                        style={{
-                            width: "100px",
-                            height: "60px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background: cartItems.length === 0 ? "#555" : "#000000",
-                            color: "#ffffff",
-                            cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                            transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                            if (cartItems.length > 0) {
-                                e.currentTarget.style.background = "#333";
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (cartItems.length > 0) {
-                                e.currentTarget.style.background = "#000000";
-                            }
-                        }}
-                    >
-                        전체 취소
-                    </button>
-                    <button
-                        onClick={handleOrder}
-                        disabled={cartItems.length === 0}
-                        style={{
-                            width: "100px",
-                            height: "60px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background: cartItems.length === 0 ? "#555" : "#ff0000",
-                            color: "#ffffff",
-                            cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                            transition: "all 0.2s",
-                        }}
-                        onMouseEnter={(e) => {
-                            if (cartItems.length > 0) {
-                                e.currentTarget.style.background = "#cc0000";
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (cartItems.length > 0) {
-                                e.currentTarget.style.background = "#ff0000";
-                            }
-                        }}
-                    >
-                        결제하기
-                    </button>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                        <div style={{ fontSize: "16px", fontWeight: "700", color: "#ffffff", whiteSpace: "nowrap" }}>
+                            총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
+                        </div>
+                        <button
+                            onClick={clearCart}
+                            disabled={cartItems.length === 0}
+                            style={{
+                                width: "100px",
+                                height: "60px",
+                                borderRadius: "8px",
+                                border: "none",
+                                background: cartItems.length === 0 ? "#555" : "#000000",
+                                color: "#ffffff",
+                                cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+                                fontSize: "16px",
+                                fontWeight: "700",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (cartItems.length > 0) {
+                                    e.currentTarget.style.background = "#333";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (cartItems.length > 0) {
+                                    e.currentTarget.style.background = "#000000";
+                                }
+                            }}
+                        >
+                            전체 취소
+                        </button>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                        <div style={{ fontSize: "16px", fontWeight: "700", color: "#ffffff", whiteSpace: "nowrap" }}>
+                            총 금액 | {cartTotal.toLocaleString()}원
+                        </div>
+                        <button
+                            onClick={handleOrder}
+                            disabled={cartItems.length === 0}
+                            style={{
+                                width: "100px",
+                                height: "60px",
+                                borderRadius: "8px",
+                                border: "none",
+                                background: cartItems.length === 0 ? "#555" : "#ff0000",
+                                color: "#ffffff",
+                                cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+                                fontSize: "16px",
+                                fontWeight: "700",
+                                transition: "all 0.2s",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (cartItems.length > 0) {
+                                    e.currentTarget.style.background = "#cc0000";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (cartItems.length > 0) {
+                                    e.currentTarget.style.background = "#ff0000";
+                                }
+                            }}
+                        >
+                            결제하기
+                        </button>
+                    </div>
                 </div>
                 </div>
             </div>
@@ -1662,7 +1654,7 @@ function MenuPageContent() {
                                     <div style={{ width: 80, height: 80, background: "#f3f3f3", border: "1px dashed #ddd", borderRadius: 8 }} />
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 700, fontSize: "1.1rem", marginBottom: 4 }}>{menu.name}</div>
-                                        <div style={{ color: "#777", marginBottom: 12 }}>{menu.price.toLocaleString()}원</div>
+                                        <div style={{ color: "#002e55", marginBottom: 12 }}>{menu.price.toLocaleString()}원</div>
                                         <button
                                             onClick={() => {
                                                 addToCart(menu);
