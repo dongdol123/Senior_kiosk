@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
+import KioskProgressBars from "../../components/KioskProgressBars";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
 function PaymentPageContent() {
@@ -343,7 +344,7 @@ function PaymentPageContent() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "12px 24px",
+                    padding: "16px 24px",
                     backgroundColor: "#fff",
                     zIndex: 50,
                 }}
@@ -399,124 +400,7 @@ function PaymentPageContent() {
                 <div style={{ width: "120px" }}></div>
             </div>
 
-            {/* Progress Bar */}
-            <div
-                style={{
-                    flexShrink: 0,
-                    backgroundColor: "#ffffff",
-                    padding: "12px 24px",
-                    borderBottom: "1px solid #e5e5e5",
-                }}
-            >
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "30px",
-                    position: "relative",
-                }}>
-                    {/* 가로선 */}
-                    <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "15%",
-                        right: "15%",
-                        height: "2px",
-                        backgroundColor: "#999",
-                        zIndex: 0,
-                    }} />
-                    
-                    {/* 진행된 부분의 가로선 (1단계에서 3단계까지) */}
-                    <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "15%",
-                        width: "calc(60% - 15%)",
-                        height: "2px",
-                        backgroundColor: "#333",
-                        zIndex: 1,
-                    }} />
-                    
-                    {/* 1 메뉴 선택 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#ffffff",
-                            color: "#000000",
-                            border: "2px solid #999",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            1
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>메뉴 선택</div>
-                    </div>
-
-                    {/* 2 포인트 적립 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#ffffff",
-                            color: "#000000",
-                            border: "2px solid #999",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            2
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>포인트 적립</div>
-                    </div>
-
-                    {/* 3 결제하기 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#000000",
-                            color: "#ffffff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            3
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#000" }}>결제하기</div>
-                    </div>
-
-                    {/* 4 완료 */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
-                        <div style={{
-                            width: "34px",
-                            height: "34px",
-                            borderRadius: "50%",
-                            backgroundColor: "#ffffff",
-                            color: "#000000",
-                            border: "2px solid #999",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "16px",
-                            fontWeight: "700",
-                        }}>
-                            4
-                        </div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "#666" }}>완료</div>
-                    </div>
-                </div>
-            </div>
+            <KioskProgressBars activeIndex={2} />
 
             {/* 메인 컨텐츠 */}
             <div
