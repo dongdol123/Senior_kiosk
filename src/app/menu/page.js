@@ -1036,7 +1036,8 @@ function MenuPageContent() {
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "stretch",
-                    gap: "0",
+                    gap: "12px",
+                    padding: "10px 16px 14px 16px",
                     backgroundColor: "#fff",
                     borderBottom: "none",
                 }}
@@ -1048,17 +1049,16 @@ function MenuPageContent() {
                     }}
                     style={{
                         flex: 1,
-                        padding: "14px 16px",
-                        borderRadius: "0",
-                        border: "none",
-                        borderBottom: selectedCategory === "burger" ? "3px solid #666" : "none",
-                        backgroundColor: selectedCategory === "burger" ? "#e5e5e5" : "#f5f5f5",
-                        color: selectedCategory === "burger" ? "#000" : "#666",
+                        padding: "16px 18px",
+                        borderRadius: "16px",
+                        border: selectedCategory === "burger" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                        backgroundColor: selectedCategory === "burger" ? "#c8d8ea" : "#f5f8fc",
+                        color: selectedCategory === "burger" ? "#000" : "#6f7f95",
                         fontSize: "20px",
                         fontWeight: selectedCategory === "burger" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
-                        boxShadow: selectedCategory === "burger" ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
+                        boxShadow: selectedCategory === "burger" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                     }}
                 >
                     버거
@@ -1070,17 +1070,16 @@ function MenuPageContent() {
                     }}
                     style={{
                         flex: 1,
-                        padding: "14px 16px",
-                        borderRadius: "0",
-                        border: "none",
-                        borderBottom: selectedCategory === "drink" ? "3px solid #666" : "none",
-                        backgroundColor: selectedCategory === "drink" ? "#e5e5e5" : "#f5f5f5",
-                        color: selectedCategory === "drink" ? "#000" : "#666",
+                        padding: "16px 18px",
+                        borderRadius: "16px",
+                        border: selectedCategory === "drink" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                        backgroundColor: selectedCategory === "drink" ? "#c8d8ea" : "#f5f8fc",
+                        color: selectedCategory === "drink" ? "#000" : "#6f7f95",
                         fontSize: "20px",
                         fontWeight: selectedCategory === "drink" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
-                        boxShadow: selectedCategory === "drink" ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
+                        boxShadow: selectedCategory === "drink" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                     }}
                 >
                     음료
@@ -1092,17 +1091,16 @@ function MenuPageContent() {
                     }}
                     style={{
                         flex: 1,
-                        padding: "14px 16px",
-                        borderRadius: "0",
-                        border: "none",
-                        borderBottom: selectedCategory === "side" ? "3px solid #666" : "none",
-                        backgroundColor: selectedCategory === "side" ? "#e5e5e5" : "#f5f5f5",
-                        color: selectedCategory === "side" ? "#000" : "#666",
+                        padding: "16px 18px",
+                        borderRadius: "16px",
+                        border: selectedCategory === "side" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                        backgroundColor: selectedCategory === "side" ? "#c8d8ea" : "#f5f8fc",
+                        color: selectedCategory === "side" ? "#000" : "#6f7f95",
                         fontSize: "20px",
                         fontWeight: selectedCategory === "side" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
-                        boxShadow: selectedCategory === "side" ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
+                        boxShadow: selectedCategory === "side" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                     }}
                 >
                     사이드
@@ -1130,7 +1128,7 @@ function MenuPageContent() {
                         display: "flex",
                         flexDirection: "column",
                         width: "100%",
-                        padding: "24px 32px",
+                        padding: "14px 32px 24px 32px",
                         minHeight: 0,
                     }}
                 >
