@@ -1187,7 +1187,7 @@ function MenuPageContent() {
                         boxShadow: selectedCategory === "side" ? "0 2px 4px rgba(0,0,0,0.1)" : "none",
                     }}
                 >
-                    곁들임
+                    사이드
                 </button>
             </div>
 
