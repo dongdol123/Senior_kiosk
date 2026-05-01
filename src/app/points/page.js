@@ -20,6 +20,7 @@ function PointsPageContent() {
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
+    const [isBackButtonActive, setIsBackButtonActive] = useState(false);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
@@ -305,8 +306,11 @@ function PointsPageContent() {
     }, []);
 
     function handleBack() {
+        setIsBackButtonActive(true);
         const enc = encodeURIComponent(JSON.stringify(cartItems));
-        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${enc}`);
+        setTimeout(() => {
+            navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${enc}`);
+        }, 120);
     }
 
     const shell = (
@@ -376,7 +380,7 @@ function PointsPageContent() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "10px 24px",
+                    padding: "12px 24px",
                     backgroundColor: "#fff",
                     zIndex: 50,
                 }}
@@ -384,17 +388,26 @@ function PointsPageContent() {
                 <button
                     onClick={handleBack}
                     style={{
-                        backgroundColor: "#000000",
+                        backgroundColor: isBackButtonActive ? "#fec315" : "#002e55",
                         color: "#ffffff",
                         border: "none",
-                        padding: "10px 20px",
+                        padding: "10px 14px",
                         borderRadius: "4px",
                         cursor: "pointer",
-                        fontSize: "16px",
+                        fontSize: "18px",
                         fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
                     }}
                 >
-                    ← 뒤로가기
+                    <img
+                        src="/back.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{ width: "22px", height: "22px", objectFit: "contain" }}
+                    />
+                    뒤로가기
                 </button>
 
                 <div style={{
@@ -409,8 +422,8 @@ function PointsPageContent() {
                         src="/logo.png"
                         alt="logo"
                         style={{
-                            width: "72px",
-                            height: "72px",
+                            width: "64px",
+                            height: "64px",
                             objectFit: "contain",
                             display: "block",
                         }}
@@ -464,8 +477,8 @@ function PointsPageContent() {
 
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",
@@ -481,8 +494,8 @@ function PointsPageContent() {
 
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#000000",
                             color: "#ffffff",
@@ -497,8 +510,8 @@ function PointsPageContent() {
 
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",

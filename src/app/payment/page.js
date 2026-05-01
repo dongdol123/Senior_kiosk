@@ -18,6 +18,7 @@ function PaymentPageContent() {
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
+    const [isBackButtonActive, setIsBackButtonActive] = useState(false);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
@@ -64,7 +65,10 @@ function PaymentPageContent() {
 
     // 뒤로가기 처리
     const handleBack = () => {
-        navigateTo(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
+        setIsBackButtonActive(true);
+        setTimeout(() => {
+            navigateTo(`/phone-input?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
+        }, 120);
     };
 
     // 카드 결제 처리
@@ -339,7 +343,7 @@ function PaymentPageContent() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "10px 24px",
+                    padding: "12px 24px",
                     backgroundColor: "#fff",
                     zIndex: 50,
                 }}
@@ -348,17 +352,26 @@ function PaymentPageContent() {
                 <button
                     onClick={handleBack}
                     style={{
-                        backgroundColor: "#000000",
+                        backgroundColor: isBackButtonActive ? "#fec315" : "#002e55",
                         color: "#ffffff",
                         border: "none",
-                        padding: "10px 20px",
+                        padding: "10px 14px",
                         borderRadius: "4px",
                         cursor: "pointer",
-                        fontSize: "16px",
+                        fontSize: "18px",
                         fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
                     }}
                 >
-                    ← 뒤로가기
+                    <img
+                        src="/back.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{ width: "22px", height: "22px", objectFit: "contain" }}
+                    />
+                    뒤로가기
                 </button>
 
                 {/* 중앙: 연두햄버거 제목 */}
@@ -374,8 +387,8 @@ function PaymentPageContent() {
                         src="/logo.png"
                         alt="logo"
                         style={{
-                            width: "72px",
-                            height: "72px",
+                            width: "64px",
+                            height: "64px",
                             objectFit: "contain",
                             display: "block",
                         }}
@@ -390,7 +403,7 @@ function PaymentPageContent() {
             <div
                 style={{
                     flexShrink: 0,
-                    backgroundColor: "#f5f5f5",
+                    backgroundColor: "#ffffff",
                     padding: "12px 24px",
                     borderBottom: "1px solid #e5e5e5",
                 }}
@@ -427,8 +440,8 @@ function PaymentPageContent() {
                     {/* 1 메뉴 선택 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",
@@ -447,8 +460,8 @@ function PaymentPageContent() {
                     {/* 2 포인트 적립 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",
@@ -467,8 +480,8 @@ function PaymentPageContent() {
                     {/* 3 결제하기 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#000000",
                             color: "#ffffff",
@@ -486,8 +499,8 @@ function PaymentPageContent() {
                     {/* 4 완료 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",

@@ -17,6 +17,7 @@ function PhoneInputPageContent() {
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
+    const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
     const inputRef = useRef(null);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
@@ -344,7 +345,7 @@ function PhoneInputPageContent() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "10px 24px",
+                    padding: "12px 24px",
                     backgroundColor: "#fff",
                     zIndex: 50,
                 }}
@@ -352,21 +353,33 @@ function PhoneInputPageContent() {
                 {/* 왼쪽: 처음으로 버튼 */}
                 <button
                     onClick={() => {
-                        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
-                        try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
-                        navigateTo(entry === "qr" ? "/qr-order" : "/");
+                        setIsHomeButtonActive(true);
+                        setTimeout(() => {
+                            try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
+                            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
+                            navigateTo(entry === "qr" ? "/qr-order" : "/");
+                        }, 120);
                     }}
                     style={{
-                        backgroundColor: "#000000",
+                        backgroundColor: isHomeButtonActive ? "#fec315" : "#002e55",
                         color: "#ffffff",
                         border: "none",
-                        padding: "10px 20px",
+                        padding: "10px 14px",
                         borderRadius: "4px",
                         cursor: "pointer",
-                        fontSize: "16px",
+                        fontSize: "18px",
                         fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
                     }}
                 >
+                    <img
+                        src="/home.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{ width: "22px", height: "22px", objectFit: "contain" }}
+                    />
                     처음으로
                 </button>
 
@@ -383,8 +396,8 @@ function PhoneInputPageContent() {
                         src="/logo.png"
                         alt="logo"
                         style={{
-                            width: "72px",
-                            height: "72px",
+                            width: "64px",
+                            height: "64px",
                             objectFit: "contain",
                             display: "block",
                         }}
@@ -436,8 +449,8 @@ function PhoneInputPageContent() {
                     {/* 1 메뉴 선택 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",
@@ -456,8 +469,8 @@ function PhoneInputPageContent() {
                     {/* 2 포인트 적립 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#000000",
                             color: "#ffffff",
@@ -475,8 +488,8 @@ function PhoneInputPageContent() {
                     {/* 3 결제하기 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",
@@ -495,8 +508,8 @@ function PhoneInputPageContent() {
                     {/* 4 완료 */}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", zIndex: 1 }}>
                         <div style={{
-                            width: "32px",
-                            height: "32px",
+                            width: "34px",
+                            height: "34px",
                             borderRadius: "50%",
                             backgroundColor: "#ffffff",
                             color: "#000000",
