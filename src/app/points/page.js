@@ -321,7 +321,7 @@ function PointsPageContent() {
                 flexDirection: "column",
                 minHeight: entry === "qr" ? "100%" : "100vh",
                 flex: entry === "qr" ? 1 : undefined,
-                backgroundColor: "#f9f9f9",
+                backgroundColor: "#ffffff",
             }}
         >
             {/* 음성 인식 로그창 - 항상 표시 */}
@@ -468,52 +468,72 @@ function PointsPageContent() {
                     margin: "0 auto",
                 }}
             >
+                <div
+                    style={{
+                        display: "block",
+                        width: "100%",
+                        backgroundColor: "#111111",
+                        color: "#ffffff",
+                        borderRadius: "12px",
+                        padding: "16px 18px",
+                    }}
+                >
+                    <div style={{ fontSize: "1rem", fontWeight: "700", marginBottom: "10px" }}>
+                        주문 내역
+                    </div>
+                    {cartItems.length === 0 ? (
+                        <div style={{ color: "#cccccc", fontSize: "0.95rem" }}>주문 정보가 없습니다.</div>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            {cartItems.map((item, idx) => (
+                                <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "1px solid #2a2a2a", paddingTop: idx === 0 ? 0 : "10px" }}>
+                                    <div style={{ fontSize: "1rem", fontWeight: "700" }}>
+                                        {item.name}{item.qty > 1 ? ` x${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
+                                    </div>
+                                    {item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
+                                        <div style={{ marginTop: "6px", fontSize: "0.92rem", color: "#d0d0d0" }}>
+                                            {item.items
+                                                .map((setItem) => {
+                                                    const name = setItem.size ? `${setItem.name}(${setItem.size})` : setItem.name;
+                                                    const price = typeof setItem.price === "number" ? ` ${setItem.price.toLocaleString()}원` : "";
+                                                    return `${name}${price}`;
+                                                })
+                                                .join(" + ")}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
                 <div style={{ width: "100%", maxWidth: "800px", textAlign: "left" }}>
-                    <div style={{ fontSize: "2rem", fontWeight: "700", color: "#1e7a39", marginBottom: "14px" }}>
-                        포인트적립
+                    <div style={{ fontSize: "2rem", fontWeight: "700", color: "#000000", marginBottom: "14px" }}>
+                        포인트 적립하기
                     </div>
                     <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
                         <button
                             onClick={openPhoneModal}
                             style={{
-                                width: "320px",
+                                width: "360px",
                                 maxWidth: "100%",
-                                padding: "18px 22px",
-                                fontSize: "1.2rem",
+                                padding: "18px 24px",
+                                fontSize: "1.8rem",
                                 fontWeight: "700",
-                                backgroundColor: "#FEE500",
-                                color: "#000",
-                                border: "none",
-                                borderRadius: "12px",
-                                cursor: "pointer",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                            }}
-                        >
-                            핸드폰번호로 적립하기
-                        </button>
-                        <button
-                            onClick={() => {}}
-                            style={{
-                                width: "320px",
-                                maxWidth: "100%",
-                                padding: "18px 22px",
-                                fontSize: "1.2rem",
-                                fontWeight: "700",
-                                backgroundColor: "#9e9e9e",
+                                backgroundColor: "#002e55",
                                 color: "#ffffff",
                                 border: "none",
                                 borderRadius: "12px",
-                                cursor: "pointer",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                cursor: "pointer"
                             }}
                         >
-                            바코드로 적립하기
+                            휴대폰 번호로 적립하기
                         </button>
                     </div>
                 </div>
 
-                <div style={{ width: "100%", maxWidth: "800px", fontSize: "2rem", fontWeight: "700", color: "#1e7a39", textAlign: "left" }}>
-                    결제 방법을 선택해주세요!
+                <div style={{ width: "100%", marginTop: "30px", maxWidth: "800px", fontSize: "2rem", fontWeight: "700", color: "#000000", textAlign: "left" }}>
+                    결제 수단을 선택해주세요
                 </div>
 
                 {/* 하단: 결제 방법 */}
@@ -687,6 +707,7 @@ function PointsPageContent() {
                 {/* 하단: 메뉴/세트 구성 안내 */}
                 <div
                     style={{
+                        display: "none",
                         width: "100%",
                         backgroundColor: "#111111",
                         color: "#ffffff",
@@ -740,7 +761,7 @@ function PointsPageContent() {
                     <div
                         style={{
                             width: "90%",
-                            maxWidth: "760px",
+                            maxWidth: "650px",
                             background: "#fff",
                             borderRadius: "16px",
                             padding: "20px",
@@ -748,33 +769,50 @@ function PointsPageContent() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                            <div style={{ fontSize: "1.3rem", fontWeight: "700" }}>휴대폰 번호 입력</div>
-                            <button onClick={closePhoneModal} style={{ background: "transparent", border: "none", fontSize: "1.4rem", cursor: "pointer" }}>x</button>
                         </div>
 
-                        <div style={{ borderBottom: "2px solid #333", paddingBottom: "10px", marginBottom: "16px", textAlign: "center", fontSize: "2rem", fontWeight: "700" }}>
-                            {phoneNumber.length ? formatPhoneNumber(phoneNumber) : "전화번호 입력"}
+                        <div style={{ borderBottom: "2px solid #333", paddingBottom: "10px", marginBottom: "16px", textAlign: "center", fontSize: "2.5rem", fontWeight: "700" }}>
+                            {phoneNumber.length ? formatPhoneNumber(phoneNumber) : "휴대폰 번호 입력"}
                         </div>
 
-                        <div style={{ display: "flex", gap: "12px" }}>
-                            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                        <div style={{ display: "flex", gap: "16px" }}>
+                            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
                                 {[7,8,9,4,5,6,1,2,3,0].map((n) => (
-                                    <button key={n} onClick={() => handleNumberClick(n)} style={{ height: "62px", fontSize: "1.4rem", fontWeight: "700", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>
+                                    <button key={n} onClick={() => handleNumberClick(n)} style={{ height: "120px", fontSize: "3rem", fontWeight: "700", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>
                                         {n}
                                     </button>
                                 ))}
-                                <button onClick={handle010} style={{ height: "62px", gridColumn: "span 2", fontSize: "1.1rem", fontWeight: "700", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>
+                                <button onClick={handle010} style={{ height: "120px", gridColumn: "span 2", fontSize: "3rem", fontWeight: "700", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>
                                     010
                                 </button>
                             </div>
-                            <div style={{ width: "120px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                                <button onClick={handleDelete} style={{ height: "62px", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer", fontWeight: "700" }}>
+                            <div style={{ width: "120px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                                <button onClick={handleDelete} style={{ height: "120px", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer", fontWeight: "700", fontSize: "2rem" }}>
                                     지움
                                 </button>
-                                <button onClick={confirmPhoneModal} disabled={phoneNumber.length < 10} style={{ flex: 1, border: "none", borderRadius: "8px", background: phoneNumber.length >= 10 ? "#ff0000" : "#bbb", color: "#fff", cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed", fontWeight: "700" }}>
+                                <button onClick={confirmPhoneModal} disabled={phoneNumber.length < 10} style={{ flex: 1, border: "none", borderRadius: "8px", background: phoneNumber.length >= 10 ? "#ff0000" : "#bbb", color: "#fff", cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed", fontWeight: "700", fontSize: "2rem" }}>
                                     확인
                                 </button>
                             </div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "center", marginTop: "18px" }}>
+                            <button
+                                onClick={closePhoneModal}
+                                style={{
+                                    width: "fit-content",
+                                    padding: "14px 24px",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "700",
+                                    backgroundColor: "#002e55",
+                                    color: "#ffffff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
+                                }}
+                            >
+                                취소하기
+                            </button>
                         </div>
                     </div>
                 </div>
