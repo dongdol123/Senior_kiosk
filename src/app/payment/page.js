@@ -430,7 +430,7 @@ function PaymentPageContent() {
                 <div style={{
                     width: "100%",
                     maxWidth: "600px",
-                    backgroundColor: "#1e7a39",
+                    backgroundColor: "#000000",
                     padding: "28px 24px",
                     borderRadius: "8px",
                     display: "flex",
