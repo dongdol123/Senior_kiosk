@@ -852,7 +852,8 @@ function MenuOptionPageContent() {
                 <div style={{ width: "120px" }}></div>
             </div>
 
-            {/* 음성 안내 메시지 */}
+            {/* 음성 안내 메시지 (화면 표시용 텍스트) */}
+            {/*
             {assistantMessage && (
                 <div
                     style={{
@@ -867,6 +868,7 @@ function MenuOptionPageContent() {
                     {assistantMessage}
                 </div>
             )}
+            */}
 
             {/* 메인 컨텐츠 */}
             <div
@@ -892,6 +894,7 @@ function MenuOptionPageContent() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 gap: "16px",
+                                transform: "translateY(-20px)", /* 이미지 + 메뉴명 + 가격 전체 묶음 위로 */
                             }}
                         >
                             <div
@@ -917,12 +920,12 @@ function MenuOptionPageContent() {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     textAlign: "center",
-                                    gap: "8px",
+                                    gap: "14px",
                                 }}
                             >
                                 <div
                                     style={{
-                                        fontSize: "2rem",
+                                        fontSize: "2.5rem",
                                         fontWeight: "800",
                                         color: "#111",
                                         lineHeight: "1.2",
@@ -932,7 +935,7 @@ function MenuOptionPageContent() {
                                 </div>
                                 <div
                                     style={{
-                                        fontSize: "1.5rem",
+                                        fontSize: "2rem",
                                         fontWeight: "700",
                                         color: "#002e55",
                                         lineHeight: "1.2",
@@ -962,12 +965,15 @@ function MenuOptionPageContent() {
                                     height: "130px",
                                     fontSize: "1.8rem",
                                     fontWeight: "bold",
-                                    backgroundColor: "#fff",
+                                    backgroundColor: activeOptionButton === "single" ? "#c8d8ea" : "#f5f8fc",
                                     color: "#000",
                                     border: activeOptionButton === "single" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                    boxShadow:
+                                        activeOptionButton === "single"
+                                            ? "0 4px 10px rgba(0,0,0,0.12)"
+                                            : "0 2px 6px rgba(0,0,0,0.06)",
                                 }}
                             >
                                 단품
@@ -984,12 +990,15 @@ function MenuOptionPageContent() {
                                     height: "130px",
                                     fontSize: "1.4rem",
                                     fontWeight: "bold",
-                                    backgroundColor: "#fff",
+                                    backgroundColor: activeOptionButton === "default" ? "#c8d8ea" : "#f5f8fc",
                                     color: "#000",
                                     border: activeOptionButton === "default" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                    boxShadow:
+                                        activeOptionButton === "default"
+                                            ? "0 4px 10px rgba(0,0,0,0.12)"
+                                            : "0 2px 6px rgba(0,0,0,0.06)",
                                     padding: "0 10px",
                                 }}
                             >
@@ -1010,12 +1019,15 @@ function MenuOptionPageContent() {
                                     height: "130px",
                                     fontSize: "1.8rem",
                                     fontWeight: "bold",
-                                    backgroundColor: "#fff",
+                                    backgroundColor: activeOptionButton === "set" ? "#c8d8ea" : "#f5f8fc",
                                     color: "#000",
                                     border: activeOptionButton === "set" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
-                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                    boxShadow:
+                                        activeOptionButton === "set"
+                                            ? "0 4px 10px rgba(0,0,0,0.12)"
+                                            : "0 2px 6px rgba(0,0,0,0.06)",
                                 }}
                             >
                                 세트 직접 선택

@@ -1057,12 +1057,12 @@ function MenuPageContent() {
                     }}
                     style={{
                         flex: 1,
-                        padding: "16px 18px",
+                        padding: "14px 18px",
                         borderRadius: "16px",
                         border: selectedCategory === "burger" ? "2px solid #002e55" : "2px solid #d9e3ef",
                         backgroundColor: selectedCategory === "burger" ? "#c8d8ea" : "#f5f8fc",
-                        color: selectedCategory === "burger" ? "#000" : "#6f7f95",
-                        fontSize: "20px",
+                        color: "#000",
+                        fontSize: "24px",
                         fontWeight: selectedCategory === "burger" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
@@ -1078,12 +1078,12 @@ function MenuPageContent() {
                     }}
                     style={{
                         flex: 1,
-                        padding: "16px 18px",
+                        padding: "14px 18px",
                         borderRadius: "16px",
                         border: selectedCategory === "drink" ? "2px solid #002e55" : "2px solid #d9e3ef",
                         backgroundColor: selectedCategory === "drink" ? "#c8d8ea" : "#f5f8fc",
-                        color: selectedCategory === "drink" ? "#000" : "#6f7f95",
-                        fontSize: "20px",
+                        color: "#000",
+                        fontSize: "24px",
                         fontWeight: selectedCategory === "drink" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
@@ -1099,12 +1099,12 @@ function MenuPageContent() {
                     }}
                     style={{
                         flex: 1,
-                        padding: "16px 18px",
+                        padding: "14px 18px",
                         borderRadius: "16px",
                         border: selectedCategory === "side" ? "2px solid #002e55" : "2px solid #d9e3ef",
                         backgroundColor: selectedCategory === "side" ? "#c8d8ea" : "#f5f8fc",
-                        color: selectedCategory === "side" ? "#000" : "#6f7f95",
-                        fontSize: "20px",
+                        color: "#000",
+                        fontSize: "24px",
                         fontWeight: selectedCategory === "side" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
@@ -1136,7 +1136,7 @@ function MenuPageContent() {
                         display: "flex",
                         flexDirection: "column",
                         width: "100%",
-                        padding: "14px 32px 24px 32px",
+                        padding: "14px 32px 4px 32px",
                         minHeight: 0,
                     }}
                 >
@@ -1178,7 +1178,10 @@ function MenuPageContent() {
                                             background: "#ffffff",
                                             border: activeMenuCardId === m.id ? "2px solid #002e55" : "2px solid #d9e3ef",
                                             borderRadius: 24,
-                                            boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                                            boxShadow:
+                                                activeMenuCardId === m.id
+                                                    ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                     : "0 2px 6px rgba(0,0,0,0.06)",
                                             padding: 0,
                                             minHeight: 0,
                                             overflow: "hidden",
@@ -1187,16 +1190,6 @@ function MenuPageContent() {
                                             aspectRatio: "1 / 1", // 정사각형 카드
                                             cursor: "pointer",
                                             transition: "all 0.2s",
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
-                                            e.currentTarget.style.transform = "translateY(-4px)";
-                                            e.currentTarget.style.borderColor = activeMenuCardId === m.id ? "#002e55" : "#FF6B35";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)";
-                                            e.currentTarget.style.transform = "translateY(0)";
-                                            e.currentTarget.style.borderColor = activeMenuCardId === m.id ? "#002e55" : "#d9e3ef";
                                         }}
                                     >
                                         {/* 이미지 영역 - 최대 크기 */}
@@ -1243,9 +1236,9 @@ function MenuPageContent() {
                                             background: "#fff",
                                             borderRadius: "0 0 24px 24px",
                                         }}>
-                                            <div style={{ fontWeight: 800, fontSize: 24, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#000", lineHeight: "1.1" }}>{m.name}</div>
+                                            <div style={{ fontWeight: 800, fontSize: 26, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#000", lineHeight: "1.1" }}>{m.name}</div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                <div style={{ color: "#002e55", fontSize: 22, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
+                                                <div style={{ color: "#002e55", fontSize: 24, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
                                             </div>
                                         </div>
                                     </div>
@@ -1257,19 +1250,19 @@ function MenuPageContent() {
                                             display: "flex",
                                             flexDirection: "column",
                                             gap: 6,
-                                            background: "#f6f7f9",
-                                            border: "1px dashed #d0d7e2",
+                                            background: "#ffffff",
+                                            border: "none",
                                             borderRadius: 12,
                                             padding: 10,
                                             minHeight: 0,
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            color: "#8aa0c5",
+                                            color: "transparent",
                                             fontWeight: 700,
                                             fontSize: 12,
                                         }}
                                     >
-                                        메뉴 준비중
+                                        ""
                                     </div>
                                 ))}
                             </>
@@ -1292,7 +1285,7 @@ function MenuPageContent() {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                padding: "12px 32px 16px 32px",
+                                padding: "12px 0px 16px 0px",
                                 marginTop: "8px",
                                 position: "relative",
                             }}
@@ -1302,13 +1295,13 @@ function MenuPageContent() {
                                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                                 disabled={currentPage === 1}
                                 style={{
-                                    padding: "10px 20px",
+                                    padding: "8px 18px",
                                     borderRadius: "4px",
                                     border: "none",
-                                    background: currentPage === 1 ? "#ccc" : "#1e7a39",
+                                    background: currentPage === 1 ? "#c8d8ea" : "#002e55",
                                     color: "#ffffff",
                                     cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                                    fontSize: "16px",
+                                    fontSize: "18px",
                                     fontWeight: "600",
                                     transition: "all 0.2s",
                                     display: "flex",
@@ -1339,7 +1332,7 @@ function MenuPageContent() {
                                 left: "50%",
                                 transform: "translateX(-50%)",
                             }}>
-                                {currentPage}/{totalPages}
+                                {currentPage} / {totalPages}
                             </div>
 
                             {/* 오른쪽: 다음 버튼 */}
@@ -1347,13 +1340,13 @@ function MenuPageContent() {
                                 onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                                 disabled={currentPage === totalPages}
                                 style={{
-                                    padding: "10px 20px",
+                                    padding: "8px 18px",
                                     borderRadius: "4px",
                                     border: "none",
-                                    background: currentPage === totalPages ? "#ccc" : "#1e7a39",
+                                    background: currentPage === totalPages ? "#c8d8ea" : "#002e55",
                                     color: "#ffffff",
                                     cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-                                    fontSize: "16px",
+                                    fontSize: "18px",
                                     fontWeight: "600",
                                     transition: "all 0.2s",
                                     display: "flex",
@@ -1388,7 +1381,7 @@ function MenuPageContent() {
                     display: "flex",
                     flexDirection: "column",
                     backgroundColor: "#fff",
-                    borderTop: "2px solid #e5e5e5",
+                    borderTop: "2px solid #d9e3ef",
                     overflow: "hidden",
                 }}
             >
@@ -1397,7 +1390,7 @@ function MenuPageContent() {
                 <div
                     style={{
                         flex: 1,
-                        background: "#333333",
+                        background: "#f5f8fc",
                         padding: "12px 24px",
                         display: "flex",
                         alignItems: "center",
@@ -1418,16 +1411,18 @@ function MenuPageContent() {
                     minWidth: 0,
                 }}>
                     {cartItems.length === 0 ? (
-                        <div style={{ color: "#999", fontSize: "14px" }}>담긴 상품이 없습니다.</div>
+                        <div style={{ color: "#c8d8ea", fontSize: "30px" }}>담긴 상품이 없습니다.</div>
                     ) : (
                         cartItems.map((it) => (
                             <div
                                 key={it.id}
                                 style={{
                                     minWidth: "160px",
+                                    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                                     background: "#ffffff",
+                                    border: "2px solid #d9e3ef",
                                     borderRadius: "6px",
-                                    padding: "8px",
+                                    padding: "12px",
                                     display: "flex",
                                     alignItems: "center",
                                     gap: "8px",
@@ -1436,8 +1431,8 @@ function MenuPageContent() {
                             >
                                 {/* 메뉴 이미지 */}
                                 <div style={{
-                                    width: "50px",
-                                    height: "50px",
+                                    width: "80px",
+                                    height: "80px",
                                     background: "#f5f5f5",
                                     borderRadius: "4px",
                                     display: "flex",
@@ -1457,8 +1452,11 @@ function MenuPageContent() {
                                 
                                 {/* 메뉴 정보 */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: "700", fontSize: "12px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <div style={{ fontWeight: "700", fontSize: "17px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                         {it.name}
+                                    </div>
+                                    <div style={{ fontWeight: "700", fontSize: "17px", marginBottom: "6px", color: "#002e55" }}>
+                                        {it.price.toLocaleString()}원
                                     </div>
                                     {/* 수량 조절 */}
                                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -1469,10 +1467,10 @@ function MenuPageContent() {
                                                 height: "20px", 
                                                 borderRadius: "3px", 
                                                 border: "none", 
-                                                background: "#1e7a39", 
+                                                background: "#002e55", 
                                                 color: "#ffffff", 
                                                 cursor: "pointer",
-                                                fontSize: "14px",
+                                                fontSize: "20px",
                                                 fontWeight: "700",
                                                 display: "flex",
                                                 alignItems: "center",
@@ -1481,7 +1479,7 @@ function MenuPageContent() {
                                         >
                                             -
                                         </button>
-                                        <span style={{ fontSize: "12px", fontWeight: "600", minWidth: "16px", textAlign: "center" }}>
+                                        <span style={{ fontSize: "17px", fontWeight: "700", minWidth: "24px", textAlign: "center" }}>
                                             {it.qty}
                                         </span>
                                         <button 
@@ -1491,10 +1489,10 @@ function MenuPageContent() {
                                                 height: "20px", 
                                                 borderRadius: "3px", 
                                                 border: "none", 
-                                                background: "#1e7a39", 
+                                                background: "#002e55", 
                                                 color: "#ffffff", 
                                                 cursor: "pointer",
-                                                fontSize: "14px",
+                                                fontSize: "20px",
                                                 fontWeight: "700",
                                                 display: "flex",
                                                 alignItems: "center",
@@ -1514,7 +1512,7 @@ function MenuPageContent() {
                                                 background: "transparent", 
                                                 color: "#000000", 
                                                 cursor: "pointer",
-                                                fontSize: "16px",
+                                                fontSize: "21px",
                                                 fontWeight: "700",
                                                 display: "flex",
                                                 alignItems: "center",
@@ -1531,68 +1529,48 @@ function MenuPageContent() {
                 </div>
 
                 {/* 오른쪽: 전체 취소 및 결제하기 버튼 */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", flexShrink: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                        <div style={{ fontSize: "16px", fontWeight: "700", color: "#ffffff", whiteSpace: "nowrap" }}>
-                            총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0, minWidth: "262px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
+                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                            총 수량　{cartItems.reduce((sum, it) => sum + it.qty, 0)}개
                         </div>
                         <button
                             onClick={clearCart}
                             disabled={cartItems.length === 0}
                             style={{
-                                width: "100px",
+                                width: "130px",
                                 height: "60px",
                                 borderRadius: "8px",
                                 border: "none",
-                                background: cartItems.length === 0 ? "#555" : "#000000",
+                                background: cartItems.length === 0 ? "#c8d8ea" : "#002e55",
                                 color: "#ffffff",
                                 cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                                fontSize: "16px",
+                                fontSize: "22px",
                                 fontWeight: "700",
                                 transition: "all 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                                if (cartItems.length > 0) {
-                                    e.currentTarget.style.background = "#333";
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (cartItems.length > 0) {
-                                    e.currentTarget.style.background = "#000000";
-                                }
                             }}
                         >
                             전체 취소
                         </button>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                        <div style={{ fontSize: "16px", fontWeight: "700", color: "#ffffff", whiteSpace: "nowrap" }}>
-                            총 금액 | {cartTotal.toLocaleString()}원
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
+                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                            총 금액　{cartTotal.toLocaleString()}원
                         </div>
                         <button
                             onClick={handleOrder}
                             disabled={cartItems.length === 0}
                             style={{
-                                width: "100px",
+                                width: "130px",
                                 height: "60px",
                                 borderRadius: "8px",
                                 border: "none",
-                                background: cartItems.length === 0 ? "#555" : "#ff0000",
+                                background: cartItems.length === 0 ? "#c8d8ea" : "#fec002",
                                 color: "#ffffff",
                                 cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                                fontSize: "16px",
+                                fontSize: "22px",
                                 fontWeight: "700",
                                 transition: "all 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                                if (cartItems.length > 0) {
-                                    e.currentTarget.style.background = "#cc0000";
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (cartItems.length > 0) {
-                                    e.currentTarget.style.background = "#ff0000";
-                                }
                             }}
                         >
                             결제하기
