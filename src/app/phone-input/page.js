@@ -46,25 +46,25 @@ function PhoneInputPageContent() {
         }, 1000);
     }
 
-    // ?レ옄 ?띿뒪?몃? ?レ옄濡?蹂??(?? "?쇨났?? -> "010", "怨듭씪怨? -> "010")
+    // 숫자 텍스트를 숫자로 변환
     function convertKoreanNumberToDigit(text) {
         const koreanNumbers = {
-            "怨?: "0", "??: "0", "?쒕줈": "0",
-            "??: "1", "?섎굹": "1", "??: "1",
-            "??: "2", "??: "2",
-            "??: "3", "??: "3",
-            "??: "4", "??: "4",
-            "??: "5", "?ㅼ꽢": "5",
-            "??: "6", "瑜?: "6", "?ъ꽢": "6",
-            "移?: "7", "?쇨낢": "7",
-            "??: "8", "?щ뜜": "8",
-            "援?: "9", "?꾪솄": "9"
+            "공": "0", "영": "0", "제로": "0",
+            "일": "1", "하나": "1", "한": "1",
+            "이": "2", "둘": "2",
+            "삼": "3", "셋": "3",
+            "사": "4", "넷": "4",
+            "오": "5", "다섯": "5",
+            "육": "6", "륙": "6", "여섯": "6",
+            "칠": "7", "일곱": "7",
+            "팔": "8", "여덟": "8",
+            "구": "9", "아홉": "9"
         };
         
         let result = "";
         const normalized = text.toLowerCase().replace(/\s/g, "");
         
-        // ?쒓? ?レ옄 ?⑦꽩 李얘린
+        // 한글 숫자 패턴 찾기
         for (let i = 0; i < normalized.length; i++) {
             let found = false;
             for (const [korean, digit] of Object.entries(koreanNumbers)) {
@@ -83,13 +83,13 @@ function PhoneInputPageContent() {
         return result;
     }
 
-    // ?뚯꽦 ?몄떇?쇰줈 ?レ옄 異붿텧
+    // 음성 인식으로 숫자 추출
     function extractNumbersFromSpeech(text) {
-        // ?レ옄留?異붿텧
-        let numbers = text.replace(/[^0-9?쇱씠?쇱궗?ㅼ쑁移좏뙏援ш났??/g, "");
+        // 숫자만 추출
+        let numbers = text.replace(/[^0-9]|(?!영|공|제로|일|이|삼|사|오|육|륙|칠|팔|구|하나|둘|셋|넷|다섯|여섯|일곱|여덟|아홉)/g, "");
         
-        // ?쒓? ?レ옄媛 ?덉쑝硫?蹂??
-        if (/[?쇱씠?쇱궗?ㅼ쑁移좏뙏援ш났??/.test(text)) {
+        // 한글 숫자가 있으면 변환
+        if (/(영|공|제로|일|이|삼|사|오|육|륙|칠|팔|구|하나|둘|셋|넷|다섯|여섯|일곱|여덟|아홉)/.test(text)) {
             numbers = convertKoreanNumberToDigit(text);
         }
         
@@ -107,7 +107,7 @@ function PhoneInputPageContent() {
             setOrderType(orderTypeParam);
         }
         
-        // ?ъ빱??
+        // 자동 포커스
         if (inputRef.current) {
             inputRef.current.focus();
         }
@@ -117,7 +117,7 @@ function PhoneInputPageContent() {
         phoneNumberRef.current = phoneNumber;
     }, [phoneNumber]);
 
-    // ?뚯꽦 ?몄떇
+    // 음성 인식
     useEffect(() => {
         mountedRef.current = true;
         firstStartRef.current = true;
@@ -136,10 +136,10 @@ function PhoneInputPageContent() {
 
         recognition.onstart = async () => {
             setIsListening(true);
-            // 泥섏쓬 ?쒖옉???뚮쭔 ?몄궗留?
+            // 처음 시작할 때만 인사말
             if (firstStartRef.current) {
                 firstStartRef.current = false;
-                const greeting = "?몃뱶??踰덊샇瑜??뚮윭二쇱꽭??;
+                const greeting = "핸드폰 번호를 불러주세요.";
                 await speakAndResume(greeting);
             }
         };
@@ -164,7 +164,7 @@ function PhoneInputPageContent() {
             }
             const transcript = event.results[0][0].transcript || "";
             
-            // ?뚯꽦 ?몄떇 濡쒓렇 異붽?
+            // 음성 인식 로그 추가
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
             const logEntry = {
                 time: new Date().toLocaleTimeString('ko-KR'),
@@ -176,30 +176,30 @@ function PhoneInputPageContent() {
                 return newLogs;
             });
             
-            // ?レ옄 異붿텧
+            // 숫자 추출
             const extractedNumbers = extractNumbersFromSpeech(transcript);
             
             if (extractedNumbers.length > 0) {
-                // ?꾩옱 踰덊샇??異붽? (理쒕? 11?먮━)
+                // 현재 번호에 추가 (최대 11자리)
                 setPhoneNumber(prev => {
                     const newNumber = prev + extractedNumbers;
                     return newNumber.slice(0, 11);
                 });
                 
-                const msg = `${extractedNumbers} ?낅젰?덉뒿?덈떎.`;
+                const msg = `${extractedNumbers} 입력됐습니다.`;
                 await speakAndResume(msg);
             } else {
-                // "?뺤씤", "?꾨즺" ?깆쓽 紐낅졊 泥섎━
+                // "확인", "완료" 등의 명령 처리
                 const normalized = transcript.toLowerCase().replace(/\s/g, "");
-                if (/?뺤씤|?꾨즺|寃곗젣|?곷┰/.test(normalized)) {
+                if (/확인|완료|결제|적립/.test(normalized)) {
                     if ((phoneNumberRef.current || "").length >= 10) {
                         handleConfirm();
                     } else {
-                        const msg = "?몃뱶??踰덊샇瑜?紐⑤몢 ?낅젰?댁＜?몄슂.";
+                        const msg = "핸드폰 번호를 모두 입력해주세요.";
                         await speakAndResume(msg);
                     }
                 } else {
-                    const msg = "踰덊샇瑜?留먯??댁＜?몄슂.";
+                    const msg = "번호를 말씀해주세요.";
                     await speakAndResume(msg);
                 }
             }
@@ -211,7 +211,7 @@ function PhoneInputPageContent() {
         try {
             recognition.start();
         } catch (e) {
-            // 沅뚰븳 ?ㅻ쪟??臾댁떆
+            // 권한 오류는 무시
         }
 
         return () => {
@@ -264,11 +264,11 @@ function PhoneInputPageContent() {
     function handleConfirm() {
         const currentPhone = phoneNumberRef.current || phoneNumber;
         if (currentPhone.length < 10) {
-            alert("?щ컮瑜??몃뱶??踰덊샇瑜??낅젰?댁＜?몄슂.");
+            alert("올바른 핸드폰 번호를 입력해주세요.");
             return;
         }
 
-        // 寃곗젣 ?섏씠吏濡??대룞
+        // 결제 페이지로 이동
         const cartData = searchParams.get("cart");
         navigateTo(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${currentPhone}&${entryQuery(entry)}`);
     }
@@ -288,7 +288,7 @@ function PhoneInputPageContent() {
                 backgroundColor: "#ffffff",
             }}
         >
-            {/* ?뚯꽦 ?몄떇 濡쒓렇李?- ??긽 ?쒖떆 */}
+            {/* 음성 인식 로그창 - 항상 표시 */}
             <div
                 style={{
                     position: "fixed",
@@ -306,11 +306,11 @@ function PhoneInputPageContent() {
                 }}
             >
                 <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
-                    ?렎 ?뚯꽦 ?몄떇 濡쒓렇
+                    🎤 음성 인식 로그
                 </div>
                 {voiceLogs.length === 0 ? (
                     <div style={{ color: "#999", fontSize: "0.85rem", textAlign: "center", padding: "20px" }}>
-                        ?뚯꽦 ?몄떇 ?湲?以?..
+                        음성 인식 대기 중..
                     </div>
                 ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -331,7 +331,7 @@ function PhoneInputPageContent() {
                                     {log.transcript}
                                 </div>
                                 <div style={{ color: "#888", fontSize: "0.75rem" }}>
-                                    (?뺢퇋?? {log.normalized})
+                                    (정규화: {log.normalized})
                                 </div>
                             </div>
                         ))}
@@ -339,7 +339,7 @@ function PhoneInputPageContent() {
                 )}
             </div>
 
-            {/* ?곷떒 ?ㅻ뜑 */}
+            {/* 상단 헤더 */}
             <div
                 style={{
                     flexShrink: 0,
@@ -351,7 +351,7 @@ function PhoneInputPageContent() {
                     zIndex: 50,
                 }}
             >
-                {/* ?쇱そ: 泥섏쓬?쇰줈 踰꾪듉 */}
+                {/* 왼쪽: 처음으로 버튼 */}
                 <button
                     onClick={() => {
                         setIsHomeButtonActive(true);
@@ -381,10 +381,10 @@ function PhoneInputPageContent() {
                         aria-hidden="true"
                         style={{ width: "22px", height: "22px", objectFit: "contain" }}
                     />
-                    泥섏쓬?쇰줈
+                    처음으로
                 </button>
 
-                {/* 以묒븰: ?곕몢?꾨쾭嫄??쒕ぉ */}
+                {/* 중앙: 로고 영역 */}
                 <div style={{ 
                     position: "absolute",
                     left: "50%",
@@ -406,13 +406,13 @@ function PhoneInputPageContent() {
                     />
                 </div>
 
-                {/* ?ㅻⅨ履? 鍮?怨듦컙 */}
+                {/* 오른쪽 빈 공간 */}
                 <div style={{ width: "100px" }}></div>
             </div>
 
             <KioskProgressBars activeIndex={2} />
 
-            {/* 硫붿씤 而⑦뀗痢?*/}
+            {/* 메인 컨텐츠 */}
             <div
                 style={{
                     flex: 1,
@@ -425,7 +425,7 @@ function PhoneInputPageContent() {
                     backgroundColor: "#ffffff",
                 }}
             >
-                {/* ?덈궡 臾멸뎄 */}
+                {/* 안내 문구 */}
                 <div style={{
                     fontSize: "2rem",
                     fontWeight: "700",
@@ -433,10 +433,10 @@ function PhoneInputPageContent() {
                     textAlign: "center",
                     marginBottom: "20px",
                 }}>
-                    ?ъ씤???곷┰???꾪빐 ?꾪솕踰덊샇瑜??낅젰?댁＜?몄슂
+                    포인트 적립을 위해 전화번호를 입력해주세요
                 </div>
 
-                {/* ?낅젰 ?꾨뱶 */}
+                {/* 입력 필드 */}
                 <div style={{
                     width: "100%",
                     maxWidth: "600px",
@@ -462,7 +462,7 @@ function PhoneInputPageContent() {
                                 fontSize: "1.4rem",
                                 pointerEvents: "none",
                             }}>
-                                ?꾪솕踰덊샇 ?낅젰
+                                전화번호 입력
                             </div>
                         ) : null}
                         <div style={{
@@ -478,21 +478,21 @@ function PhoneInputPageContent() {
                     </div>
                 </div>
 
-                {/* ?レ옄 ?ㅽ뙣???곸뿭 */}
+                {/* 숫자 키패드 영역 */}
                 <div style={{
                     width: "100%",
                     maxWidth: "600px",
                     display: "flex",
                     gap: "16px",
                 }}>
-                    {/* ?쇱そ: ?レ옄 ?ㅽ뙣??*/}
+                    {/* 왼쪽: 숫자 키패드 */}
                     <div style={{
                         flex: 1,
                         display: "grid",
                         gridTemplateColumns: "repeat(3, 1fr)",
                         gap: "12px",
                     }}>
-                        {/* 泥?踰덉㎏ 以? 7, 8, 9 */}
+                        {/* 첫번째 줄 7, 8, 9 */}
                         <button
                             onClick={() => handleNumberClick(7)}
                             style={{
@@ -566,7 +566,7 @@ function PhoneInputPageContent() {
                             9
                         </button>
 
-                        {/* ??踰덉㎏ 以? 4, 5, 6 */}
+                        {/* 두번째 줄 4, 5, 6 */}
                         <button
                             onClick={() => handleNumberClick(4)}
                             style={{
@@ -640,7 +640,7 @@ function PhoneInputPageContent() {
                             6
                         </button>
 
-                        {/* ??踰덉㎏ 以? 1, 2, 3 */}
+                        {/* 세번째 줄 1, 2, 3 */}
                         <button
                             onClick={() => handleNumberClick(1)}
                             style={{
@@ -714,7 +714,7 @@ function PhoneInputPageContent() {
                             3
                         </button>
 
-                        {/* ??踰덉㎏ 以? 0, 010 */}
+                        {/* 네번째 줄 0, 010 */}
                         <button
                             onClick={() => handleNumberClick(0)}
                             style={{
@@ -766,7 +766,7 @@ function PhoneInputPageContent() {
                         </button>
                     </div>
 
-                    {/* ?ㅻⅨ履? 吏? 諛??뺤씤 踰꾪듉 */}
+                    {/* 오른쪽 지우기 및 확인 버튼 */}
                     <div style={{
                         display: "flex",
                         flexDirection: "column",
@@ -796,7 +796,7 @@ function PhoneInputPageContent() {
                                 e.currentTarget.style.borderColor = "#ddd";
                             }}
                         >
-                            吏?
+                            지우기
                         </button>
                         <button
                             onClick={handleConfirm}
@@ -825,7 +825,7 @@ function PhoneInputPageContent() {
                                 e.currentTarget.style.opacity = phoneNumber.length >= 10 ? "1" : "0.6";
                             }}
                         >
-                            ?뺤씤
+                            확인
                         </button>
                     </div>
                 </div>
