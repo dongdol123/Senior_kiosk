@@ -161,12 +161,9 @@ export default function HomePage() {
               onClick={() => goKioskVoice("dinein")}
               style={{
                 ...squareBase,
-                backgroundColor: "#ffffff",
+                backgroundColor: activeOrderType === "dinein" ? "#c8d8ea" : "#ffffff",
                 color: blue,
-                boxShadow:
-                  activeOrderType === "dinein"
-                    ? "inset 0 0 0 10px #c8d8ea, inset 0 0 0 20px #f5f8fc, 0 16px 36px rgba(0, 12, 29, 0.22)"
-                    : "0 16px 36px rgba(0, 12, 29, 0.22)",
+                boxShadow: "none"
               }}
             >
               <img
@@ -189,12 +186,9 @@ export default function HomePage() {
               onClick={() => goKioskVoice("takeout")}
               style={{
                 ...squareBase,
-                backgroundColor: "#ffffff",
+                backgroundColor: activeOrderType === "takeout" ? "#c8d8ea" : "#ffffff",
                 color: blue,
-                boxShadow:
-                  activeOrderType === "takeout"
-                    ? "inset 0 0 0 10px #c8d8ea, inset 0 0 0 20px #f5f8fc, 0 16px 36px rgba(0, 12, 29, 0.16)"
-                    : "0 16px 36px rgba(0, 12, 29, 0.16)",
+                boxShadow: "none"
               }}
             >
               <img

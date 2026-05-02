@@ -33,6 +33,7 @@ function MenuOptionPageContent() {
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [isBackButtonActive, setIsBackButtonActive] = useState(false);
+    const [activeOptionButton, setActiveOptionButton] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
@@ -625,6 +626,27 @@ function MenuOptionPageContent() {
     }
 
     // 기본세트 추가 함수 (새로 작성)
+    const handleSingleClick = () => {
+        setActiveOptionButton("single");
+        setTimeout(() => {
+            handleSingle();
+        }, 120);
+    };
+
+    const handleDefaultSetClick = () => {
+        setActiveOptionButton("default");
+        setTimeout(() => {
+            handleDefaultSet();
+        }, 120);
+    };
+
+    const handleSetClick = () => {
+        setActiveOptionButton("set");
+        setTimeout(() => {
+            handleSet();
+        }, 120);
+    };
+
     const addDefaultSetToCart = useCallback(() => {
         const currentSearchParams = searchParamsRef.current;
         const currentRouter = routerRef.current;
@@ -934,7 +956,7 @@ function MenuOptionPageContent() {
                         >
                             <button
                                 ref={singleButtonRef}
-                                onClick={handleSingle}
+                                onClick={handleSingleClick}
                                 style={{
                                     width: "100%",
                                     height: "130px",
@@ -942,7 +964,7 @@ function MenuOptionPageContent() {
                                     fontWeight: "bold",
                                     backgroundColor: "#fff",
                                     color: "#000",
-                                    border: "2px solid #ddd",
+                                    border: activeOptionButton === "single" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
@@ -956,7 +978,7 @@ function MenuOptionPageContent() {
 
                             <button
                                 ref={defaultSetButtonRef}
-                                onClick={handleDefaultSet}
+                                onClick={handleDefaultSetClick}
                                 style={{
                                     width: "100%",
                                     height: "130px",
@@ -964,7 +986,7 @@ function MenuOptionPageContent() {
                                     fontWeight: "bold",
                                     backgroundColor: "#fff",
                                     color: "#000",
-                                    border: "2px solid #ddd",
+                                    border: activeOptionButton === "default" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
@@ -982,7 +1004,7 @@ function MenuOptionPageContent() {
 
                             <button
                                 ref={setButtonRef}
-                                onClick={handleSet}
+                                onClick={handleSetClick}
                                 style={{
                                     width: "100%",
                                     height: "130px",
@@ -990,7 +1012,7 @@ function MenuOptionPageContent() {
                                     fontWeight: "bold",
                                     backgroundColor: "#fff",
                                     color: "#000",
-                                    border: "2px solid #ddd",
+                                    border: activeOptionButton === "set" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
                                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
