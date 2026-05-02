@@ -7,10 +7,10 @@ import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 import {
-    STATIC_MENU,
     inferMenuCategory,
     mergeMenusFromApiResponse,
     menuThumbImageSrc,
+    staticMenuCatalogCopy,
     voiceNormalizedMatchesItem,
 } from "../utils/kioskMenuCatalog";
 
@@ -69,8 +69,8 @@ function DrinkSelectPageContent() {
         router.push(path);
     }
 
-    const [catalogItems, setCatalogItems] = useState(STATIC_MENU);
-    const catalogRef = useRef(STATIC_MENU);
+    const [catalogItems, setCatalogItems] = useState(() => staticMenuCatalogCopy());
+    const catalogRef = useRef(catalogItems);
 
     const drinkItems = useMemo(
         () =>
@@ -94,17 +94,23 @@ function DrinkSelectPageContent() {
     useEffect(() => {
         let cancelled = false;
         async function load() {
+            const fallback = staticMenuCatalogCopy();
+            const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "");
             try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/menu`
-                );
-                const data = await res.json();
-                if (cancelled || !res.ok) return;
-                const merged = mergeMenusFromApiResponse(data);
-                if (merged) setCatalogItems(merged);
+                const res = await fetch(`${base}/api/menu`, { cache: "no-store" });
+                const data = await res.json().catch(() => ({}));
+                if (cancelled) return;
+                if (res.ok) {
+                    const merged = mergeMenusFromApiResponse(data);
+                    if (merged?.length) {
+                        setCatalogItems(merged);
+                        return;
+                    }
+                }
             } catch (e) {
                 console.error("drink-select menu load:", e);
             }
+            if (!cancelled) setCatalogItems(fallback);
         }
         load();
         return () => {

@@ -69,6 +69,54 @@ export const STATIC_MENU = [
         image: "/icetea.png",
         keywords: ["아이스티", "티", "iced", "icetea", "ice tea"],
     },
+    {
+        id: "drink-cola",
+        name: "콜라",
+        price: 2500,
+        category: "drink",
+        image: "/coke_main.png",
+        keywords: ["콜라", "코크", "coke", "콜라주", "탄산"],
+    },
+    {
+        id: "drink-zerocola",
+        name: "제로콜라",
+        price: 2500,
+        category: "drink",
+        image: "/coke_main.png",
+        keywords: ["제로콜라", "제로", "zero", "제로코크", "다이어트콜라"],
+    },
+    {
+        id: "drink-cider",
+        name: "사이다",
+        price: 2500,
+        category: "drink",
+        image: "/cider_main.png",
+        keywords: ["사이다", "cider", "사이다주", "soda", "스프라이트"],
+    },
+    {
+        id: "drink-coffee",
+        name: "커피",
+        price: 2500,
+        category: "drink",
+        image: "/coffee_main.png",
+        keywords: ["커피", "coffee", "아메리카노", "아메", "핫커피"],
+    },
+    {
+        id: "side-fries",
+        name: "감자튀김",
+        price: 2500,
+        category: "side",
+        image: "/french_fries_main.png",
+        keywords: ["감자튀김", "감튀", "프렌치프라이", "french", "fries", "후라이드", "포테이토"],
+    },
+    {
+        id: "side-salad",
+        name: "샐러드",
+        price: 3000,
+        category: "side",
+        image: "/salad_main.png",
+        keywords: ["샐러드", "salad", "그린샐러드", "야채샐러드"],
+    },
 ];
 
 export function inferMenuCategory(item) {
@@ -146,4 +194,9 @@ export function voiceNormalizedMatchesItem(normalizedTranscript, item) {
         if (k && t.includes(k)) return true;
     }
     return false;
+}
+
+/** API 없음·실패·빈 menus 일 때 세트 픽커·메뉴 화면용 최소 전체 목록 */
+export function staticMenuCatalogCopy() {
+    return STATIC_MENU.map((m) => ({ ...m }));
 }
