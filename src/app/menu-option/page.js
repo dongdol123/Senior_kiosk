@@ -17,6 +17,7 @@ function MenuOptionPageContent() {
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
+    const [isBackButtonActive, setIsBackButtonActive] = useState(false);
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
@@ -35,6 +36,15 @@ function MenuOptionPageContent() {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
         router.push(path);
     }
+
+    const handleBack = () => {
+        setIsBackButtonActive(true);
+        setTimeout(() => {
+            const cartData = encodeURIComponent(JSON.stringify(cartItems));
+            const orderType = searchParams.get("orderType") || "takeout";
+            navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+        }, 120);
+    };
 
     // 최신 router와 searchParams 참조 유지
     useEffect(() => {
@@ -727,15 +737,16 @@ function MenuOptionPageContent() {
             {/* 상단 헤더 */}
             <div
                 style={{
+                    flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "16px",
+                    padding: "16px 24px",
                     backgroundColor: "#fff",
-                    borderBottom: "2px solid #e5e5e5",
+                    zIndex: 50,
                 }}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "none" }}>
                     <h2 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{menuName}</h2>
                     <div
                         style={{
@@ -756,21 +767,52 @@ function MenuOptionPageContent() {
                     </div>
                 </div>
                 <button
-                    onClick={() => {
-                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                        const orderType = searchParams.get("orderType") || "takeout";
-                        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
-                    }}
+                    onClick={handleBack}
                     style={{
-                        backgroundColor: "#ffffff",
-                        border: "1px solid #ddd",
-                        padding: "8px 14px",
-                        borderRadius: "8px",
+                        backgroundColor: isBackButtonActive ? "#fec315" : "#002e55",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "10px 14px",
+                        borderRadius: "4px",
                         cursor: "pointer",
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
                     }}
                 >
-                    뒤로 가기
+                    <img
+                        src="/back.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{ width: "22px", height: "22px", objectFit: "contain" }}
+                    />
+                    뒤로가기
                 </button>
+                <div
+                    style={{
+                        position: "absolute",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <img
+                        src="/logo.png"
+                        alt="logo"
+                        style={{
+                            width: "64px",
+                            height: "64px",
+                            objectFit: "contain",
+                            display: "block",
+                            marginTop: "4px",
+                        }}
+                    />
+                </div>
+                <div style={{ width: "120px" }}></div>
             </div>
 
             {/* 음성 안내 메시지 */}
