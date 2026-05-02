@@ -171,6 +171,7 @@ function MenuPageContent() {
     const [showRecommendation, setShowRecommendation] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState("burger"); // "burger", "drink", "side"
+    const [activeMenuCardId, setActiveMenuCardId] = useState(null);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -421,6 +422,13 @@ function MenuPageContent() {
     }
 
     function handleMenuCardClick(menu) {
+        setActiveMenuCardId(menu.id);
+        setTimeout(() => {
+            proceedMenuCardClick(menu);
+        }, 120);
+    }
+
+    function proceedMenuCardClick(menu) {
         const name = menu.name;
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
@@ -1168,7 +1176,7 @@ function MenuPageContent() {
                                             flexDirection: "column",
                                             gap: 0,
                                             background: "#ffffff",
-                                            border: "2px solid #f0f0f0",
+                                            border: activeMenuCardId === m.id ? "2px solid #002e55" : "2px solid #d9e3ef",
                                             borderRadius: 24,
                                             boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
                                             padding: 0,
@@ -1183,12 +1191,12 @@ function MenuPageContent() {
                                         onMouseEnter={(e) => {
                                             e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
                                             e.currentTarget.style.transform = "translateY(-4px)";
-                                            e.currentTarget.style.borderColor = "#FF6B35";
+                                            e.currentTarget.style.borderColor = activeMenuCardId === m.id ? "#002e55" : "#FF6B35";
                                         }}
                                         onMouseLeave={(e) => {
                                             e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)";
                                             e.currentTarget.style.transform = "translateY(0)";
-                                            e.currentTarget.style.borderColor = "#f0f0f0";
+                                            e.currentTarget.style.borderColor = activeMenuCardId === m.id ? "#002e55" : "#d9e3ef";
                                         }}
                                     >
                                         {/* 이미지 영역 - 최대 크기 */}
