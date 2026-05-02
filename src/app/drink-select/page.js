@@ -58,6 +58,9 @@ function DrinkSelectPageContent() {
     const [assistantMessage, setAssistantMessage] = useState("");
     const [isBackButtonActive, setIsBackButtonActive] = useState(false);
     const [isCancelButtonActive, setIsCancelButtonActive] = useState(false);
+    const [isCompleteButtonActive, setIsCompleteButtonActive] = useState(false);
+    const [pendingDrinkSize, setPendingDrinkSize] = useState("");
+    const [pendingSideSize, setPendingSideSize] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
@@ -167,7 +170,7 @@ function DrinkSelectPageContent() {
     }, [selectedDrinkSize]);
 
     useEffect(() => {
-        if (selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {
+        if (false && selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {
             const drinkP = drinkSizePrice(selectedDrink, selectedDrinkSize, catalogItems);
             const sideP = sideUnitPriceCatalog(selectedSide, selectedSideSize, catalogItems);
             const timer = setTimeout(() => {
@@ -472,6 +475,49 @@ function DrinkSelectPageContent() {
     }, [selectedDrink, selectedDrinkSize, selectedSide, selectedSideSize]);
 
     /* 현재 합산 금액 변수 */
+    function handleSelectionComplete() {
+        const effectiveDrink = selectedDrink || NONE_OPTION;
+        const effectiveDrinkSize = effectiveDrink === NONE_OPTION ? NONE_OPTION : selectedDrinkSize;
+        const effectiveSide = selectedSide || NONE_OPTION;
+        const effectiveSideSize = effectiveSide === NONE_OPTION ? NONE_OPTION : selectedSideSize;
+
+        if ((effectiveDrink !== NONE_OPTION && !effectiveDrinkSize) || (effectiveSide !== NONE_OPTION && !effectiveSideSize)) {
+            return false;
+        }
+
+        const drinkP = drinkSizePrice(effectiveDrink, effectiveDrinkSize, catalogItems);
+        const sideP = sideUnitPriceCatalog(effectiveSide, effectiveSideSize, catalogItems);
+        const totalPrice = menuPrice + drinkP + sideP;
+        const setItems = [
+            { name: menuName, price: menuPrice },
+            ...(effectiveDrink === NONE_OPTION
+                ? []
+                : [{ name: effectiveDrink, size: effectiveDrinkSize, price: drinkP }]),
+            ...(effectiveSide === NONE_OPTION
+                ? []
+                : [{ name: effectiveSide, size: effectiveSideSize, price: sideP }]),
+        ];
+        const selectedParts = [
+            effectiveDrink !== NONE_OPTION ? `${effectiveDrink}(${effectiveDrinkSize})` : null,
+            effectiveSide !== NONE_OPTION ? `${effectiveSide}(${effectiveSideSize})` : null,
+        ].filter(Boolean);
+
+        const newCartItems = [...cartItems];
+        const cartName = [menuName, ...selectedParts].join(" + ");
+        newCartItems.push({
+            id: `${menuId}_set_${Date.now()}`,
+            name: cartName,
+            price: totalPrice,
+            qty: 1,
+            type: "set",
+            items: setItems,
+        });
+        const cartData = encodeURIComponent(JSON.stringify(newCartItems));
+        const orderType = searchParams.get("orderType") || "takeout";
+        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+        return true;
+    }
+
     const currentTotalPrice =
         menuPrice +
         drinkSizePrice(selectedDrink, selectedDrinkSize, catalogItems) +
@@ -841,18 +887,25 @@ function DrinkSelectPageContent() {
                                 <button
                                     key={size.name}
                                     onClick={() => {
-                                        setSelectedDrinkSize(size.name);
+                                        setPendingDrinkSize(size.name);
+                                        setTimeout(() => {
+                                            setSelectedDrinkSize(size.name);
+                                            setPendingDrinkSize("");
+                                        }, 120);
                                     }}
                                     style={{
                                         height: "75px",
                                         fontSize: "1.5rem",
                                         fontWeight: "bold",
-                                        backgroundColor: selectedDrinkSize === size.name ? "#c8d8ea" : "#f5f8fc",
+                                        backgroundColor: pendingDrinkSize === size.name ? "#c8d8ea" : "#f5f8fc",
                                         color: "#000",
-                                        border: selectedDrinkSize === size.name ? "2px solid #002e55" : "1px solid #d9e3ef",
-                                        borderRadius: "10px",
+                                        border: pendingDrinkSize === size.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: "12px",
                                         cursor: "pointer",
-                                        boxShadow: selectedDrinkSize === size.name ? "0 4px 10px rgba(0,0,0,0.12)" : "none",
+                                        boxShadow:
+                                            pendingDrinkSize === size.name
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "space-between",
@@ -1003,6 +1056,151 @@ function DrinkSelectPageContent() {
                 {selectedSide && selectedSide !== NONE_OPTION && !selectedSideSize && (
                     <div
                         style={{
+                            position: "fixed",
+                            left: "50%",
+                            top: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: "min(560px, calc(100vw - 32px))",
+                            display: "grid",
+                            gridTemplateColumns: "1fr",
+                            gap: "16px",
+                            alignItems: "stretch",
+                            background: "#ffffff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "18px",
+                            padding: "35px",
+                            boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                            zIndex: 120,
+                        }}
+                    >
+                        <div
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
+                                minHeight: 220,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "none",
+                                overflow: "hidden",
+                                flexDirection: "column",
+                                gap: "12px",
+                            }}
+                        >
+                            {(() => {
+                                const row = catalogItems.find((m) => m.name === selectedSide);
+                                const src = menuThumbImageSrc(row || { name: selectedSide });
+                                return src ? (
+                                    <img
+                                        src={src}
+                                        alt="side-select"
+                                        style={{
+                                            width: "70%",
+                                            height: "70%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ color: "#8aa0c5", fontWeight: 700 }}>side image</div>
+                                );
+                            })()}
+                            <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                {selectedSide}
+                            </div>
+                        </div>
+                        <div
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 20,
+                                boxShadow: "none",
+                            }}
+                        >
+                            <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
+                                사이즈를 선택하세요
+                            </div>
+                            {sideSizeOptions.map((size) => {
+                                const p = sideUnitPriceCatalog(selectedSide, size.name, catalogItems);
+                                return (
+                                    <button
+                                        key={size.name}
+                                        onClick={() => {
+                                            setPendingSideSize(size.name);
+                                            setTimeout(() => {
+                                                setSelectedSideSize(size.name);
+                                                setPendingSideSize("");
+                                            }, 120);
+                                        }}
+                                        style={{
+                                            height: "75px",
+                                            fontSize: "1.5rem",
+                                            fontWeight: "bold",
+                                            backgroundColor: pendingSideSize === size.name ? "#c8d8ea" : "#f5f8fc",
+                                            color: "#000",
+                                            border: pendingSideSize === size.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                            borderRadius: "12px",
+                                            cursor: "pointer",
+                                            boxShadow:
+                                                pendingSideSize === size.name
+                                                    ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                    : "0 2px 6px rgba(0,0,0,0.06)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "0 20px",
+                                        }}
+                                    >
+                                        <div>
+                                            <div style={{ fontWeight: 700, lineHeight: 1.2 }}>
+                                                {size.name === "미디엄" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기"}
+                                            </div>
+                                            <div style={{ display: "none", fontSize: "0.85rem", opacity: 0.9 }}>
+                                                {size.name === "라지" ? `+500원 (총 ${p.toLocaleString()}원)` : `${p.toLocaleString()}원`}
+                                            </div>
+                                        </div>
+                                        <span style={{ fontWeight: 800, fontSize: "1.3rem" }}>{p.toLocaleString()}원</span>
+                                    </button>
+                                );
+                            })}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsCancelButtonActive(true);
+                                    setTimeout(() => {
+                                        setSelectedSide("");
+                                        setSelectedSideSize("");
+                                        setIsCancelButtonActive(false);
+                                    }, 120);
+                                }}
+                                style={{
+                                    width: "fit-content",
+                                    alignSelf: "center",
+                                    marginTop: "8px",
+                                    padding: "14px 24px",
+                                    backgroundColor: isCancelButtonActive ? "#fec315" : "#002e55",
+                                    color: "#ffffff",
+                                    borderRadius: "10px",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "800",
+                                    cursor: "pointer",
+                                    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                }}
+                            >
+                                취소하기
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {false && selectedSide && selectedSide !== NONE_OPTION && !selectedSideSize && (
+                    <div
+                        style={{
                             display: "grid",
                             gridTemplateColumns: "1.2fr 1fr",
                             gap: "16px",
@@ -1116,11 +1314,19 @@ function DrinkSelectPageContent() {
             </div>
             <button
                 type="button"
+                onClick={() => {
+                    setIsCompleteButtonActive(true);
+                    setTimeout(() => {
+                        if (!handleSelectionComplete()) {
+                            setIsCompleteButtonActive(false);
+                        }
+                    }, 120);
+                }}
                 style={{
                     position: "absolute",
                     right: "40px",
                     bottom: "40px",
-                    backgroundColor: "#002e55",
+                    backgroundColor: isCompleteButtonActive ? "#fec002" : "#ff3b30",
                     color: "#ffffff",
                     border: "none",
                     borderRadius: "10px",

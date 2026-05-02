@@ -320,8 +320,11 @@ function PointsPageContent() {
                 display: "flex",
                 flexDirection: "column",
                 minHeight: entry === "qr" ? "100%" : "100vh",
+                height: entry === "qr" ? "100%" : "100dvh",
+                maxHeight: entry === "qr" ? "100%" : "100dvh",
                 flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#ffffff",
+                overflow: "hidden",
             }}
         >
             {/* 음성 인식 로그창 - 항상 표시 */}
@@ -457,41 +460,49 @@ function PointsPageContent() {
             <div
                 style={{
                     flex: 1,
+                    minHeight: 0,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    padding: "40px 20px",
-                    gap: "30px",
+                    justifyContent: "flex-start",
+                    padding: "36px 20px 12px",
+                    gap: "16px",
                     maxWidth: "800px",
                     width: "100%",
                     margin: "0 auto",
+                    overflow: "hidden",
+                    transform: "translateY(-16px)",
                 }}
             >
                 <div
                     style={{
                         display: "block",
                         width: "100%",
-                        backgroundColor: "#111111",
-                        color: "#ffffff",
+                        background: "#f5f8fc",
+                        color: "#000000",
+                        border: "2px solid #d9e3ef",
                         borderRadius: "12px",
                         padding: "16px 18px",
+                        height: "400px",
+                        boxSizing: "border-box",
+                        marginTop: "0",
+                        marginBottom: "44px",
                     }}
                 >
-                    <div style={{ fontSize: "1rem", fontWeight: "700", marginBottom: "10px" }}>
+                    <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "14px" }}>
                         주문 내역
                     </div>
                     {cartItems.length === 0 ? (
-                        <div style={{ color: "#cccccc", fontSize: "0.95rem" }}>주문 정보가 없습니다.</div>
+                        <div style={{ color: "#000000", fontSize: "0.95rem", background: "#f5f8fc" }}>주문 정보가 없습니다.</div>
                     ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", height: "calc(100% - 52px)", overflowY: "auto", overflowX: "hidden", paddingRight: "4px", paddingBottom: "12px", boxSizing: "border-box", background: "#f5f8fc" }}>
                             {cartItems.map((item, idx) => (
-                                <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "1px solid #2a2a2a", paddingTop: idx === 0 ? 0 : "10px" }}>
+                                <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "1px solid #d9e3ef", paddingTop: idx === 0 ? 0 : "10px", background: "#f5f8fc" }}>
                                     <div style={{ fontSize: "1rem", fontWeight: "700" }}>
                                         {item.name}{item.qty > 1 ? ` x${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
                                     </div>
-                                    {item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
-                                        <div style={{ marginTop: "6px", fontSize: "0.92rem", color: "#d0d0d0" }}>
+                                    {false && item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
+                                        <div style={{ marginTop: "6px", fontSize: "0.92rem", color: "#000000" }}>
                                             {item.items
                                                 .map((setItem) => {
                                                     const name = setItem.size ? `${setItem.name}(${setItem.size})` : setItem.name;
@@ -507,7 +518,7 @@ function PointsPageContent() {
                     )}
                 </div>
 
-                <div style={{ width: "100%", maxWidth: "800px", textAlign: "left" }}>
+                <div style={{ width: "100%", maxWidth: "800px", textAlign: "left", marginTop: "0", marginBottom: "44px" }}>
                     <div style={{ fontSize: "2rem", fontWeight: "700", color: "#000000", marginBottom: "14px" }}>
                         포인트 적립하기
                     </div>
@@ -532,7 +543,7 @@ function PointsPageContent() {
                     </div>
                 </div>
 
-                <div style={{ width: "100%", marginTop: "30px", maxWidth: "800px", fontSize: "2rem", fontWeight: "700", color: "#000000", textAlign: "left" }}>
+                <div style={{ width: "100%", marginTop: "0", maxWidth: "800px", fontSize: "2rem", fontWeight: "700", color: "#000000", textAlign: "left" }}>
                     결제 수단을 선택해주세요
                 </div>
 
@@ -550,7 +561,7 @@ function PointsPageContent() {
                         onClick={handleCardPayment}
                         style={{
                             flex: 1,
-                            padding: "40px 20px",
+                            padding: "28px 20px",
                             fontSize: "1.8rem",
                             fontWeight: "700",
                             backgroundColor: "#ffffff",
@@ -562,7 +573,7 @@ function PointsPageContent() {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            gap: "16px",
+                            gap: "12px",
                             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         onMouseEnter={(e) => {
@@ -602,7 +613,7 @@ function PointsPageContent() {
                         onClick={handlePayPayment}
                         style={{
                             flex: 1,
-                            padding: "40px 20px",
+                            padding: "28px 20px",
                             fontSize: "1.8rem",
                             fontWeight: "700",
                             backgroundColor: "#ffffff",
@@ -614,7 +625,7 @@ function PointsPageContent() {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            gap: "16px",
+                            gap: "12px",
                             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         onMouseEnter={(e) => {
@@ -671,7 +682,7 @@ function PointsPageContent() {
                         onClick={handlePayPayment}
                         style={{
                             flex: 1,
-                            padding: "40px 20px",
+                            padding: "28px 20px",
                             fontSize: "1.8rem",
                             fontWeight: "700",
                             backgroundColor: "#ffffff",
@@ -683,7 +694,7 @@ function PointsPageContent() {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
-                            gap: "16px",
+                            gap: "12px",
                             boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                         }}
                         onMouseEnter={(e) => {
@@ -727,7 +738,7 @@ function PointsPageContent() {
                                     <div style={{ fontSize: "1rem", fontWeight: "700" }}>
                                         {item.name}{item.qty > 1 ? ` x${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
                                     </div>
-                                    {item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
+                                    {false && item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
                                         <div style={{ marginTop: "6px", fontSize: "0.92rem", color: "#d0d0d0" }}>
                                             {item.items
                                                 .map((setItem) => {
