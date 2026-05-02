@@ -7,6 +7,21 @@ import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
+function getMenuImageSrc(menuId) {
+    switch ((menuId || "").toLowerCase()) {
+        case "bur-bacon":
+            return "/tomato_bur.png";
+        case "bur-mozza":
+            return "/mozza_bulbur.png";
+        case "bur-triple":
+            return "/triple_bur.png";
+        case "bur-mush":
+            return "/merss.png";
+        default:
+            return "/burger.png";
+    }
+}
+
 function MenuOptionPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -684,7 +699,7 @@ function MenuOptionPageContent() {
                 flexDirection: "column",
                 minHeight: entry === "qr" ? "100%" : "100vh",
                 flex: entry === "qr" ? 1 : undefined,
-                backgroundColor: "#f9f9f9",
+                backgroundColor: "#ffffff",
             }}
         >
             {/* 음성 인식 로그창 */}
@@ -849,47 +864,61 @@ function MenuOptionPageContent() {
                         <div
                             style={{
                                 width: "100%",
-                                maxWidth: "720px",
-                                height: "300px",
-                                background: "#fff",
-                                border: "1px solid #e5e5e5",
-                                borderRadius: "20px",
-                                boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                                maxWidth: "460px",
                                 display: "flex",
+                                flexDirection: "column",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                overflow: "hidden",
-                                padding: "20px",
+                                gap: "16px",
                             }}
                         >
-                            {(() => {
-                                const n = (menuName || "").replace(/\s+/g, "").toLowerCase();
-                                if (/칠리/.test(n)) {
-                                    return (
-                                        <img
-                                            src="/C_srp.png"
-                                            alt={menuName}
-                                            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-                                        />
-                                    );
-                                }
-                                if (/트러플/.test(n)) {
-                                    return (
-                                        <img
-                                            src="/T_srp.png"
-                                            alt={menuName}
-                                            style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-                                        />
-                                    );
-                                }
-                                return (
-                                    <img
-                                        src="/burger.png"
-                                        alt={menuName}
-                                        style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
-                                    />
-                                );
-                            })()}
+                            <div
+                                style={{
+                                    width: "100%",
+                                    height: "320px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <img
+                                    src={getMenuImageSrc(menuId)}
+                                    alt={menuName}
+                                    style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                                />
+                            </div>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    textAlign: "center",
+                                    gap: "8px",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        fontSize: "2rem",
+                                        fontWeight: "800",
+                                        color: "#111",
+                                        lineHeight: "1.2",
+                                    }}
+                                >
+                                    {menuName}
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: "1.5rem",
+                                        fontWeight: "700",
+                                        color: "#002e55",
+                                        lineHeight: "1.2",
+                                    }}
+                                >
+                                    {menuPrice.toLocaleString()}원
+                                </div>
+                            </div>
                         </div>
 
                         {/* 단품/기본 세트/세트 직접 선택 버튼 - 동일 크기 한 줄 정렬 */}
@@ -1128,7 +1157,7 @@ function MenuOptionPageContent() {
 
 export default function MenuOptionPage() {
     return (
-        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#f9f9f9" }} />}>
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#ffffff" }} />}>
             <MenuOptionPageContent />
         </Suspense>
     );
