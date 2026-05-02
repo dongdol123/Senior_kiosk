@@ -58,6 +58,8 @@ function MenuPageContent() {
     const [conversation, setConversation] = useState([]);
     const [lastUser, setLastUser] = useState("");
     const [isHomeButtonActive, setIsHomeButtonActive] = useState(false);
+    const [isClearCartButtonActive, setIsClearCartButtonActive] = useState(false);
+    const [isOrderButtonActive, setIsOrderButtonActive] = useState(false);
     const recognitionRef = useRef(null);
     const restartingRef = useRef(false);
     const mountedRef = useRef(true);
@@ -303,6 +305,23 @@ function MenuPageContent() {
             routerRef.current.push(`/points?cart=${cartData}&total=${cartTotal}&orderType=${orderType}&${entryQuery(ent)}`);
         }
     }
+
+    const handleClearCartClick = () => {
+        if (cartItems.length === 0) return;
+        setIsClearCartButtonActive(true);
+        setTimeout(() => {
+            clearCart();
+            setIsClearCartButtonActive(false);
+        }, 120);
+    };
+
+    const handleOrderClick = () => {
+        if (cartItems.length === 0) return;
+        setIsOrderButtonActive(true);
+        setTimeout(() => {
+            handleOrder();
+        }, 120);
+    };
 
     function handleMenuCardClick(menu) {
         setActiveMenuCardId(menu.id);
@@ -1418,14 +1437,14 @@ function MenuPageContent() {
                             총 수량　{cartItems.reduce((sum, it) => sum + it.qty, 0)}개
                         </div>
                         <button
-                            onClick={clearCart}
+                            onClick={handleClearCartClick}
                             disabled={cartItems.length === 0}
                             style={{
                                 width: "130px",
                                 height: "60px",
                                 borderRadius: "8px",
                                 border: "none",
-                                background: cartItems.length === 0 ? "#c8d8ea" : "#002e55",
+                                background: cartItems.length === 0 ? "#c8d8ea" : isClearCartButtonActive ? "#ff3b30" : "#002e55",
                                 color: "#ffffff",
                                 cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
                                 fontSize: "22px",
@@ -1441,14 +1460,14 @@ function MenuPageContent() {
                             총 금액　{cartTotal.toLocaleString()}원
                         </div>
                         <button
-                            onClick={handleOrder}
+                            onClick={handleOrderClick}
                             disabled={cartItems.length === 0}
                             style={{
                                 width: "130px",
                                 height: "60px",
                                 borderRadius: "8px",
                                 border: "none",
-                                background: cartItems.length === 0 ? "#c8d8ea" : "#fec002",
+                                background: cartItems.length === 0 ? "#c8d8ea" : isOrderButtonActive ? "#ff3b30" : "#fec002",
                                 color: "#ffffff",
                                 cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
                                 fontSize: "22px",
