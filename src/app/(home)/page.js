@@ -165,7 +165,7 @@ export default function HomePage() {
                 color: blue,
                 boxShadow:
                   activeOrderType === "dinein"
-                    ? `inset 0 0 0 10px ${accent}, 0 16px 36px rgba(0, 12, 29, 0.22)`
+                    ? "inset 0 0 0 10px #c8d8ea, inset 0 0 0 20px #f5f8fc, 0 16px 36px rgba(0, 12, 29, 0.22)"
                     : "0 16px 36px rgba(0, 12, 29, 0.22)",
               }}
             >
@@ -193,7 +193,7 @@ export default function HomePage() {
                 color: blue,
                 boxShadow:
                   activeOrderType === "takeout"
-                    ? `inset 0 0 0 10px ${accent}, 0 16px 36px rgba(0, 12, 29, 0.16)`
+                    ? "inset 0 0 0 10px #c8d8ea, inset 0 0 0 20px #f5f8fc, 0 16px 36px rgba(0, 12, 29, 0.16)"
                     : "0 16px 36px rgba(0, 12, 29, 0.16)",
               }}
             >

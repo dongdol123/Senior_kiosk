@@ -1231,11 +1231,11 @@ function MenuPageContent() {
                                             flexDirection: "column", 
                                             gap: 2, 
                                             flexShrink: 0,
-                                            padding: "10px 16px 14px 16px",
+                                            padding: "14px 20px 18px 20px",
                                             background: "#fff",
                                             borderRadius: "0 0 24px 24px",
                                         }}>
-                                            <div style={{ fontWeight: 800, fontSize: 24, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#333", lineHeight: "1.1" }}>{m.name}</div>
+                                            <div style={{ fontWeight: 800, fontSize: 24, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#000", lineHeight: "1.1" }}>{m.name}</div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                                 <div style={{ color: "#002e55", fontSize: 22, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
                                             </div>
