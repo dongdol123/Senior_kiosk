@@ -7,87 +7,13 @@ import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import KioskProgressBars from "../../components/KioskProgressBars";
 import { getOrderFlowEntry, entryQuery, qrRequiresOrderTypeRedirect } from "../utils/orderFlowEntry";
-
-function normalizeMenuKey(name) {
-    return (name || "").replace(/\s+/g, "").toLowerCase();
-}
-
-/** 키오스크 기본 메뉴(가격·이미지·카테고리). API와 병합 시 이름 기준으로 매칭됩니다. */
-const STATIC_MENU = [
-    {
-        id: "bur-bacon",
-        name: "베이컨 디럭스 버거",
-        price: 4600,
-        category: "burger",
-        image: "/tomato_bur.png",
-        keywords: ["베이컨", "디럭스", "bacon", "deluxe", "토마토"],
-    },
-    {
-        id: "bur-mozza",
-        name: "모짜렐라 치즈 불고기 버거",
-        price: 4800,
-        category: "burger",
-        image: "/mozza_bulbur.png",
-        keywords: ["모짜렐라", "모짜", "불고기", "치즈"],
-    },
-    {
-        id: "bur-triple",
-        name: "트리플 불고기 버거",
-        price: 5500,
-        category: "burger",
-        image: "/triple_bur.png",
-        keywords: ["트리플", "triple"],
-    },
-    {
-        id: "bur-mush",
-        name: "머쉬룸 버거",
-        price: 6000,
-        category: "burger",
-        image: "/merss.png",
-        keywords: ["머쉬룸", "머시룸", "mushroom"],
-    },
-    {
-        id: "side-wing",
-        name: "치킨윙 4개",
-        price: 4000,
-        category: "side",
-        image: "/wing.png",
-        keywords: ["치킨윙", "윙", "wing"],
-    },
-    {
-        id: "side-hash",
-        name: "해쉬브라운",
-        price: 2500,
-        category: "side",
-        image: "/hash.png",
-        keywords: ["해쉬", "해시", "hash", "브라운", "해쉬브라운"],
-    },
-    {
-        id: "drink-latte",
-        name: "카페라떼",
-        price: 2500,
-        category: "drink",
-        image: "/latte.png",
-        keywords: ["카페라떼", "라떼", "latte", "카페"],
-    },
-    {
-        id: "drink-icedtea",
-        name: "아이스티",
-        price: 2500,
-        category: "drink",
-        image: "/icetea.png",
-        keywords: ["아이스티", "티", "iced", "icetea", "ice tea"],
-    },
-];
-
-function inferMenuCategory(item) {
-    if (item?.category) return item.category;
-    const n = normalizeMenuKey(item?.name);
-    if (/버거|burger/.test(n)) return "burger";
-    if (/카페라떼|라떼|아이스티|icetea|icedtea/.test(n)) return "drink";
-    if (/치킨윙|해쉬브라운|해시브라운/.test(n)) return "side";
-    return "";
-}
+import {
+    STATIC_MENU,
+    inferMenuCategory,
+    mergeMenusFromApiResponse,
+    menuThumbImageSrc,
+    normalizeMenuKey,
+} from "../utils/kioskMenuCatalog";
 
 function menuItemMatchesCategory(item, selectedCategory) {
     return inferMenuCategory(item) === selectedCategory;
@@ -95,21 +21,6 @@ function menuItemMatchesCategory(item, selectedCategory) {
 
 function isTapToAddSide(item) {
     return inferMenuCategory(item) === "side";
-}
-
-function menuGridImageSrc(m) {
-    if (m?.image) return m.image;
-    const n = normalizeMenuKey(m?.name);
-    if (/칠리/.test(n)) return "/C_srp.png";
-    if (/트러플/.test(n)) return "/T_srp.png";
-    if (/버거/.test(n)) return "/burger.png";
-    if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
-    if (/사이다/.test(n)) return "/cider_main.png";
-    if (/커피/.test(n)) return "/coffee_main.png";
-    if (/감자튀김/.test(n)) return "/french_fries_main.png";
-    if (/샐러드/.test(n)) return "/salad_main.png";
-    if (/치킨텐더/.test(n)) return "/tender_main.png";
-    return null;
 }
 
 function cartItemImageSrc(it) {
@@ -184,37 +95,9 @@ function MenuPageContent() {
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/menu`);
                 const data = await res.json();
-                if (res.ok && data.menus && data.menus.length > 0) {
-                    const uniqueByName = new Map();
-                    data.menus.forEach((item) => {
-                        if (!item?.name) return;
-                        const key = normalizeMenuKey(item.name);
-                        if (!uniqueByName.has(key)) uniqueByName.set(key, item);
-                    });
-
-                    const staticByName = new Map(STATIC_MENU.map((m) => [normalizeMenuKey(m.name), m]));
-
-                    const canonical = Array.from(uniqueByName.values()).map((item) => {
-                        const st = staticByName.get(normalizeMenuKey(item.name));
-                        return {
-                            ...item,
-                            id: st?.id ?? item.id,
-                            price: st?.price ?? item.price,
-                            image: st?.image ?? item.image,
-                            category: st?.category ?? inferMenuCategory(item),
-                            keywords:
-                                st?.keywords?.length ? st.keywords : item.keywords ?? [],
-                        };
-                    });
-
-                    const existingNames = new Set(canonical.map((m) => normalizeMenuKey(m.name)));
-                    STATIC_MENU.forEach((item) => {
-                        if (!existingNames.has(normalizeMenuKey(item.name))) {
-                            canonical.push({ ...item });
-                        }
-                    });
-
-                    setMENU_ITEMS(canonical);
+                if (res.ok) {
+                    const canonical = mergeMenusFromApiResponse(data);
+                    if (canonical) setMENU_ITEMS(canonical);
                 }
             } catch (e) {
                 console.error('Failed to load menus:', e);
@@ -1214,7 +1097,7 @@ function MenuPageContent() {
                                             }}
                                         >
                                             {(() => {
-                                                const src = menuGridImageSrc(m);
+                                                const src = menuThumbImageSrc(m);
                                                 return src ? (
                                                     <img
                                                         src={src}
