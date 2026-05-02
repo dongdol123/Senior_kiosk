@@ -1,26 +1,46 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, useMemo } from "react";
 import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
+import {
+    inferMenuCategory,
+    mergeMenusFromApiResponse,
+    menuThumbImageSrc,
+    staticMenuCatalogCopy,
+    voiceNormalizedMatchesItem,
+} from "../utils/kioskMenuCatalog";
 
-function drinkUnitPrice(size) {
-    return size === "라지" ? 3000 : 2500;
+const NONE_OPTION = "None";
+
+function drinkMediumPrice(drinkName, catalog) {
+    if (!drinkName || drinkName === NONE_OPTION) return 0;
+    const row = catalog?.find((m) => m.name === drinkName);
+    return row?.price != null ? row.price : 2500;
 }
 
-function sideBasePrice(sideName) {
-    return sideName === "치킨윙 4개" ? 4000 : 2500;
-}
-
-function sideUnitPrice(sideName, size) {
-    const base = sideBasePrice(sideName);
+function drinkSizePrice(drinkName, size, catalog) {
+    if (!drinkName || drinkName === NONE_OPTION || size === NONE_OPTION) return 0;
+    const base = drinkMediumPrice(drinkName, catalog);
     return size === "라지" ? base + 500 : base;
 }
 
-const NONE_OPTION = "None";
+function sideBasePriceFromCatalog(sideName, catalog) {
+    if (!sideName || sideName === NONE_OPTION) return 0;
+    const row = catalog?.find((m) => m.name === sideName);
+    if (row?.price != null) return row.price;
+    if (sideName === "치킨윙 4개") return 4000;
+    return 2500;
+}
+
+function sideUnitPriceCatalog(sideName, size, catalog) {
+    if (!sideName || sideName === NONE_OPTION || size === NONE_OPTION) return 0;
+    const base = sideBasePriceFromCatalog(sideName, catalog);
+    return size === "라지" ? base + 500 : base;
+}
 
 function DrinkSelectPageContent() {
     const router = useRouter();
@@ -49,12 +69,66 @@ function DrinkSelectPageContent() {
         router.push(path);
     }
 
-    const drinks = ["카페라떼", "아이스티"];
-    const drinkSizes = [
-        { name: "미디움", price: 2500 },
-        { name: "라지", price: 3000 },
-    ];
-    const sides = ["치킨윙 4개", "해쉬브라운"];
+    const [catalogItems, setCatalogItems] = useState(() => staticMenuCatalogCopy());
+    const catalogRef = useRef(catalogItems);
+
+    const drinkItems = useMemo(
+        () =>
+            catalogItems
+                .filter((m) => inferMenuCategory(m) === "drink")
+                .sort((a, b) => a.name.localeCompare(b.name, "ko")),
+        [catalogItems]
+    );
+    const sideItems = useMemo(
+        () =>
+            catalogItems
+                .filter((m) => inferMenuCategory(m) === "side")
+                .sort((a, b) => a.name.localeCompare(b.name, "ko")),
+        [catalogItems]
+    );
+
+    useEffect(() => {
+        catalogRef.current = catalogItems;
+    }, [catalogItems]);
+
+    useEffect(() => {
+        let cancelled = false;
+        async function load() {
+            const fallback = staticMenuCatalogCopy();
+            const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "");
+            try {
+                const res = await fetch(`${base}/api/menu`, { cache: "no-store" });
+                const data = await res.json().catch(() => ({}));
+                if (cancelled) return;
+                if (res.ok) {
+                    const merged = mergeMenusFromApiResponse(data);
+                    if (merged?.length) {
+                        setCatalogItems(merged);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error("drink-select menu load:", e);
+            }
+            if (!cancelled) setCatalogItems(fallback);
+        }
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const drinkSizeButtons =
+        selectedDrink && selectedDrink !== NONE_OPTION
+            ? (() => {
+                  const med = drinkMediumPrice(selectedDrink, catalogItems);
+                  return [
+                      { name: "미디움", price: med },
+                      { name: "라지", price: med + 500 },
+                  ];
+              })()
+            : [];
+
     const sideSizeOptions = [{ name: "미디움" }, { name: "라지" }];
 
     useEffect(() => {
@@ -86,8 +160,8 @@ function DrinkSelectPageContent() {
 
     useEffect(() => {
         if (selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {
-            const drinkP = selectedDrink === NONE_OPTION ? 0 : drinkUnitPrice(selectedDrinkSize);
-            const sideP = selectedSide === NONE_OPTION ? 0 : sideUnitPrice(selectedSide, selectedSideSize);
+            const drinkP = drinkSizePrice(selectedDrink, selectedDrinkSize, catalogItems);
+            const sideP = sideUnitPriceCatalog(selectedSide, selectedSideSize, catalogItems);
             const timer = setTimeout(() => {
                 const totalPrice = menuPrice + drinkP + sideP;
                 const setItems = [
@@ -121,7 +195,19 @@ function DrinkSelectPageContent() {
             }, 800);
             return () => clearTimeout(timer);
         }
-    }, [selectedDrink, selectedDrinkSize, selectedSide, selectedSideSize, menuId, menuName, menuPrice, cartItems, searchParams, router]);
+    }, [
+        selectedDrink,
+        selectedDrinkSize,
+        selectedSide,
+        selectedSideSize,
+        menuId,
+        menuName,
+        menuPrice,
+        cartItems,
+        catalogItems,
+        searchParams,
+        router,
+    ]);
 
     useEffect(() => {
         mountedRef.current = true;
@@ -258,49 +344,84 @@ function DrinkSelectPageContent() {
             });
 
             let reply = "";
+            const cat = catalogRef.current;
+            const drinksCat = cat.filter((m) => inferMenuCategory(m) === "drink");
+            const sidesCat = cat.filter((m) => inferMenuCategory(m) === "side");
 
-            if (/아이스티|icetea|ice\s*tea/.test(normalized)) {
-                setSelectedDrink("아이스티");
-                setSelectedDrinkSize("");
-                reply = "아이스티를 선택했어요. 음료 사이즈를 선택해주세요.";
-            } else if (/카페라떼|라떼|latte/.test(normalized)) {
-                setSelectedDrink("카페라떼");
-                setSelectedDrinkSize("");
-                reply = "카페라떼를 선택했어요. 음료 사이즈를 선택해주세요.";
+            if (/선택안함|선택안해|음료없음|사이드없음|빼주세요|스킵/.test(normalized)) {
+                if (!selectedDrinkSize && (!selectedDrink || selectedDrink === "")) {
+                    setSelectedDrink(NONE_OPTION);
+                    setSelectedDrinkSize(NONE_OPTION);
+                    reply = "음료는 선택하지 않을게요. 사이드를 골라주세요.";
+                } else if (selectedDrinkSize && (!selectedSide || selectedSide === "") && !selectedSideSize) {
+                    setSelectedSide(NONE_OPTION);
+                    setSelectedSideSize(NONE_OPTION);
+                    reply = "사이드는 선택하지 않을게요.";
+                }
             }
 
-            if (/치킨윙|치킨윙네개|윙네개|윙/.test(normalized)) {
-                setSelectedSide("치킨윙 4개");
-                setSelectedSideSize("");
-                reply = "치킨윙을 선택했어요. 사이드 사이즈를 선택해주세요.";
-            } else if (/해쉬|해시|hash|브라운/.test(normalized)) {
-                setSelectedSide("해쉬브라운");
-                setSelectedSideSize("");
-                reply = "해쉬브라운을 선택했어요. 사이드 사이즈를 선택해주세요.";
-            }
-
-            if (!reply) {
-                if (/미디움|미디엄|중간/.test(normalized)) {
-                    if (selectedSide && !selectedSideSize) {
-                        setSelectedSideSize("미디움");
-                        reply = `${selectedSide} 미디움으로 선택했어요.`;
-                    } else if (selectedDrink && !selectedDrinkSize) {
-                        setSelectedDrinkSize("미디움");
-                        reply = `${selectedDrink} 미디움으로 선택했어요.`;
-                    }
-                } else if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
-                    if (selectedSide && !selectedSideSize) {
-                        setSelectedSideSize("라지");
-                        reply = `${selectedSide} 라지로 선택했어요.`;
-                    } else if (selectedDrink && !selectedDrinkSize) {
-                        setSelectedDrinkSize("라지");
-                        reply = `${selectedDrink} 라지로 선택했어요.`;
+            if (!reply && (!selectedDrink || selectedDrink === "")) {
+                for (const d of drinksCat) {
+                    if (voiceNormalizedMatchesItem(normalized, d)) {
+                        setSelectedDrink(d.name);
+                        setSelectedDrinkSize("");
+                        reply = `${d.name}를 선택했어요. 음료 사이즈를 선택해주세요.`;
+                        break;
                     }
                 }
             }
 
+            if (
+                !reply &&
+                selectedDrink &&
+                selectedDrink !== NONE_OPTION &&
+                !selectedDrinkSize
+            ) {
+                if (/미디움|미디엄|중간/.test(normalized)) {
+                    setSelectedDrinkSize("미디움");
+                    reply = `${selectedDrink} 미디움으로 선택했어요.`;
+                } else if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
+                    setSelectedDrinkSize("라지");
+                    reply = `${selectedDrink} 라지로 선택했어요.`;
+                }
+            }
+
+            if (
+                !reply &&
+                selectedDrinkSize &&
+                (!selectedSide || selectedSide === "")
+            ) {
+                for (const s of sidesCat) {
+                    if (voiceNormalizedMatchesItem(normalized, s)) {
+                        setSelectedSide(s.name);
+                        setSelectedSideSize("");
+                        reply = `${s.name}를 선택했어요. 사이드 사이즈를 선택해주세요.`;
+                        break;
+                    }
+                }
+            }
+
+            if (
+                !reply &&
+                selectedSide &&
+                selectedSide !== NONE_OPTION &&
+                !selectedSideSize
+            ) {
+                if (/미디움|미디엄|중간/.test(normalized)) {
+                    setSelectedSideSize("미디움");
+                    reply = `${selectedSide} 미디움으로 선택했어요.`;
+                } else if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
+                    setSelectedSideSize("라지");
+                    reply = `${selectedSide} 라지로 선택했어요.`;
+                }
+            }
+
             if (!reply) {
-                reply = "카페라떼 또는 아이스티, 치킨윙 또는 해쉬브라운을 고른 뒤 사이즈를 말씀해 주세요.";
+                const ex = drinksCat
+                    .slice(0, 3)
+                    .map((m) => m.name)
+                    .join(", ");
+                reply = `음료 이름과 사이즈, 이어서 사이드와 사이즈를 말씀해 주세요. 예: ${ex || "콜라"}`;
             }
 
             setAssistantMessage(reply);
@@ -488,16 +609,17 @@ function DrinkSelectPageContent() {
                         </h3>
                         {selectedDrink && selectedDrinkSize && selectedDrink !== NONE_OPTION && selectedDrinkSize !== NONE_OPTION && (
                             <div style={{ fontSize: "1rem", fontWeight: "700", color: "#1e7a39" }}>
-                                {selectedDrink} : {drinkSizes.find((s) => s.name === selectedDrinkSize)?.price.toLocaleString() || "0"}원
+                                {selectedDrink} :{" "}
+                                {drinkSizeButtons.find((s) => s.name === selectedDrinkSize)?.price.toLocaleString() || "0"}원
                             </div>
                         )}
                     </div>
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                            gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
                             gap: "12px",
-                            maxWidth: "720px",
+                            maxWidth: "900px",
                             margin: "0 auto",
                         }}
                     >
@@ -527,47 +649,53 @@ function DrinkSelectPageContent() {
                         >
                             <div style={{ fontSize: "1.4rem", fontWeight: "800" }}>선택 안 함</div>
                         </button>
-                        {drinks.map((drink) => (
-                            <button
-                                key={drink}
-                                onClick={() => {
-                                    setSelectedDrink(drink);
-                                    setSelectedDrinkSize("");
-                                }}
-                                style={{
-                                    minHeight: "170px",
-                                    fontSize: "1.1rem",
-                                    fontWeight: "bold",
-                                    backgroundColor: selectedDrink === drink ? "#1e7a39" : "#fff",
-                                    color: selectedDrink === drink ? "#fff" : "#333",
-                                    border: selectedDrink === drink ? "3px solid #1e7a39" : "2px solid #ddd",
-                                    borderRadius: "12px",
-                                    cursor: "pointer",
-                                    boxShadow: selectedDrink === drink ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: 8,
-                                    padding: "16px 12px",
-                                }}
-                            >
-                                <img
-                                    src={drink === "카페라떼" ? "/latte.png" : "/icetea.png"}
-                                    alt=""
-                                    style={{ width: 72, height: 72, objectFit: "contain" }}
-                                />
-                                {drink}
-                                <div style={{ fontSize: "0.9rem", marginTop: 2, opacity: 0.85 }}>
-                                    M {drinkSizes[0].price.toLocaleString()}원
-                                </div>
-                            </button>
-                        ))}
+                        {drinkItems.map((d) => {
+                            const thumb = menuThumbImageSrc(d);
+                            return (
+                                <button
+                                    key={d.id || d.name}
+                                    onClick={() => {
+                                        setSelectedDrink(d.name);
+                                        setSelectedDrinkSize("");
+                                    }}
+                                    style={{
+                                        minHeight: "170px",
+                                        fontSize: "1.1rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: selectedDrink === d.name ? "#1e7a39" : "#fff",
+                                        color: selectedDrink === d.name ? "#fff" : "#333",
+                                        border: selectedDrink === d.name ? "3px solid #1e7a39" : "2px solid #ddd",
+                                        borderRadius: "12px",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            selectedDrink === d.name
+                                                ? "0 4px 12px rgba(0,0,0,0.2)"
+                                                : "0 2px 6px rgba(0,0,0,0.1)",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: 8,
+                                        padding: "16px 12px",
+                                    }}
+                                >
+                                    {thumb ? (
+                                        <img src={thumb} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
+                                    ) : (
+                                        <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>음료</div>
+                                    )}
+                                    {d.name}
+                                    <div style={{ fontSize: "0.9rem", marginTop: 2, opacity: 0.85 }}>
+                                        M {drinkMediumPrice(d.name, catalogItems).toLocaleString()}원
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* 음료 사이즈 선택 */}
-                {selectedDrink && !selectedDrinkSize && (
+                {selectedDrink && selectedDrink !== NONE_OPTION && !selectedDrinkSize && (
                     <div
                         style={{
                             display: "grid",
@@ -590,33 +718,24 @@ function DrinkSelectPageContent() {
                                 overflow: "hidden",
                             }}
                         >
-                            {selectedDrink === "카페라떼" ? (
-                                <img
-                                    src="/latte.png"
-                                    alt="사이즈 선택"
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "contain",
-                                        display: "block",
-                                    }}
-                                />
-                            ) : selectedDrink === "아이스티" ? (
-                                <img
-                                    src="/icetea.png"
-                                    alt="사이즈 선택"
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "contain",
-                                        display: "block",
-                                    }}
-                                />
-                            ) : (
-                                <div style={{ color: "#8aa0c5", fontWeight: 700 }}>
-                                    음료 이미지 추가 영역
-                                </div>
-                            )}
+                            {(() => {
+                                const row = catalogItems.find((m) => m.name === selectedDrink);
+                                const src = menuThumbImageSrc(row || { name: selectedDrink });
+                                return src ? (
+                                    <img
+                                        src={src}
+                                        alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ color: "#8aa0c5", fontWeight: 700 }}>음료 이미지</div>
+                                );
+                            })()}
                         </div>
                         <div
                             style={{
@@ -633,7 +752,7 @@ function DrinkSelectPageContent() {
                             <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
                                 {selectedDrink} 사이즈를 선택하세요
                             </div>
-                            {drinkSizes.map((size) => (
+                            {drinkSizeButtons.map((size) => (
                                 <button
                                     key={size.name}
                                     onClick={() => {
@@ -678,9 +797,9 @@ function DrinkSelectPageContent() {
                     <div
                         style={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                            gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
                             gap: "12px",
-                            maxWidth: "720px",
+                            maxWidth: "900px",
                             margin: "0 auto",
                         }}
                     >
@@ -710,47 +829,53 @@ function DrinkSelectPageContent() {
                         >
                             <div style={{ fontSize: "1.4rem", fontWeight: "800" }}>선택 안 함</div>
                         </button>
-                        {sides.map((side) => (
-                            <button
-                                key={side}
-                                onClick={() => {
-                                    setSelectedSide(side);
-                                    setSelectedSideSize("");
-                                }}
-                                style={{
-                                    minHeight: "170px",
-                                    fontSize: "1.1rem",
-                                    fontWeight: "bold",
-                                    backgroundColor: selectedSide === side ? "#1e7a39" : "#fff",
-                                    color: selectedSide === side ? "#fff" : "#333",
-                                    border: selectedSide === side ? "3px solid #1e7a39" : "2px solid #ddd",
-                                    borderRadius: "12px",
-                                    cursor: "pointer",
-                                    boxShadow: selectedSide === side ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: 8,
-                                    padding: "16px 12px",
-                                }}
-                            >
-                                <img
-                                    src={side === "치킨윙 4개" ? "/wing.png" : "/hash.png"}
-                                    alt=""
-                                    style={{ width: 72, height: 72, objectFit: "contain" }}
-                                />
-                                {side}
-                                <div style={{ fontSize: "0.9rem", marginTop: 2, opacity: 0.85 }}>
-                                    M {sideBasePrice(side).toLocaleString()}원
-                                </div>
-                            </button>
-                        ))}
+                        {sideItems.map((item) => {
+                            const thumb = menuThumbImageSrc(item);
+                            return (
+                                <button
+                                    key={item.id || item.name}
+                                    onClick={() => {
+                                        setSelectedSide(item.name);
+                                        setSelectedSideSize("");
+                                    }}
+                                    style={{
+                                        minHeight: "170px",
+                                        fontSize: "1.1rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: selectedSide === item.name ? "#1e7a39" : "#fff",
+                                        color: selectedSide === item.name ? "#fff" : "#333",
+                                        border: selectedSide === item.name ? "3px solid #1e7a39" : "2px solid #ddd",
+                                        borderRadius: "12px",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            selectedSide === item.name
+                                                ? "0 4px 12px rgba(0,0,0,0.2)"
+                                                : "0 2px 6px rgba(0,0,0,0.1)",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: 8,
+                                        padding: "16px 12px",
+                                    }}
+                                >
+                                    {thumb ? (
+                                        <img src={thumb} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
+                                    ) : (
+                                        <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>사이드</div>
+                                    )}
+                                    {item.name}
+                                    <div style={{ fontSize: "0.9rem", marginTop: 2, opacity: 0.85 }}>
+                                        M {sideBasePriceFromCatalog(item.name, catalogItems).toLocaleString()}원
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
                 {/* 사이드 사이즈 선택 */}
-                {selectedSide && !selectedSideSize && (
+                {selectedSide && selectedSide !== NONE_OPTION && !selectedSideSize && (
                     <div
                         style={{
                             display: "grid",
@@ -773,16 +898,24 @@ function DrinkSelectPageContent() {
                                 overflow: "hidden",
                             }}
                         >
-                            <img
-                                src={selectedSide === "치킨윙 4개" ? "/wing.png" : "/hash.png"}
-                                alt={selectedSide}
-                                style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "contain",
-                                    display: "block",
-                                }}
-                            />
+                            {(() => {
+                                const row = catalogItems.find((m) => m.name === selectedSide);
+                                const src = menuThumbImageSrc(row || { name: selectedSide });
+                                return src ? (
+                                    <img
+                                        src={src}
+                                        alt={selectedSide}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ color: "#8aa0c5", fontWeight: 700 }}>사이드 이미지</div>
+                                );
+                            })()}
                         </div>
                         <div
                             style={{
@@ -800,7 +933,7 @@ function DrinkSelectPageContent() {
                                 {selectedSide} 사이즈를 선택하세요
                             </div>
                             {sideSizeOptions.map((size) => {
-                                const p = sideUnitPrice(selectedSide, size.name);
+                                const p = sideUnitPriceCatalog(selectedSide, size.name, catalogItems);
                                 return (
                                     <button
                                         key={size.name}
