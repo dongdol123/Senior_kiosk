@@ -56,6 +56,7 @@ function DrinkSelectPageContent() {
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
+    const [isBackButtonActive, setIsBackButtonActive] = useState(false);
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
@@ -151,12 +152,18 @@ function DrinkSelectPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        if (!selectedDrinkSize || selectedSide || sidePromptPlayedRef.current) return;
+        if (!selectedDrinkSize || selectedDrinkSize === NONE_OPTION || selectedSide || sidePromptPlayedRef.current) return;
         sidePromptPlayedRef.current = true;
         const msg = "사이드를 골라주세요.";
         setAssistantMessage(msg);
         speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
     }, [selectedDrinkSize, selectedSide]);
+
+    useEffect(() => {
+        if (selectedDrinkSize) {
+            setAssistantMessage("");
+        }
+    }, [selectedDrinkSize]);
 
     useEffect(() => {
         if (selectedDrink && selectedDrinkSize && selectedSide && selectedSideSize) {
@@ -470,7 +477,7 @@ function DrinkSelectPageContent() {
                 flexDirection: "column",
                 minHeight: entry === "qr" ? "100%" : "100vh",
                 flex: entry === "qr" ? 1 : undefined,
-                backgroundColor: "#f9f9f9",
+                backgroundColor: "#ffffff",
             }}
         >
             {/* 음성 인식 로그창 - 항상 표시 */}
@@ -526,15 +533,16 @@ function DrinkSelectPageContent() {
             {/* 상단 헤더 */}
             <div
                 style={{
+                    flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "16px",
+                    padding: "16px 24px",
                     backgroundColor: "#fff",
-                    borderBottom: "2px solid #e5e5e5",
+                    zIndex: 50,
                 }}
             >
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "none" }}>
                     <h2 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>음료/사이드 선택</h2>
                     <div
                         style={{
@@ -556,20 +564,59 @@ function DrinkSelectPageContent() {
                 </div>
                 <button
                     onClick={() => {
-                        const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                        const orderType = searchParams.get("orderType") || "takeout";
-                        navigateTo(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                        setIsBackButtonActive(true);
+                        setTimeout(() => {
+                            const cartData = encodeURIComponent(JSON.stringify(cartItems));
+                            const orderType = searchParams.get("orderType") || "takeout";
+                            navigateTo(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                        }, 120);
                     }}
                     style={{
-                        backgroundColor: "#ffffff",
-                        border: "1px solid #ddd",
-                        padding: "8px 14px",
-                        borderRadius: "8px",
+                        backgroundColor: isBackButtonActive ? "#fec315" : "#002e55",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "10px 14px",
+                        borderRadius: "4px",
                         cursor: "pointer",
+                        fontSize: "18px",
+                        fontWeight: "600",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        flexDirection: "row-reverse",
+                        gap: "8px",
                     }}
                 >
-                    뒤로 가기
+                    뒤로가기
+                    <img
+                        src="/back.png"
+                        alt=""
+                        aria-hidden="true"
+                        style={{ width: "22px", height: "22px", objectFit: "contain" }}
+                    />
                 </button>
+                <div
+                    style={{
+                        position: "absolute",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    <img
+                        src="/logo.png"
+                        alt="logo"
+                        style={{
+                            width: "64px",
+                            height: "64px",
+                            objectFit: "contain",
+                            display: "block",
+                            marginTop: "4px",
+                        }}
+                    />
+                </div>
+                <div style={{ width: "120px" }}></div>
             </div>
 
             {/* 음성 안내 메시지 */}
@@ -604,10 +651,10 @@ function DrinkSelectPageContent() {
                 {/* 음료 선택 */}
                 <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                        <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", margin: 0 }}>
+                        <h3 style={{ fontSize: "2rem", fontWeight: "bold", margin: 0 }}>
                             음료를 선택하세요
                         </h3>
-                        {selectedDrink && selectedDrinkSize && selectedDrink !== NONE_OPTION && selectedDrinkSize !== NONE_OPTION && (
+                        {false && (
                             <div style={{ fontSize: "1rem", fontWeight: "700", color: "#1e7a39" }}>
                                 {selectedDrink} :{" "}
                                 {drinkSizeButtons.find((s) => s.name === selectedDrinkSize)?.price.toLocaleString() || "0"}원
@@ -628,17 +675,18 @@ function DrinkSelectPageContent() {
                             onClick={() => {
                                 setSelectedDrink(NONE_OPTION);
                                 setSelectedDrinkSize(NONE_OPTION);
+                                setAssistantMessage("");
                             }}
                             style={{
                                 minHeight: "170px",
                                 fontSize: "1.1rem",
                                 fontWeight: "bold",
-                                backgroundColor: selectedDrink === NONE_OPTION ? "#1e7a39" : "#fff",
-                                color: selectedDrink === NONE_OPTION ? "#fff" : "#333",
-                                border: selectedDrink === NONE_OPTION ? "3px solid #1e7a39" : "2px solid #ddd",
+                                backgroundColor: selectedDrink === NONE_OPTION ? "#c8d8ea" : "#f5f8fc",
+                                color: "#000",
+                                border: selectedDrink === NONE_OPTION ? "2px solid #002e55" : "2px solid #d9e3ef",
                                 borderRadius: "12px",
                                 cursor: "pointer",
-                                boxShadow: selectedDrink === NONE_OPTION ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
+                                boxShadow: selectedDrink === NONE_OPTION ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
@@ -662,15 +710,15 @@ function DrinkSelectPageContent() {
                                         minHeight: "170px",
                                         fontSize: "1.1rem",
                                         fontWeight: "bold",
-                                        backgroundColor: selectedDrink === d.name ? "#1e7a39" : "#fff",
-                                        color: selectedDrink === d.name ? "#fff" : "#333",
-                                        border: selectedDrink === d.name ? "3px solid #1e7a39" : "2px solid #ddd",
+                                        backgroundColor: selectedDrink === d.name ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: selectedDrink === d.name ? "2px solid #002e55" : "2px solid #d9e3ef",
                                         borderRadius: "12px",
                                         cursor: "pointer",
                                         boxShadow:
                                             selectedDrink === d.name
-                                                ? "0 4px 12px rgba(0,0,0,0.2)"
-                                                : "0 2px 6px rgba(0,0,0,0.1)",
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
                                         display: "flex",
                                         flexDirection: "column",
                                         alignItems: "center",
@@ -698,23 +746,34 @@ function DrinkSelectPageContent() {
                 {selectedDrink && selectedDrink !== NONE_OPTION && !selectedDrinkSize && (
                     <div
                         style={{
+                            position: "fixed",
+                            left: "50%",
+                            top: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: "min(560px, calc(100vw - 32px))",
                             display: "grid",
-                            gridTemplateColumns: "1.2fr 1fr",
+                            gridTemplateColumns: "1fr",
                             gap: "16px",
                             alignItems: "stretch",
+                            background: "#ffffff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "18px",
+                            padding: "20px",
+                            boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                            zIndex: 120,
                         }}
                     >
                         <div
                             style={{
-                                background: "#fff",
-                                border: "1px solid #e5e5e5",
-                                borderRadius: 14,
-                                padding: 16,
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
                                 minHeight: 220,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                                boxShadow: "none",
                                 overflow: "hidden",
                             }}
                         >
@@ -762,12 +821,12 @@ function DrinkSelectPageContent() {
                                         height: "70px",
                                         fontSize: "1.1rem",
                                         fontWeight: "bold",
-                                        backgroundColor: selectedDrinkSize === size.name ? "#4a90e2" : "#f7f9fc",
-                                        color: selectedDrinkSize === size.name ? "#fff" : "#333",
-                                        border: selectedDrinkSize === size.name ? "2px solid #4a90e2" : "1px solid #d7dfef",
+                                        backgroundColor: selectedDrinkSize === size.name ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: selectedDrinkSize === size.name ? "2px solid #002e55" : "1px solid #d9e3ef",
                                         borderRadius: "10px",
                                         cursor: "pointer",
-                                        boxShadow: selectedDrinkSize === size.name ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+                                        boxShadow: selectedDrinkSize === size.name ? "0 4px 10px rgba(0,0,0,0.12)" : "none",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "space-between",
@@ -791,7 +850,7 @@ function DrinkSelectPageContent() {
 
                 {/* 사이드 선택 */}
                 <div>
-                    <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "20px" }}>
+                    <h3 style={{ fontSize: "2rem", fontWeight: "bold", marginBottom: "20px" }}>
                         사이드를 선택하세요
                     </h3>
                     <div
@@ -813,12 +872,12 @@ function DrinkSelectPageContent() {
                                 minHeight: "170px",
                                 fontSize: "1.1rem",
                                 fontWeight: "bold",
-                                backgroundColor: selectedSide === NONE_OPTION ? "#1e7a39" : "#fff",
-                                color: selectedSide === NONE_OPTION ? "#fff" : "#333",
-                                border: selectedSide === NONE_OPTION ? "3px solid #1e7a39" : "2px solid #ddd",
+                                backgroundColor: selectedSide === NONE_OPTION ? "#c8d8ea" : "#f5f8fc",
+                                color: "#000",
+                                border: selectedSide === NONE_OPTION ? "2px solid #002e55" : "2px solid #d9e3ef",
                                 borderRadius: "12px",
                                 cursor: "pointer",
-                                boxShadow: selectedSide === NONE_OPTION ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)",
+                                boxShadow: selectedSide === NONE_OPTION ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                                 display: "flex",
                                 flexDirection: "column",
                                 alignItems: "center",
@@ -842,15 +901,15 @@ function DrinkSelectPageContent() {
                                         minHeight: "170px",
                                         fontSize: "1.1rem",
                                         fontWeight: "bold",
-                                        backgroundColor: selectedSide === item.name ? "#1e7a39" : "#fff",
-                                        color: selectedSide === item.name ? "#fff" : "#333",
-                                        border: selectedSide === item.name ? "3px solid #1e7a39" : "2px solid #ddd",
+                                        backgroundColor: selectedSide === item.name ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: selectedSide === item.name ? "2px solid #002e55" : "2px solid #d9e3ef",
                                         borderRadius: "12px",
                                         cursor: "pointer",
                                         boxShadow:
                                             selectedSide === item.name
-                                                ? "0 4px 12px rgba(0,0,0,0.2)"
-                                                : "0 2px 6px rgba(0,0,0,0.1)",
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
                                         display: "flex",
                                         flexDirection: "column",
                                         alignItems: "center",
@@ -942,12 +1001,12 @@ function DrinkSelectPageContent() {
                                             height: "70px",
                                             fontSize: "1.1rem",
                                             fontWeight: "bold",
-                                            backgroundColor: selectedSideSize === size.name ? "#4a90e2" : "#f7f9fc",
-                                            color: selectedSideSize === size.name ? "#fff" : "#333",
-                                            border: selectedSideSize === size.name ? "2px solid #4a90e2" : "1px solid #d7dfef",
+                                            backgroundColor: selectedSideSize === size.name ? "#c8d8ea" : "#f5f8fc",
+                                            color: "#000",
+                                            border: selectedSideSize === size.name ? "2px solid #002e55" : "1px solid #d9e3ef",
                                             borderRadius: "10px",
                                             cursor: "pointer",
-                                            boxShadow: selectedSideSize === size.name ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+                                            boxShadow: selectedSideSize === size.name ? "0 4px 10px rgba(0,0,0,0.12)" : "none",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "space-between",
@@ -979,7 +1038,7 @@ function DrinkSelectPageContent() {
 
 export default function DrinkSelectPage() {
     return (
-        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#f9f9f9" }} />}>
+        <Suspense fallback={<main style={{ minHeight: "100vh", backgroundColor: "#ffffff" }} />}>
             <DrinkSelectPageContent />
         </Suspense>
     );
