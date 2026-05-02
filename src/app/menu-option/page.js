@@ -673,7 +673,7 @@ function MenuOptionPageContent() {
             }
         }
 
-        // 기본세트: 메인 + 콜라 M + 감자튀김 M
+        // 기본세트: 메인 + 감자튀김 M + 콜라 M
         const drinkP = 2500;
         const sideP = 2500;
         const setPrice = currentMenuPrice + drinkP + sideP;
@@ -692,8 +692,8 @@ function MenuOptionPageContent() {
                 type: "set",
                 items: [
                     { name: currentMenuName, price: currentMenuPrice },
-                    { name: "콜라", size: "미디움", price: drinkP },
                     { name: "감자튀김", size: "미디움", price: sideP },
+                    { name: "콜라", size: "미디움", price: drinkP },
                 ],
             });
         }
@@ -997,7 +997,7 @@ function MenuOptionPageContent() {
                             >
                                 기본 세트
                                 <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
-                                    콜라 M + 감자튀김 M
+                                    감자튀김 중간 + 콜라 중간 사이즈
                                 </div>
                                 <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
                                     {(menuPrice + 2500 + 2500).toLocaleString()}원
