@@ -1313,7 +1313,7 @@ function MenuPageContent() {
                     minWidth: 0,
                 }}>
                     {cartItems.length === 0 ? (
-                        <div style={{ color: "#c8d8ea", fontSize: "30px" }}>담긴 상품이 없습니다.</div>
+                        <div style={{ color: "#c8d8ea", fontSize: "30px" }}>담긴 상품이 없습니다</div>
                     ) : (
                         cartItems.map((it) => (
                             <div
@@ -1434,7 +1434,7 @@ function MenuPageContent() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0, minWidth: "262px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
                         <div style={{ fontSize: "20px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                            총 수량　{cartItems.reduce((sum, it) => sum + it.qty, 0)}개
+                            총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
                         </div>
                         <button
                             onClick={handleClearCartClick}
@@ -1457,7 +1457,7 @@ function MenuPageContent() {
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
                         <div style={{ fontSize: "20px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                            총 금액　{cartTotal.toLocaleString()}원
+                            총 금액 | {cartTotal.toLocaleString()}원
                         </div>
                         <button
                             onClick={handleOrderClick}
