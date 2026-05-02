@@ -882,6 +882,7 @@ function MenuOptionPageContent() {
                     justifyContent: "center",
                     padding: "40px 20px",
                     gap: "30px",
+                    transform: "translateY(-24px)",
                 }}
             >
                 {!isDrink ? (
@@ -965,13 +966,19 @@ function MenuOptionPageContent() {
                                 style={{
                                     width: "100%",
                                     height: "130px",
-                                    fontSize: "1.8rem",
+                                    fontSize: "2rem",
                                     fontWeight: "bold",
                                     backgroundColor: activeOptionButton === "single" ? "#c8d8ea" : "#f5f8fc",
                                     color: "#000",
                                     border: activeOptionButton === "single" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
+                                    textAlign: "left",
+                                    paddingLeft: "134px",
+                                    backgroundImage: "url('/option_single.png')",
+                                    backgroundRepeat: "no-repeat",
+                                    backgroundPosition: "24px center",
+                                    backgroundSize: "84px auto",
                                     boxShadow:
                                         activeOptionButton === "single"
                                             ? "0 4px 10px rgba(0,0,0,0.12)"
@@ -979,7 +986,7 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 단품
-                                <div style={{ fontSize: "1.2rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
+                                <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {menuPrice.toLocaleString()}원
                                 </div>
                             </button>
@@ -990,25 +997,28 @@ function MenuOptionPageContent() {
                                 style={{
                                     width: "100%",
                                     height: "130px",
-                                    fontSize: "1.4rem",
+                                    fontSize: "2rem",
                                     fontWeight: "bold",
                                     backgroundColor: activeOptionButton === "default" ? "#c8d8ea" : "#f5f8fc",
                                     color: "#000",
                                     border: activeOptionButton === "default" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
+                                    textAlign: "left",
+                                    paddingLeft: "134px",
+                                    backgroundImage: "url('/option_default.png')",
+                                    backgroundRepeat: "no-repeat",
+                                    backgroundPosition: "24px center",
+                                    backgroundSize: "84px auto",
                                     boxShadow:
                                         activeOptionButton === "default"
                                             ? "0 4px 10px rgba(0,0,0,0.12)"
                                             : "0 2px 6px rgba(0,0,0,0.06)",
-                                    padding: "0 10px",
+                                    paddingRight: "10px",
                                 }}
                             >
-                                기본 세트
-                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
-                                    감자튀김 중간 + 콜라 중간 사이즈
-                                </div>
-                                <div style={{ fontSize: "1rem", marginTop: "4px", opacity: 0.9, color: "#000" }}>
+                                기본 세트 (감자튀김 중간 + 콜라 중간)
+                                <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {(menuPrice + 2500 + 2500).toLocaleString()}원
                                 </div>
                             </button>
@@ -1019,13 +1029,19 @@ function MenuOptionPageContent() {
                                 style={{
                                     width: "100%",
                                     height: "130px",
-                                    fontSize: "1.8rem",
+                                    fontSize: "2rem",
                                     fontWeight: "bold",
                                     backgroundColor: activeOptionButton === "set" ? "#c8d8ea" : "#f5f8fc",
                                     color: "#000",
                                     border: activeOptionButton === "set" ? "2px solid #002e55" : "2px solid #d9e3ef",
                                     borderRadius: "16px",
                                     cursor: "pointer",
+                                    textAlign: "left",
+                                    paddingLeft: "134px",
+                                    backgroundImage: "url('/option_set.png')",
+                                    backgroundRepeat: "no-repeat",
+                                    backgroundPosition: "24px center",
+                                    backgroundSize: "84px auto",
                                     boxShadow:
                                         activeOptionButton === "set"
                                             ? "0 4px 10px rgba(0,0,0,0.12)"
@@ -1033,8 +1049,8 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 세트 직접 선택
-                                <div style={{ fontSize: "1rem", marginTop: "8px", opacity: 0.9, color: "#000" }}>
-                                    음료 / 사이드 선택
+                                <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
+                                    음료 또는 사이드 선택
                                 </div>
                             </button>
                         </div>
