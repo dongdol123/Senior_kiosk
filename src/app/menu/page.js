@@ -23,9 +23,17 @@ function isTapToAddSide(item) {
     return inferMenuCategory(item) === "side";
 }
 
+function isDrinkMenu(item) {
+    return inferMenuCategory(item) === "drink";
+}
+
 function cartItemImageSrc(it) {
     if (it?.image) return it.image;
-    const raw = (it?.name || "").replace(/\s+/g, "").toLowerCase();
+    const baseName =
+        it?.type === "set" && Array.isArray(it?.items) && it.items.length > 0
+            ? it.items[0]?.name || it?.name || ""
+            : it?.name || "";
+    const raw = baseName.replace(/\s+/g, "").toLowerCase();
     const n = raw.replace(/\(.*?\)/g, "");
     if (/베이컨|디럭스|토마토/.test(n) && /버거/.test(n)) return "/tomato_bur.png";
     if (/모짜렐라|모짜/.test(n) && /버거/.test(n)) return "/mozza_bulbur.png";
@@ -85,6 +93,10 @@ function MenuPageContent() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState("burger"); // "burger", "drink", "side"
     const [activeMenuCardId, setActiveMenuCardId] = useState(null);
+    const [selectedDrinkMenu, setSelectedDrinkMenu] = useState(null);
+    const [activeDrinkSizeButton, setActiveDrinkSizeButton] = useState("");
+    const [selectedSideMenu, setSelectedSideMenu] = useState(null);
+    const [activeSideSizeButton, setActiveSideSizeButton] = useState("");
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -336,11 +348,70 @@ function MenuPageContent() {
         const orderType = searchParams.get("orderType") || "takeout";
 
         if (isTapToAddSide(menu)) {
-            addToCart(menu);
+            setSelectedSideMenu(menu);
+            return;
+        }
+
+        if (isDrinkMenu(menu)) {
+            setSelectedDrinkMenu(menu);
             return;
         }
 
         navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+    }
+
+    function addDrinkWithSize(menu, size) {
+        const sizeDisplayName = size === "미디움" ? "중간" : "큰";
+        const price = menu.price + (size === "라지" ? 500 : 0);
+        const item = {
+            ...menu,
+            id: `${menu.id}_${size}`,
+            name: `${menu.name}(${sizeDisplayName})`,
+            price,
+            type: "drink",
+            size,
+        };
+        setCartItems((prev) => {
+            const existingIndex = prev.findIndex((cartItem) => cartItem.id === item.id);
+            if (existingIndex >= 0) {
+                const next = [...prev];
+                next[existingIndex] = {
+                    ...next[existingIndex],
+                    qty: (next[existingIndex].qty || 1) + 1,
+                };
+                return next;
+            }
+            return [...prev, { ...item, qty: 1 }];
+        });
+        setSelectedDrinkMenu(null);
+        setActiveDrinkSizeButton("");
+    }
+
+    function addSideWithSize(menu, size) {
+        const sizeDisplayName = size === "미디움" ? "중간" : "큰";
+        const price = menu.price + (size === "라지" ? 500 : 0);
+        const item = {
+            ...menu,
+            id: `${menu.id}_${size}`,
+            name: `${menu.name}(${sizeDisplayName})`,
+            price,
+            type: "side",
+            size,
+        };
+        setCartItems((prev) => {
+            const existingIndex = prev.findIndex((cartItem) => cartItem.id === item.id);
+            if (existingIndex >= 0) {
+                const next = [...prev];
+                next[existingIndex] = {
+                    ...next[existingIndex],
+                    qty: (next[existingIndex].qty || 1) + 1,
+                };
+                return next;
+            }
+            return [...prev, { ...item, qty: 1 }];
+        });
+        setSelectedSideMenu(null);
+        setActiveSideSizeButton("");
     }
 
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
@@ -1563,6 +1634,295 @@ function MenuPageContent() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {selectedDrinkMenu && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1200,
+                    }}
+                    onClick={() => {
+                        setSelectedDrinkMenu(null);
+                        setActiveDrinkSizeButton("");
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "min(560px, calc(100vw - 32px))",
+                            display: "grid",
+                            gridTemplateColumns: "1fr",
+                            gap: "16px",
+                            alignItems: "stretch",
+                            background: "#ffffff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "18px",
+                            padding: "35px",
+                            boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
+                                minHeight: 220,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "none",
+                                overflow: "hidden",
+                                flexDirection: "column",
+                                gap: "12px",
+                            }}
+                        >
+                            {(() => {
+                                const src = menuThumbImageSrc(selectedDrinkMenu);
+                                return src ? (
+                                    <img
+                                        src={src}
+                                        alt={selectedDrinkMenu.name}
+                                        style={{
+                                            width: "70%",
+                                            height: "70%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : (
+                                    <div style={{ color: "#8aa0c5", fontWeight: 700 }}>음료 이미지</div>
+                                );
+                            })()}
+                            <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                {selectedDrinkMenu.name}
+                            </div>
+                        </div>
+                        <div
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 20,
+                                boxShadow: "none",
+                            }}
+                        >
+                            <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
+                                사이즈를 선택하세요
+                            </div>
+                            {[
+                                { name: "미디움", price: selectedDrinkMenu.price, label: "중간 사이즈" },
+                                { name: "라지", price: selectedDrinkMenu.price + 500, label: "큰 사이즈" },
+                            ].map((size) => (
+                                <button
+                                    key={size.name}
+                                    onClick={() => {
+                                        setActiveDrinkSizeButton(size.name);
+                                        setTimeout(() => {
+                                            addDrinkWithSize(selectedDrinkMenu, size.name);
+                                        }, 120);
+                                    }}
+                                    style={{
+                                        height: "75px",
+                                        fontSize: "1.5rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: activeDrinkSizeButton === size.name ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: activeDrinkSizeButton === size.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: "12px",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            activeDrinkSizeButton === size.name
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "0 20px",
+                                    }}
+                                >
+                                    <div style={{ fontWeight: 700, lineHeight: 1.2 }}>{size.label}</div>
+                                    <span style={{ fontWeight: 800, fontSize: "1.3rem" }}>{size.price.toLocaleString()}원</span>
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedDrinkMenu(null);
+                                    setActiveDrinkSizeButton("");
+                                }}
+                                style={{
+                                    width: "fit-content",
+                                    alignSelf: "center",
+                                    marginTop: "8px",
+                                    padding: "14px 24px",
+                                    backgroundColor: "#002e55",
+                                    color: "#ffffff",
+                                    borderRadius: "10px",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "800",
+                                    cursor: "pointer",
+                                    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                }}
+                            >
+                                취소하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {selectedSideMenu && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        backgroundColor: "rgba(0, 0, 0, 0.35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "16px",
+                        zIndex: 1200,
+                    }}
+                    onClick={() => {
+                        setSelectedSideMenu(null);
+                        setActiveSideSizeButton("");
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "min(560px, calc(100vw - 32px))",
+                            display: "grid",
+                            gridTemplateColumns: "1fr",
+                            gap: "16px",
+                            alignItems: "stretch",
+                            background: "#ffffff",
+                            border: "1px solid #e5e5e5",
+                            borderRadius: "18px",
+                            padding: "35px",
+                            boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
+                                minHeight: 220,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "none",
+                                overflow: "hidden",
+                                flexDirection: "column",
+                                gap: "12px",
+                            }}
+                        >
+                            {(() => {
+                                const src = menuThumbImageSrc(selectedSideMenu);
+                                return src ? (
+                                    <img
+                                        src={src}
+                                        alt={selectedSideMenu.name}
+                                        style={{
+                                            width: "70%",
+                                            height: "70%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : null;
+                            })()}
+                            <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                {selectedSideMenu.name}
+                            </div>
+                        </div>
+                        <div
+                            style={{
+                                background: "transparent",
+                                border: "none",
+                                borderRadius: 0,
+                                padding: 0,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 20,
+                                boxShadow: "none",
+                            }}
+                        >
+                            <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
+                                사이즈를 선택하세요
+                            </div>
+                            {[
+                                { name: "미디움", price: selectedSideMenu.price, label: "중간 사이즈" },
+                                { name: "라지", price: selectedSideMenu.price + 500, label: "큰 사이즈" },
+                            ].map((size) => (
+                                <button
+                                    key={size.name}
+                                    onClick={() => {
+                                        setActiveSideSizeButton(size.name);
+                                        setTimeout(() => {
+                                            addSideWithSize(selectedSideMenu, size.name);
+                                        }, 120);
+                                    }}
+                                    style={{
+                                        height: "75px",
+                                        fontSize: "1.5rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: activeSideSizeButton === size.name ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: activeSideSizeButton === size.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: "12px",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            activeSideSizeButton === size.name
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "0 20px",
+                                    }}
+                                >
+                                    <div style={{ fontWeight: 700, lineHeight: 1.2 }}>{size.label}</div>
+                                    <span style={{ fontWeight: 800, fontSize: "1.3rem" }}>{size.price.toLocaleString()}원</span>
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedSideMenu(null);
+                                    setActiveSideSizeButton("");
+                                }}
+                                style={{
+                                    width: "fit-content",
+                                    alignSelf: "center",
+                                    marginTop: "8px",
+                                    padding: "14px 24px",
+                                    backgroundColor: "#002e55",
+                                    color: "#ffffff",
+                                    borderRadius: "10px",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "800",
+                                    cursor: "pointer",
+                                    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                }}
+                            >
+                                취소하기
+                            </button>
                         </div>
                     </div>
                 </div>

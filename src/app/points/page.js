@@ -22,6 +22,8 @@ function PointsPageContent() {
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
     const [isBackButtonActive, setIsBackButtonActive] = useState(false);
+    const [activePaymentButton, setActivePaymentButton] = useState("");
+    const [activeDialButton, setActiveDialButton] = useState("");
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const firstStartRef = useRef(true);
@@ -47,6 +49,21 @@ function PointsPageContent() {
             if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
             try { recognitionRef.current && recognitionRef.current.start(); } catch {}
         }, 1000);
+    }
+
+    function handleCardPaymentClick() {
+        setActivePaymentButton("card");
+        handleCardPayment();
+    }
+
+    function handlePayPaymentClick() {
+        setActivePaymentButton("pay");
+        handlePayPayment();
+    }
+
+    function handleCouponPaymentClick() {
+        setActivePaymentButton("coupon");
+        handlePayPayment();
     }
 
     useEffect(() => {
@@ -148,6 +165,14 @@ function PointsPageContent() {
         } else if (phoneNumber.length < 8) {
             setPhoneNumber((prev) => prev + "010");
         }
+    }
+
+    function flashDialButton(key, action) {
+        setActiveDialButton(String(key));
+        setTimeout(() => {
+            action();
+            setActiveDialButton("");
+        }, 120);
     }
 
     function openPhoneModal() {
@@ -492,14 +517,15 @@ function PointsPageContent() {
                     <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "14px" }}>
                         주문 내역
                     </div>
+                    <div style={{ display: "flex", flexDirection: "column", height: "calc(100% - 52px)", background: "#f5f8fc" }}>
                     {cartItems.length === 0 ? (
                         <div style={{ color: "#000000", fontSize: "0.95rem", background: "#f5f8fc" }}>주문 정보가 없습니다.</div>
                     ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", height: "calc(100% - 52px)", overflowY: "auto", overflowX: "hidden", paddingRight: "4px", paddingBottom: "12px", boxSizing: "border-box", background: "#f5f8fc" }}>
+                        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", overflowX: "hidden", paddingRight: "4px", paddingBottom: "12px", boxSizing: "border-box", background: "#f5f8fc" }}>
                             {cartItems.map((item, idx) => (
-                                <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "1px solid #d9e3ef", paddingTop: idx === 0 ? 0 : "10px", background: "#f5f8fc" }}>
-                                    <div style={{ fontSize: "1rem", fontWeight: "700" }}>
-                                        {item.name}{item.qty > 1 ? ` x${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
+                                <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "2px solid #d9e3ef", paddingTop: idx === 0 ? 0 : "10px", background: "#f5f8fc" }}>
+                                    <div style={{ fontSize: "1.45rem", fontWeight: "700", lineHeight: 1.3 }}>
+                                        {item.name}{item.qty > 1 ? ` ×${item.qty}` : ""} | {(item.price * (item.qty || 1)).toLocaleString()}원                                        
                                     </div>
                                     {false && item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
                                         <div style={{ marginTop: "6px", fontSize: "0.92rem", color: "#000000" }}>
@@ -516,6 +542,10 @@ function PointsPageContent() {
                             ))}
                         </div>
                     )}
+                        <div style={{ marginTop: "12px", textAlign: "right", fontSize: "1.6rem", fontWeight: "800", color: "#000000", background: "#f5f8fc", paddingRight: "4px", paddingBottom: "8px", boxSizing: "border-box" }}>
+                            총 금액 | {cartItems.reduce((sum, item) => sum + item.price * (item.qty || 1), 0).toLocaleString()}원
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ width: "100%", maxWidth: "800px", textAlign: "left", marginTop: "0", marginBottom: "44px" }}>
@@ -558,15 +588,15 @@ function PointsPageContent() {
                     }}
                 >
                     <button
-                        onClick={handleCardPayment}
+                        onClick={handleCardPaymentClick}
                         style={{
                             flex: 1,
                             padding: "28px 20px",
                             fontSize: "1.8rem",
                             fontWeight: "700",
-                            backgroundColor: "#ffffff",
+                            backgroundColor: activePaymentButton === "card" ? "#c8d8ea" : "#f5f8fc",
                             color: "#000000",
-                            border: "1px solid #ddd",
+                            border: activePaymentButton === "card" ? "2px solid #002e55" : "2px solid #d9e3ef",
                             borderRadius: "12px",
                             cursor: "pointer",
                             transition: "all 0.2s",
@@ -574,15 +604,7 @@ function PointsPageContent() {
                             flexDirection: "column",
                             alignItems: "center",
                             gap: "12px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f5f5f5";
-                            e.currentTarget.style.borderColor = "#999";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "#ffffff";
-                            e.currentTarget.style.borderColor = "#ddd";
+                            boxShadow: activePaymentButton === "card" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                         }}
                     >
                         <div style={{
@@ -610,15 +632,15 @@ function PointsPageContent() {
                     </button>
 
                     <button
-                        onClick={handlePayPayment}
+                        onClick={handlePayPaymentClick}
                         style={{
                             flex: 1,
                             padding: "28px 20px",
                             fontSize: "1.8rem",
                             fontWeight: "700",
-                            backgroundColor: "#ffffff",
+                            backgroundColor: activePaymentButton === "pay" ? "#c8d8ea" : "#f5f8fc",
                             color: "#000000",
-                            border: "1px solid #ddd",
+                            border: activePaymentButton === "pay" ? "2px solid #002e55" : "2px solid #d9e3ef",
                             borderRadius: "12px",
                             cursor: "pointer",
                             transition: "all 0.2s",
@@ -626,15 +648,7 @@ function PointsPageContent() {
                             flexDirection: "column",
                             alignItems: "center",
                             gap: "12px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f5f5f5";
-                            e.currentTarget.style.borderColor = "#999";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "#ffffff";
-                            e.currentTarget.style.borderColor = "#ddd";
+                            boxShadow: activePaymentButton === "pay" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                         }}
                     >
                         <div style={{
@@ -679,15 +693,15 @@ function PointsPageContent() {
                     </button>
 
                     <button
-                        onClick={handlePayPayment}
+                        onClick={handleCouponPaymentClick}
                         style={{
                             flex: 1,
                             padding: "28px 20px",
                             fontSize: "1.8rem",
                             fontWeight: "700",
-                            backgroundColor: "#ffffff",
+                            backgroundColor: activePaymentButton === "coupon" ? "#c8d8ea" : "#f5f8fc",
                             color: "#000000",
-                            border: "1px solid #ddd",
+                            border: activePaymentButton === "coupon" ? "2px solid #002e55" : "2px solid #d9e3ef",
                             borderRadius: "12px",
                             cursor: "pointer",
                             transition: "all 0.2s",
@@ -695,15 +709,7 @@ function PointsPageContent() {
                             flexDirection: "column",
                             alignItems: "center",
                             gap: "12px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = "#f5f5f5";
-                            e.currentTarget.style.borderColor = "#999";
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = "#ffffff";
-                            e.currentTarget.style.borderColor = "#ddd";
+                            boxShadow: activePaymentButton === "coupon" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                         }}
                     >
                         <img
@@ -736,7 +742,7 @@ function PointsPageContent() {
                             {cartItems.map((item, idx) => (
                                 <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "1px solid #2a2a2a", paddingTop: idx === 0 ? 0 : "10px" }}>
                                     <div style={{ fontSize: "1rem", fontWeight: "700" }}>
-                                        {item.name}{item.qty > 1 ? ` x${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
+                                        {item.name}{item.qty > 1 ? ` ×${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
                                     </div>
                                     {false && item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
                                         <div style={{ marginTop: "6px", fontSize: "0.92rem", color: "#d0d0d0" }}>
@@ -789,16 +795,16 @@ function PointsPageContent() {
                         <div style={{ display: "flex", gap: "16px" }}>
                             <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
                                 {[7,8,9,4,5,6,1,2,3,0].map((n) => (
-                                    <button key={n} onClick={() => handleNumberClick(n)} style={{ height: "120px", fontSize: "3rem", fontWeight: "700", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>
+                                    <button key={n} onClick={() => flashDialButton(n, () => handleNumberClick(n))} style={{ height: "120px", fontSize: "3rem", fontWeight: "700", border: activeDialButton === String(n) ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === String(n) ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", boxShadow: activeDialButton === String(n) ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
                                         {n}
                                     </button>
                                 ))}
-                                <button onClick={handle010} style={{ height: "120px", gridColumn: "span 2", fontSize: "3rem", fontWeight: "700", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>
+                                <button onClick={() => flashDialButton("010", handle010)} style={{ height: "120px", gridColumn: "span 2", fontSize: "3rem", fontWeight: "700", border: activeDialButton === "010" ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === "010" ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", boxShadow: activeDialButton === "010" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
                                     010
                                 </button>
                             </div>
                             <div style={{ width: "120px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                                <button onClick={handleDelete} style={{ height: "120px", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", cursor: "pointer", fontWeight: "700", fontSize: "2rem" }}>
+                                <button onClick={() => flashDialButton("delete", handleDelete)} style={{ height: "120px", border: activeDialButton === "delete" ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === "delete" ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", fontWeight: "700", fontSize: "2rem", boxShadow: activeDialButton === "delete" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
                                     지움
                                 </button>
                                 <button onClick={confirmPhoneModal} disabled={phoneNumber.length < 10} style={{ flex: 1, border: "none", borderRadius: "8px", background: phoneNumber.length >= 10 ? "#ff0000" : "#bbb", color: "#fff", cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed", fontWeight: "700", fontSize: "2rem" }}>
