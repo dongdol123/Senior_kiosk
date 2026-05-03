@@ -549,7 +549,7 @@ function MenuOptionPageContent() {
         } else {
             // 사이즈에 맞게 이름 표시 (미디움 -> 중간, 라지 -> 큰)
             const sizeDisplayName = size === "미디움" ? "중간" : "큰";
-            currentCartItems.push({ id, name: `${currentMenuName} (${sizeDisplayName})`, price, qty: 1, type: "drink", size });
+            currentCartItems.push({ id, name: `${currentMenuName}(${sizeDisplayName})`, price, qty: 1, type: "drink", size });
         }
 
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
@@ -686,7 +686,7 @@ function MenuOptionPageContent() {
         } else {
             currentCartItems.push({
                 id: setId,
-                name: `기본세트`,
+                name: `${currentMenuName} 기본 세트`,
                 price: setPrice,
                 qty: 1,
                 type: "set",

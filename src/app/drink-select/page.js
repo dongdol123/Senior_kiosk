@@ -497,13 +497,14 @@ function DrinkSelectPageContent() {
                 ? []
                 : [{ name: effectiveSide, size: effectiveSideSize, price: sideP }]),
         ];
+        const sizeLabel = (size) => (size === "미디움" ? "중간" : size === "라지" ? "큰" : size);
         const selectedParts = [
-            effectiveDrink !== NONE_OPTION ? `${effectiveDrink}(${effectiveDrinkSize})` : null,
-            effectiveSide !== NONE_OPTION ? `${effectiveSide}(${effectiveSideSize})` : null,
+            effectiveDrink !== NONE_OPTION ? `${effectiveDrink}(${sizeLabel(effectiveDrinkSize)})` : null,
+            effectiveSide !== NONE_OPTION ? `${effectiveSide}(${sizeLabel(effectiveSideSize)})` : null,
         ].filter(Boolean);
 
         const newCartItems = [...cartItems];
-        const cartName = [menuName, ...selectedParts].join(" + ");
+        const cartName = [menuName, ...selectedParts].join(" + ").replace(/\s+\(/g, "(");
         newCartItems.push({
             id: `${menuId}_set_${Date.now()}`,
             name: cartName,
