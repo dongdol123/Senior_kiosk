@@ -1126,7 +1126,7 @@ function DrinkSelectPageContent() {
                             <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
                                 사이즈를 선택하세요
                             </div>
-                            {sideSizeOptions.map((size) => {
+                            {sideSizeOptions.map((size, index) => {
                                 const p = sideUnitPriceCatalog(selectedSide, size.name, catalogItems);
                                 return (
                                     <button
@@ -1158,7 +1158,9 @@ function DrinkSelectPageContent() {
                                         }}
                                     >
                                         <div>
-                                            <div style={{ fontWeight: 700, lineHeight: 1.2 }}>
+                                            <div style={{ fontSize: 0, fontWeight: 700, lineHeight: 1.2 }}>
+                                                <div style={{ fontSize: "1.5rem" }}>{index === 0 ? "중간 사이즈" : "큰 사이즈"}</div>
+                                                <span style={{ fontSize: "1em" }}>{index === 0 ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기"}</span>
                                                 {size.name === "미디엄" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기"}
                                             </div>
                                             <div style={{ display: "none", fontSize: "0.85rem", opacity: 0.9 }}>
