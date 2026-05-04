@@ -291,6 +291,7 @@ function PhoneInputPageContent() {
             {/* 음성 인식 로그창 - 항상 표시 */}
             <div
                 style={{
+                    display: "none",
                     position: "fixed",
                     top: "10px",
                     right: "10px",
