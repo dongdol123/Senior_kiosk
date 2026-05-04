@@ -727,7 +727,7 @@ function MenuOptionPageContent() {
             }}
         >
             {/* 음성 인식 로그창 */}
-            {voiceLogs.length > 0 && (
+            {false && voiceLogs.length > 0 && (
                 <div
                     style={{
                         position: "fixed",
