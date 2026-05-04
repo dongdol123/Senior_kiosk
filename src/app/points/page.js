@@ -18,6 +18,9 @@ function PointsPageContent() {
     const [cartItems, setCartItems] = useState([]);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [showPhoneModal, setShowPhoneModal] = useState(false);
+    const [couponCode, setCouponCode] = useState("");
+    const [showCouponModal, setShowCouponModal] = useState(false);
+    const phoneModalMode = "phone";
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
@@ -63,7 +66,8 @@ function PointsPageContent() {
 
     function handleCouponPaymentClick() {
         setActivePaymentButton("coupon");
-        handlePayPayment();
+        setCouponCode("");
+        setShowCouponModal(true);
     }
 
     useEffect(() => {
@@ -190,6 +194,28 @@ function PointsPageContent() {
             return;
         }
         setShowPhoneModal(false);
+    }
+
+    function handleCouponNumberClick(num) {
+        setCouponCode((prev) => (prev.length < 16 ? prev + String(num) : prev));
+    }
+
+    function handleCouponDelete() {
+        setCouponCode((prev) => prev.slice(0, -1));
+    }
+
+    function formatCouponCode(value) {
+        return value.replace(/(\d{4})(?=\d)/g, "$1-");
+    }
+
+    function closeCouponModal() {
+        setShowCouponModal(false);
+    }
+
+    function confirmCouponModal() {
+        if (couponCode.length < 16) return;
+        setShowCouponModal(false);
+        navigateTo(entry === "qr" ? "/qr-order" : "/");
     }
 
     async function handleCardPayment() {
@@ -788,7 +814,35 @@ function PointsPageContent() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                         </div>
 
-                        <div style={{ borderBottom: "2px solid #333", paddingBottom: "10px", marginBottom: "16px", textAlign: "center", fontSize: "2.5rem", fontWeight: "700" }}>
+                        <div style={{ borderBottom: "2px solid #333", paddingBottom: "10px", marginBottom: "16px", textAlign: "center", fontSize: "2.5rem", fontWeight: "700", position: "relative", color: "transparent" }}>
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#000000",
+                                    background: "#ffffff",
+                                }}
+                            >
+                                {couponCode.length ? formatCouponCode(couponCode) : "쿠폰 번호 입력"}
+                            </div>
+                            {phoneModalMode === "coupon" && !phoneNumber.length && (
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "#000000",
+                                        background: "#ffffff",
+                                    }}
+                                >
+                                    쿠폰 번호 입력
+                                </div>
+                            )}
                             {phoneNumber.length ? formatPhoneNumber(phoneNumber) : "휴대폰 번호 입력"}
                         </div>
 
@@ -815,6 +869,92 @@ function PointsPageContent() {
                         <div style={{ display: "flex", justifyContent: "center", marginTop: "18px" }}>
                             <button
                                 onClick={closePhoneModal}
+                                style={{
+                                    width: "fit-content",
+                                    padding: "14px 24px",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "700",
+                                    backgroundColor: "#002e55",
+                                    color: "#ffffff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
+                                }}
+                            >
+                                취소하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showCouponModal && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.45)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 2000,
+                    }}
+                    onClick={closeCouponModal}
+                >
+                    <div
+                        style={{
+                            width: "90%",
+                            maxWidth: "650px",
+                            background: "#fff",
+                            borderRadius: "16px",
+                            padding: "20px",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                        </div>
+
+                        <div style={{ borderBottom: "2px solid #333", paddingBottom: "10px", marginBottom: "16px", textAlign: "center", fontSize: "2.5rem", fontWeight: "700", position: "relative", color: "transparent" }}>
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#000000",
+                                    background: "#ffffff",
+                                }}
+                            >
+                                {couponCode.length ? formatCouponCode(couponCode) : "쿠폰 번호 입력"}
+                            </div>
+                            {couponCode.length ? couponCode : "쿠폰 번호 입력"}
+                        </div>
+
+                        <div style={{ display: "flex", gap: "16px" }}>
+                            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                                {[7,8,9,4,5,6,1,2,3].map((n) => (
+                                    <button key={`coupon-${n}`} onClick={() => flashDialButton(`coupon-${n}`, () => handleCouponNumberClick(n))} style={{ height: "120px", fontSize: "3rem", fontWeight: "700", border: activeDialButton === `coupon-${n}` ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === `coupon-${n}` ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", boxShadow: activeDialButton === `coupon-${n}` ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
+                                        {n}
+                                    </button>
+                                ))}
+                                <button onClick={() => flashDialButton("coupon-0", () => handleCouponNumberClick(0))} style={{ height: "120px", gridColumn: "span 3", fontSize: "3rem", fontWeight: "700", border: activeDialButton === "coupon-0" ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === "coupon-0" ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", boxShadow: activeDialButton === "coupon-0" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
+                                    0
+                                </button>
+                            </div>
+                            <div style={{ width: "120px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                                <button onClick={() => flashDialButton("coupon-delete", handleCouponDelete)} style={{ height: "120px", border: activeDialButton === "coupon-delete" ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === "coupon-delete" ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", fontWeight: "700", fontSize: "2rem", boxShadow: activeDialButton === "coupon-delete" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
+                                    지움
+                                </button>
+                                <button onClick={confirmCouponModal} disabled={couponCode.length < 16} style={{ flex: 1, border: "none", borderRadius: "8px", background: couponCode.length >= 16 ? "#ff0000" : "#bbb", color: "#fff", cursor: couponCode.length >= 16 ? "pointer" : "not-allowed", fontWeight: "700", fontSize: "2rem" }}>
+                                    확인
+                                </button>
+                            </div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "center", marginTop: "18px" }}>
+                            <button
+                                onClick={closeCouponModal}
                                 style={{
                                     width: "fit-content",
                                     padding: "14px 24px",
