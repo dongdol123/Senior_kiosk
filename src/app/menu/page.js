@@ -15,6 +15,8 @@ import {
     normalizeMenuKey,
 } from "../utils/kioskMenuCatalog";
 
+const MENU_GREETING_ONCE_KEY = "menuGreetingPlayedOnce";
+
 function menuItemMatchesCategory(item, selectedCategory) {
     return inferMenuCategory(item) === selectedCategory;
 }
@@ -101,6 +103,29 @@ function MenuPageContent() {
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
         router.push(path);
+    }
+
+    function hasMenuGreetingPlayed() {
+        if (typeof window === "undefined") return false;
+        try {
+            return window.sessionStorage.getItem(MENU_GREETING_ONCE_KEY) === "1";
+        } catch {
+            return false;
+        }
+    }
+
+    function markMenuGreetingPlayed() {
+        if (typeof window === "undefined") return;
+        try {
+            window.sessionStorage.setItem(MENU_GREETING_ONCE_KEY, "1");
+        } catch {}
+    }
+
+    function clearMenuGreetingPlayed() {
+        if (typeof window === "undefined") return;
+        try {
+            window.sessionStorage.removeItem(MENU_GREETING_ONCE_KEY);
+        } catch {}
     }
 
     // DB에서 메뉴 로드
@@ -581,19 +606,23 @@ function MenuPageContent() {
         };
 
         recognition.onresult = async (event) => {
-            if (isTtsActive()) {
-                return;
-            }
-            // 음성 안내 재생 중이면 음성 인식 결과를 무시
-            if (isSpeakingRef.current) {
-                console.log("🔇 음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
-                return;
-            }
-            
             const transcript = event.results[0][0].transcript || "";
             setLastUser(transcript);
-
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
+
+            // 음성 안내 중에는 기본적으로 명령 처리하지 않음.
+            // 단, 사용자가 "멈춰/잠깐/그만" 같은 중단 키워드를 말하면 안내를 즉시 끊고 대기 상태로 전환.
+            if (isTtsActive() || isSpeakingRef.current) {
+                if (/멈춰|잠깐|그만|스탑|stop|중지/.test(normalized)) {
+                    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
+                    isSpeakingRef.current = false;
+                    setAssistantMessage("네, 말씀하세요.");
+                } else {
+                    console.log("🔇 음성 안내 재생 중이므로 음성 인식 결과 무시:", transcript);
+                }
+                return;
+            }
+
             console.log("🎤 음성 인식 결과:", transcript, "normalized:", normalized);
             
             // 메뉴 이름 직접 말하기 - 가장 먼저 체크 (부가 설명 없이 바로 담기)
@@ -680,7 +709,7 @@ function MenuPageContent() {
                 return;
             }
 
-            const directPaymentPattern = /이대로\s*주문\s*해\s*줘|이대로\s*결제\s*해\s*줘|지금\s*결제\s*해\s*줘|바로\s*결제|결제\s*페이지\s*로|그대로\s*결제|지금\s*바로\s*결제|주문\s*마치고\s*결제/;
+            const directPaymentPattern = /이대로\s*주문\s*해\s*줘|이대로\s*주문|이대로\s*결제\s*해\s*줘|지금\s*결제\s*해\s*줘|바로\s*결제|결제\s*페이지\s*로|그대로\s*결제|그대로\s*주문|지금\s*바로\s*결제|주문\s*마치고\s*결제/;
             if (directPaymentPattern.test(normalized)) {
                 const currentCartItems = cartItemsRef.current;
                 if (currentCartItems.length === 0) {
@@ -854,8 +883,10 @@ function MenuPageContent() {
         if (voiceOrderMode) {
             const startVoiceFlow = async () => {
                 if (!mountedRef.current || !shouldListenRef.current) return;
-                if (!hasPlayedInitialGreetingRef.current) {
+                // 같은 주문 흐름에서는 1회만 안내, 결제 완료 후 새 흐름에서 다시 안내
+                if (!hasPlayedInitialGreetingRef.current && !hasMenuGreetingPlayed()) {
                     hasPlayedInitialGreetingRef.current = true;
+                    markMenuGreetingPlayed();
                     const greeting = "무엇을 주문하시겠어요?";
                     setAssistantMessage(greeting);
                     isSpeakingRef.current = true;
@@ -938,6 +969,7 @@ function MenuPageContent() {
                     onClick={() => {
                         setIsHomeButtonActive(true);
                         shouldListenRef.current = false;
+                        clearMenuGreetingPlayed();
                         setTimeout(() => {
                             try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
                             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }

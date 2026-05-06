@@ -8,6 +8,8 @@ import KioskAspectFrame from "../../components/KioskAspectFrame";
 import KioskProgressBars from "../../components/KioskProgressBars";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
+const MENU_GREETING_ONCE_KEY = "menuGreetingPlayedOnce";
+
 function PointsPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -38,6 +40,13 @@ function PointsPageContent() {
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current);
         router.push(path);
+    }
+
+    function clearMenuGreetingPlayed() {
+        if (typeof window === "undefined") return;
+        try {
+            window.sessionStorage.removeItem(MENU_GREETING_ONCE_KEY);
+        } catch {}
     }
 
     async function speakAndResume(msg) {
@@ -215,6 +224,7 @@ function PointsPageContent() {
     function confirmCouponModal() {
         if (couponCode.length < 16) return;
         setShowCouponModal(false);
+        clearMenuGreetingPlayed();
         navigateTo(entry === "qr" ? "/qr-order" : "/");
     }
 
@@ -225,6 +235,7 @@ function PointsPageContent() {
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
+            clearMenuGreetingPlayed();
             navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
     }
@@ -236,6 +247,7 @@ function PointsPageContent() {
         setAssistantMessage(msg);
         speakKorean(msg).catch(() => {});
         setTimeout(() => {
+            clearMenuGreetingPlayed();
             navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
     }

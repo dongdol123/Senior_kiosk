@@ -152,7 +152,7 @@ function MenuOptionPageContent() {
 
             const msg = isCurrentDrink
                 ? "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?"
-                : "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
+                : "원하시는 구성이 있나요?";
             if (!cancelled) {
                 setAssistantMessage(msg);
             }
@@ -377,25 +377,6 @@ function MenuOptionPageContent() {
                     }, 100);
                     return;
                 }
-                const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
-                setAssistantMessage(msg);
-                try {
-                    recognition.stop();
-                } catch (e) { }
-                isSpeakingRef.current = true;
-                await speakKorean(msg);
-                setTimeout(() => {
-                    isSpeakingRef.current = false;
-                    if (mountedRef.current && shouldListenRef.current) {
-                        setTimeout(() => {
-                            if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                try {
-                                    recognitionRef.current.start();
-                                } catch (e) { }
-                            }
-                        }, 2000);
-                    }
-                }, 1000);
                 return;
             }
 
@@ -480,26 +461,8 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 도움말 (버거인 경우)
-                const msg = "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
-                setAssistantMessage(msg);
-                try {
-                    recognition.stop();
-                } catch (e) { }
-                isSpeakingRef.current = true;
-                await speakKorean(msg);
-                setTimeout(() => {
-                    isSpeakingRef.current = false;
-                    if (mountedRef.current && shouldListenRef.current) {
-                        setTimeout(() => {
-                            if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                                try {
-                                    recognitionRef.current.start();
-                                } catch (e) { }
-                            }
-                        }, 2000);
-                    }
-                }, 1000);
+                // 인식 실패 시 재질문 없이 대기
+                return;
             }
         };
 

@@ -8,6 +8,8 @@ import KioskAspectFrame from "../../components/KioskAspectFrame";
 import KioskProgressBars from "../../components/KioskProgressBars";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
+const MENU_GREETING_ONCE_KEY = "menuGreetingPlayedOnce";
+
 function PaymentPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -31,6 +33,13 @@ function PaymentPageContent() {
         shouldListenRef.current = false;
         stopVoiceSession(recognitionRef.current);
         router.push(path);
+    };
+
+    const clearMenuGreetingPlayed = () => {
+        if (typeof window === "undefined") return;
+        try {
+            window.sessionStorage.removeItem(MENU_GREETING_ONCE_KEY);
+        } catch {}
     };
 
     async function speakAndResume(msg) {
@@ -87,6 +96,7 @@ function PaymentPageContent() {
         // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
             console.log("타임아웃으로 페이지 이동");
+            clearMenuGreetingPlayed();
             navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
 
@@ -115,6 +125,7 @@ function PaymentPageContent() {
         // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
             console.log("타임아웃으로 페이지 이동");
+            clearMenuGreetingPlayed();
             navigateTo(entry === "qr" ? "/qr-order" : "/");
         }, 1000);
 
