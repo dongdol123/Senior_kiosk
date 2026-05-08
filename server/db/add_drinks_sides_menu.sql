@@ -43,8 +43,13 @@ SET name = '아메리카노',
 WHERE name = '커피';
 
 INSERT INTO menu (name, price, keywords)
-SELECT '샐러드', 3000, '샐러드,salad,그린샐러드,야채샐러드'
-WHERE NOT EXISTS (SELECT 1 FROM menu m WHERE m.name = '샐러드');
+SELECT '코울슬로', 3000, '코울슬로,coleslaw,샐러드,salad'
+WHERE NOT EXISTS (SELECT 1 FROM menu m WHERE m.name = '코울슬로');
+
+UPDATE menu
+SET name = '코울슬로',
+    keywords = '코울슬로,coleslaw,샐러드,salad'
+WHERE name = '샐러드';
 
 INSERT INTO menu (name, price, keywords)
 SELECT '감자튀김', 2500, '감자튀김,감튀,프렌치프라이,french,fries,후라이드,포테이토'

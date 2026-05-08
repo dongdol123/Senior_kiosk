@@ -24,6 +24,12 @@ const DRINK_DISPLAY_ORDER = [
     "카페라떼",
     "아이스티",
 ];
+const SIDE_DISPLAY_ORDER = [
+    "감자튀김",
+    "해시브라운",
+    "치킨윙",
+    "코울슬로",
+];
 
 function drinkMediumPrice(drinkName, catalog) {
     if (!drinkName || drinkName === NONE_OPTION) return 0;
@@ -107,10 +113,17 @@ function DrinkSelectPageContent() {
         [catalogItems]
     );
     const sideItems = useMemo(
-        () =>
-            catalogItems
+        () => {
+            const sideOrder = new Map(SIDE_DISPLAY_ORDER.map((name, index) => [name, index]));
+            return catalogItems
                 .filter((m) => inferMenuCategory(m) === "side")
-                .sort((a, b) => a.name.localeCompare(b.name, "ko")),
+                .sort((a, b) => {
+                    const aOrder = sideOrder.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+                    const bOrder = sideOrder.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+                    if (aOrder !== bOrder) return aOrder - bOrder;
+                    return a.name.localeCompare(b.name, "ko");
+                });
+        },
         [catalogItems]
     );
 
@@ -519,10 +532,15 @@ function DrinkSelectPageContent() {
                 ? []
                 : [{ name: effectiveSide, size: effectiveSideSize, price: sideP }]),
         ];
-        const sizeLabel = (size) => (size === "미디움" ? "중간" : size === "라지" ? "큰" : size);
+        const sizeLabel = (size, itemName) => {
+            if (itemName === "치킨윙") {
+                return size === "미디움" ? "6개" : size === "라지" ? "8개" : size;
+            }
+            return size === "미디움" ? "중간" : size === "라지" ? "큰" : size;
+        };
         const selectedParts = [
-            effectiveDrink !== NONE_OPTION ? `${effectiveDrink}(${sizeLabel(effectiveDrinkSize)})` : null,
-            effectiveSide !== NONE_OPTION ? `${effectiveSide}(${sizeLabel(effectiveSideSize)})` : null,
+            effectiveDrink !== NONE_OPTION ? `${effectiveDrink}(${sizeLabel(effectiveDrinkSize, effectiveDrink)})` : null,
+            effectiveSide !== NONE_OPTION ? `${effectiveSide}(${sizeLabel(effectiveSideSize, effectiveSide)})` : null,
         ].filter(Boolean);
 
         const newCartItems = [...cartItems];
@@ -1183,8 +1201,12 @@ function DrinkSelectPageContent() {
                                     >
                                         <div>
                                             <div style={{ fontSize: 0, fontWeight: 700, lineHeight: 1.2 }}>
-                                                <div style={{ fontSize: "1.5rem" }}>{index === 0 ? "중간 사이즈" : "큰 사이즈"}</div>
-                                                <span style={{ fontSize: "1em" }}>{index === 0 ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기"}</span>
+                                                <div style={{ fontSize: "1.5rem" }}>
+                                                    {selectedSide === "치킨윙" ? (index === 0 ? "6개" : "8개") : index === 0 ? "중간 사이즈" : "큰 사이즈"}
+                                                </div>
+                                                <span style={{ fontSize: "1em" }}>
+                                                    {selectedSide === "치킨윙" ? (index === 0 ? "6개로 주문하기" : "8개로 주문하기") : index === 0 ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기"}
+                                                </span>
                                                 {size.name === "미디엄" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기"}
                                             </div>
                                             <div style={{ display: "none", fontSize: "0.85rem", opacity: 0.9 }}>

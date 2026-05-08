@@ -86,20 +86,28 @@ export const STATIC_MENU = [
         keywords: ["마늘", "마늘불고기버거", "불고기", "garlic", "bulgogi"],
     },
     {
-        id: "side-wing",
-        name: "치킨윙 4개",
-        price: 4000,
+        id: "side-fries",
+        name: "감자튀김",
+        price: 2500,
         category: "side",
-        image: "/wing.png",
-        keywords: ["치킨윙", "윙", "wing"],
+        image: "/fries.png",
+        keywords: ["감자튀김", "감튀", "프렌치프라이", "french", "fries", "프라이드", "포테이토"],
     },
     {
         id: "side-hash",
         name: "해시브라운",
         price: 2500,
         category: "side",
-        image: "/hash.png",
+        image: "/hashbrown.png",
         keywords: ["해시", "해쉬", "hash", "브라운", "해시브라운"],
+    },
+    {
+        id: "side-wing",
+        name: "치킨윙",
+        price: 4000,
+        category: "side",
+        image: "/wing.png",
+        keywords: ["치킨윙", "윙", "wing"],
     },
     {
         id: "drink-cola",
@@ -158,20 +166,12 @@ export const STATIC_MENU = [
         keywords: ["아이스티", "티", "iced", "icetea", "ice tea"],
     },
     {
-        id: "side-fries",
-        name: "감자튀김",
-        price: 2500,
-        category: "side",
-        image: "/french_fries_main.png",
-        keywords: ["감자튀김", "감튀", "프렌치프라이", "french", "fries", "프라이드", "포테이토"],
-    },
-    {
         id: "side-salad",
-        name: "샐러드",
+        name: "코울슬로",
         price: 3000,
         category: "side",
-        image: "/salad_main.png",
-        keywords: ["샐러드", "salad", "그린샐러드", "치킨샐러드"],
+        image: "/coleslaw.png",
+        keywords: ["코울슬로", "coleslaw", "샐러드", "salad"],
     },
 ];
 
@@ -180,7 +180,7 @@ export function inferMenuCategory(item) {
     const n = normalizeMenuKey(item?.name);
     if (/버거|burger/.test(n)) return "burger";
     if (/카페라떼|라떼|아이스티|icetea|icedtea|콜라|제로콜라|사이다|제로사이다|커피|아메리카노|americano/.test(n)) return "drink";
-    if (/치킨윙|윙|wing|해쉬브라운|해시브라운|hash|샐러드|salad|감자튀김|감튀/.test(n)) return "side";
+    if (/치킨윙|윙|wing|해쉬브라운|해시브라운|hash|코울슬로|coleslaw|샐러드|salad|감자튀김|감튀/.test(n)) return "side";
     return "";
 }
 
@@ -243,13 +243,13 @@ export function menuThumbImageSrc(m) {
     if (/제로사이다/.test(n)) return "/zero_cider.png";
     if (/사이다/.test(n)) return "/cider.png";
     if (/커피|아메리카노|americano/.test(n)) return "/americano.png";
-    if (/감자튀김/.test(n)) return "/french_fries_main.png";
-    if (/샐러드/.test(n)) return "/salad_main.png";
+    if (/감자튀김/.test(n)) return "/fries.png";
+    if (/코울슬로|coleslaw|샐러드/.test(n)) return "/coleslaw.png";
     if (/치킨텐더/.test(n)) return "/tender_main.png";
     if (/카페라떼|라떼|latte/.test(n)) return "/caffelatte.png";
     if (/아이스티|icetea/.test(n)) return "/icetea.png";
     if (/치킨윙|윙/.test(n)) return "/wing.png";
-    if (/해쉬|해시|hash|브라운/.test(n)) return "/hash.png";
+    if (/해쉬|해시|hash|브라운/.test(n)) return "/hashbrown.png";
     return null;
 }
 

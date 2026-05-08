@@ -45,7 +45,7 @@ function cartItemImageSrc(it) {
     if (/머쉬룸|머시룸/.test(n)) return "/mushroom_bulgogi.png";
     if (/치킨/.test(n) && /버거/.test(n)) return "/chicken.png";
     if (/치킨윙|윙/.test(n)) return "/wing.png";
-    if (/해쉬|해시|hash/.test(n)) return "/hash.png";
+    if (/해쉬|해시|hash/.test(n)) return "/hashbrown.png";
     if (/카페라떼|라떼|latte/.test(n)) return "/caffelatte.png";
     if (/아이스티|icetea/.test(n)) return "/icetea.png";
     if (/불고기/.test(n) && /버거/.test(n)) return "/bulgogi.png";
@@ -54,8 +54,8 @@ function cartItemImageSrc(it) {
     if (/제로사이다/.test(n)) return "/zero_cider.png";
     if (/사이다/.test(n)) return "/cider.png";
     if (/커피|아메리카노|americano/.test(n)) return "/americano.png";
-    if (/감자튀김/.test(n)) return "/french_fries_main.png";
-    if (/샐러드/.test(n)) return "/salad_main.png";
+    if (/감자튀김/.test(n)) return "/fries.png";
+    if (/코울슬로|coleslaw|샐러드/.test(n)) return "/coleslaw.png";
     if (/치킨텐더|텐더/.test(n)) return "/tender_main.png";
     return null;
 }
@@ -414,7 +414,7 @@ function MenuPageContent() {
         const item = {
             ...menu,
             id: `${menu.id}_${size}`,
-            name: `${menu.name}(${sizeDisplayName})`,
+            name: `${menu.name}(${menu?.id === "side-wing" ? (size === "미디움" ? "6개" : "8개") : sizeDisplayName})`,
             price,
             type: "drink",
             size,
@@ -442,7 +442,7 @@ function MenuPageContent() {
         const item = {
             ...menu,
             id: `${menu.id}_${size}`,
-            name: `${menu.name}(${sizeDisplayName})`,
+            name: `${menu.name}(${menu?.id === "side-wing" ? (size === "미디움" ? "6개" : "8개") : sizeDisplayName})`,
             price,
             type: "side",
             size,
@@ -1923,8 +1923,12 @@ function MenuPageContent() {
                                 사이즈를 선택하세요
                             </div>
                             {[
-                                { name: "미디움", price: selectedSideMenu.price, label: "중간 사이즈" },
-                                { name: "라지", price: selectedSideMenu.price + 500, label: "큰 사이즈" },
+                                selectedSideMenu?.id === "side-wing"
+                                    ? { name: "미디움", price: selectedSideMenu.price, label: "6개" }
+                                    : { name: "미디움", price: selectedSideMenu.price, label: "중간 사이즈" },
+                                selectedSideMenu?.id === "side-wing"
+                                    ? { name: "라지", price: selectedSideMenu.price + 500, label: "8개" }
+                                    : { name: "라지", price: selectedSideMenu.price + 500, label: "큰 사이즈" },
                             ].map((size) => (
                                 <button
                                     key={size.name}
