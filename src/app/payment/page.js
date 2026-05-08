@@ -439,7 +439,7 @@ function PaymentPageContent() {
                     alignItems: "center",
                 }}>
                     <div style={{
-                        fontSize: "2rem",
+                        fontSize: "3.4rem",
                         fontWeight: "700",
                         color: "#ffffff",
                         textAlign: "center",

@@ -27,6 +27,7 @@ function PointsPageContent() {
     const [isPhoneRewardButtonActive, setIsPhoneRewardButtonActive] = useState(false);
     const [isPhoneCancelButtonActive, setIsPhoneCancelButtonActive] = useState(false);
     const [isPhoneConfirmButtonActive, setIsPhoneConfirmButtonActive] = useState(false);
+    const [isPhoneRewardCompleted, setIsPhoneRewardCompleted] = useState(false);
     const [isCouponCancelButtonActive, setIsCouponCancelButtonActive] = useState(false);
     const [activePaymentButton, setActivePaymentButton] = useState("");
     const [activeDialButton, setActiveDialButton] = useState("");
@@ -215,6 +216,7 @@ function PointsPageContent() {
             alert("올바른 핸드폰 번호를 입력해주세요.");
             return;
         }
+        setIsPhoneRewardCompleted(true);
         setShowPhoneModal(false);
     }
 
@@ -565,7 +567,7 @@ function PointsPageContent() {
                         marginBottom: "44px",
                     }}
                 >
-                    <div style={{ fontSize: "2rem", fontWeight: "700", marginBottom: "14px" }}>
+                    <div style={{ fontSize: "2.2rem", fontWeight: "700", marginBottom: "14px" }}>
                         주문 내역
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", height: "calc(100% - 52px)", background: "#f5f8fc" }}>
@@ -575,7 +577,7 @@ function PointsPageContent() {
                         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px", overflowY: "auto", overflowX: "hidden", paddingRight: "4px", paddingBottom: "12px", boxSizing: "border-box", background: "#f5f8fc" }}>
                             {cartItems.map((item, idx) => (
                                 <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "2px solid #d9e3ef", paddingTop: idx === 0 ? 0 : "10px", background: "#f5f8fc" }}>
-                                    <div style={{ fontSize: "1.45rem", fontWeight: "700", lineHeight: 1.3 }}>
+                                    <div style={{ fontSize: "1.35rem", fontWeight: "700", lineHeight: 1.3 }}>
                                         {item.name}{item.qty > 1 ? ` ×${item.qty}` : ""} | {(item.price * (item.qty || 1)).toLocaleString()}원                                        
                                     </div>
                                     {false && item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (
@@ -593,14 +595,14 @@ function PointsPageContent() {
                             ))}
                         </div>
                     )}
-                        <div style={{ marginTop: "12px", textAlign: "right", fontSize: "1.6rem", fontWeight: "800", color: "#000000", background: "#f5f8fc", paddingRight: "4px", paddingBottom: "8px", boxSizing: "border-box" }}>
+                        <div style={{ marginTop: "12px", textAlign: "right", fontSize: "2.2rem", fontWeight: "700", color: "#000000", background: "#f5f8fc", paddingRight: "4px", paddingBottom: "8px", boxSizing: "border-box" }}>
                             총 금액 | {cartItems.reduce((sum, item) => sum + item.price * (item.qty || 1), 0).toLocaleString()}원
                         </div>
                     </div>
                 </div>
 
                 <div style={{ width: "100%", maxWidth: "800px", textAlign: "left", marginTop: "0", marginBottom: "44px" }}>
-                    <div style={{ fontSize: "2rem", fontWeight: "700", color: "#000000", marginBottom: "14px" }}>
+                    <div style={{ fontSize: "2.2rem", fontWeight: "700", color: "#000000", marginBottom: "14px" }}>
                         포인트 적립하기
                     </div>
                     <div
@@ -631,12 +633,12 @@ function PointsPageContent() {
                                 zIndex: 2,
                             }}
                         >
-                            휴대폰 번호로 적립하기
+                            {isPhoneRewardCompleted ? "휴대폰 번호로 적립 완료" : "휴대폰 번호로 적립하기"}
                         </button>
                     </div>
                 </div>
 
-                <div style={{ width: "100%", marginTop: "0", maxWidth: "800px", fontSize: "2rem", fontWeight: "700", color: "#000000", textAlign: "left" }}>
+                <div style={{ width: "100%", marginTop: "0", maxWidth: "800px", fontSize: "2.2rem", fontWeight: "700", color: "#000000", textAlign: "left" }}>
                     결제 수단을 선택해주세요
                 </div>
 
@@ -796,7 +798,7 @@ function PointsPageContent() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                             {cartItems.map((item, idx) => (
                                 <div key={`${item.id || item.name}-${idx}`} style={{ borderTop: idx === 0 ? "none" : "1px solid #2a2a2a", paddingTop: idx === 0 ? 0 : "10px" }}>
-                                    <div style={{ fontSize: "1rem", fontWeight: "700" }}>
+                                    <div style={{ fontSize: "0.9rem", fontWeight: "700" }}>
                                         {item.name}{item.qty > 1 ? ` ×${item.qty}` : ""} - {(item.price * (item.qty || 1)).toLocaleString()}원
                                     </div>
                                     {false && item.type === "set" && Array.isArray(item.items) && item.items.length > 0 && (

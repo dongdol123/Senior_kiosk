@@ -102,6 +102,8 @@ function MenuPageContent() {
     const [activeDrinkSizeButton, setActiveDrinkSizeButton] = useState("");
     const [selectedSideMenu, setSelectedSideMenu] = useState(null);
     const [activeSideSizeButton, setActiveSideSizeButton] = useState("");
+    const [activeCartAdjustButton, setActiveCartAdjustButton] = useState("");
+    const [activeCartDeleteButton, setActiveCartDeleteButton] = useState("");
 
     useEffect(() => {
         const menuCategory = searchParams.get("menuCategory");
@@ -377,6 +379,31 @@ function MenuPageContent() {
         }
 
         navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${menuState}&${entryQuery(entry)}`);
+    }
+
+    function handleCartAdjustClick(type, item) {
+        const buttonKey = `${type}-${item.id}`;
+        setActiveCartAdjustButton(buttonKey);
+        setTimeout(() => {
+            if (type === "minus") {
+                removeFromCart(item.id);
+            } else {
+                addToCart(item);
+            }
+            setTimeout(() => {
+                setActiveCartAdjustButton((current) => (current === buttonKey ? "" : current));
+            }, 120);
+        }, 120);
+    }
+
+    function handleCartDeleteClick(itemId) {
+        setActiveCartDeleteButton(itemId);
+        setTimeout(() => {
+            deleteFromCart(itemId);
+            setTimeout(() => {
+                setActiveCartDeleteButton((current) => (current === itemId ? "" : current));
+            }, 120);
+        }, 120);
     }
 
     function addDrinkWithSize(menu, size) {
@@ -1054,7 +1081,7 @@ function MenuPageContent() {
                         border: selectedCategory === "burger" ? "2px solid #002e55" : "2px solid #d9e3ef",
                         backgroundColor: selectedCategory === "burger" ? "#c8d8ea" : "#f5f8fc",
                         color: "#000",
-                        fontSize: "24px",
+                        fontSize: "26px",
                         fontWeight: selectedCategory === "burger" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
@@ -1075,7 +1102,7 @@ function MenuPageContent() {
                         border: selectedCategory === "drink" ? "2px solid #002e55" : "2px solid #d9e3ef",
                         backgroundColor: selectedCategory === "drink" ? "#c8d8ea" : "#f5f8fc",
                         color: "#000",
-                        fontSize: "24px",
+                        fontSize: "26px",
                         fontWeight: selectedCategory === "drink" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
@@ -1096,7 +1123,7 @@ function MenuPageContent() {
                         border: selectedCategory === "side" ? "2px solid #002e55" : "2px solid #d9e3ef",
                         backgroundColor: selectedCategory === "side" ? "#c8d8ea" : "#f5f8fc",
                         color: "#000",
-                        fontSize: "24px",
+                        fontSize: "26px",
                         fontWeight: selectedCategory === "side" ? 700 : 500,
                         cursor: "pointer",
                         transition: "all 0.2s",
@@ -1228,9 +1255,9 @@ function MenuPageContent() {
                                             background: "#fff",
                                             borderRadius: "0 0 24px 24px",
                                         }}>
-                                            <div style={{ fontWeight: 800, fontSize: 26, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#000", lineHeight: "1.1" }}>{m.name}</div>
+                                            <div style={{ fontWeight: 800, fontSize: 32, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#000", lineHeight: "1.1" }}>{m.name}</div>
                                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                                <div style={{ color: "#002e55", fontSize: 24, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
+                                                <div style={{ color: "#002e55", fontSize: 28, fontWeight: 800 }}>{m.price.toLocaleString()}원</div>
                                             </div>
                                         </div>
                                     </div>
@@ -1317,7 +1344,7 @@ function MenuPageContent() {
 
                             {/* 가운데: 페이지 번호 */}
                             <div style={{ 
-                                fontSize: "16px", 
+                                fontSize: "20px", 
                                 fontWeight: "600", 
                                 color: "#333",
                                 position: "absolute",
@@ -1403,7 +1430,7 @@ function MenuPageContent() {
                     minWidth: 0,
                 }}>
                     {cartItems.length === 0 ? (
-                        <div style={{ color: "#c8d8ea", fontSize: "30px" }}>담긴 상품이 없습니다</div>
+                        <div style={{ color: "#c8d8ea", fontSize: "34px" }}>담긴 상품이 없습니다</div>
                     ) : (
                         cartItems.map((it) => (
                             <div
@@ -1444,22 +1471,22 @@ function MenuPageContent() {
                                 
                                 {/* 메뉴 정보 */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: "700", fontSize: "17px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    <div style={{ fontWeight: "700", fontSize: "20px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                         {it.name}
                                     </div>
-                                    <div style={{ fontWeight: "700", fontSize: "17px", marginBottom: "6px", color: "#002e55" }}>
+                                    <div style={{ fontWeight: "700", fontSize: "20px", marginBottom: "6px", color: "#002e55" }}>
                                         {it.price.toLocaleString()}원
                                     </div>
                                     {/* 수량 조절 */}
                                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                         <button 
-                                            onClick={() => removeFromCart(it.id)} 
+                                            onClick={() => handleCartAdjustClick("minus", it)} 
                                             style={{ 
-                                                width: "20px", 
-                                                height: "20px", 
+                                                width: "24px", 
+                                                height: "24px", 
                                                 borderRadius: "3px", 
                                                 border: "none", 
-                                                background: "#002e55", 
+                                                background: activeCartAdjustButton === `minus-${it.id}` ? "#fec315" : "#002e55", 
                                                 color: "#ffffff", 
                                                 cursor: "pointer",
                                                 fontSize: "20px",
@@ -1467,21 +1494,22 @@ function MenuPageContent() {
                                                 display: "flex",
                                                 alignItems: "center",
                                                 justifyContent: "center",
+                                                transition: "background-color 0.12s ease",
                                             }}
                                         >
-                                            -
+                                            −
                                         </button>
-                                        <span style={{ fontSize: "17px", fontWeight: "700", minWidth: "24px", textAlign: "center" }}>
+                                        <span style={{ fontSize: "20px", fontWeight: "700", minWidth: "24px", textAlign: "center" }}>
                                             {it.qty}
                                         </span>
                                         <button 
-                                            onClick={() => addToCart(it)} 
+                                            onClick={() => handleCartAdjustClick("plus", it)} 
                                             style={{ 
-                                                width: "20px", 
-                                                height: "20px", 
+                                                width: "24px", 
+                                                height: "24px", 
                                                 borderRadius: "3px", 
                                                 border: "none", 
-                                                background: "#002e55", 
+                                                background: activeCartAdjustButton === `plus-${it.id}` ? "#fec315" : "#002e55", 
                                                 color: "#ffffff", 
                                                 cursor: "pointer",
                                                 fontSize: "20px",
@@ -1489,26 +1517,28 @@ function MenuPageContent() {
                                                 display: "flex",
                                                 alignItems: "center",
                                                 justifyContent: "center",
+                                                transition: "background-color 0.12s ease",
                                             }}
                                         >
                                             +
                                         </button>
                                         <button 
-                                            onClick={() => deleteFromCart(it.id)} 
+                                            onClick={() => handleCartDeleteClick(it.id)} 
                                             style={{ 
                                                 marginLeft: "4px",
-                                                width: "20px", 
-                                                height: "20px", 
-                                                borderRadius: "3px", 
+                                                width: "24px", 
+                                                height: "24px", 
+                                                borderRadius: "50%", 
                                                 border: "none", 
-                                                background: "transparent", 
-                                                color: "#000000", 
+                                                background: activeCartDeleteButton === it.id ? "#fec315" : "#ff3b30", 
+                                                color: "#ffffff", 
                                                 cursor: "pointer",
-                                                fontSize: "21px",
+                                                fontSize: "20px",
                                                 fontWeight: "700",
                                                 display: "flex",
                                                 alignItems: "center",
                                                 justifyContent: "center",
+                                                transition: "background-color 0.12s ease",
                                             }}
                                         >
                                             ×
@@ -1523,7 +1553,7 @@ function MenuPageContent() {
                 {/* 오른쪽: 전체 취소 및 결제하기 버튼 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0, minWidth: "262px" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
-                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
                             총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
                         </div>
                         <button
@@ -1537,7 +1567,7 @@ function MenuPageContent() {
                                 background: cartItems.length === 0 ? "#c8d8ea" : isClearCartButtonActive ? "#fec002" : "#002e55",
                                 color: "#ffffff",
                                 cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                                fontSize: "22px",
+                                fontSize: "24px",
                                 fontWeight: "700",
                                 transition: "all 0.2s",
                             }}
@@ -1546,7 +1576,7 @@ function MenuPageContent() {
                         </button>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
-                        <div style={{ fontSize: "20px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
                             총 금액 | {cartTotal.toLocaleString()}원
                         </div>
                         <button
@@ -1560,7 +1590,7 @@ function MenuPageContent() {
                                 background: cartItems.length === 0 ? "#c8d8ea" : isOrderButtonActive ? "#fec002" : "#ff3b30",
                                 color: "#ffffff",
                                 cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
-                                fontSize: "22px",
+                                fontSize: "24px",
                                 fontWeight: "700",
                                 transition: "all 0.2s",
                             }}
