@@ -1288,12 +1288,12 @@ function MenuPageContent() {
                                 }}
                                 onMouseEnter={(e) => {
                                     if (currentPage !== 1) {
-                                        e.currentTarget.style.background = "#1a6b2e";
+                                        e.currentTarget.style.background = "#002e55";
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (currentPage !== 1) {
-                                        e.currentTarget.style.background = "#1e7a39";
+                                        e.currentTarget.style.background = "#002e55";
                                     }
                                 }}
                             >
@@ -1333,12 +1333,12 @@ function MenuPageContent() {
                                 }}
                                 onMouseEnter={(e) => {
                                     if (currentPage !== totalPages) {
-                                        e.currentTarget.style.background = "#1a6b2e";
+                                        e.currentTarget.style.background = "#002e55";
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (currentPage !== totalPages) {
-                                        e.currentTarget.style.background = "#1e7a39";
+                                        e.currentTarget.style.background = "#002e55";
                                     }
                                 }}
                             >
@@ -1411,7 +1411,7 @@ function MenuPageContent() {
                                 <div style={{
                                     width: "80px",
                                     height: "80px",
-                                    background: "#f5f5f5",
+                                    background: "#ffffff",
                                     borderRadius: "4px",
                                     display: "flex",
                                     alignItems: "center",
