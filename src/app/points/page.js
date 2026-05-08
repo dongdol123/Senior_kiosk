@@ -24,6 +24,10 @@ function PointsPageContent() {
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
     const [isBackButtonActive, setIsBackButtonActive] = useState(false);
+    const [isPhoneRewardButtonActive, setIsPhoneRewardButtonActive] = useState(false);
+    const [isPhoneCancelButtonActive, setIsPhoneCancelButtonActive] = useState(false);
+    const [isPhoneConfirmButtonActive, setIsPhoneConfirmButtonActive] = useState(false);
+    const [isCouponCancelButtonActive, setIsCouponCancelButtonActive] = useState(false);
     const [activePaymentButton, setActivePaymentButton] = useState("");
     const [activeDialButton, setActiveDialButton] = useState("");
     const recognitionRef = useRef(null);
@@ -179,6 +183,14 @@ function PointsPageContent() {
         }, 120);
     }
 
+    function flashAction(setActive, action) {
+        setActive(true);
+        setTimeout(() => {
+            action();
+            setActive(false);
+        }, 120);
+    }
+
     function openPhoneModal() {
         shouldListenRef.current = false;
         try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
@@ -221,6 +233,7 @@ function PointsPageContent() {
     function closeCouponModal() {
         setShowCouponModal(false);
         setActiveDialButton("");
+        setActivePaymentButton("");
     }
 
     function confirmCouponModal() {
@@ -602,14 +615,14 @@ function PointsPageContent() {
                     >
                         <button
                             type="button"
-                            onClick={openPhoneModal}
+                            onClick={() => flashAction(setIsPhoneRewardButtonActive, openPhoneModal)}
                             style={{
                                 width: "360px",
                                 maxWidth: "100%",
                                 padding: "18px 24px",
                                 fontSize: "1.8rem",
                                 fontWeight: "700",
-                                backgroundColor: "#002e55",
+                                backgroundColor: isPhoneRewardButtonActive ? "#fec315" : "#002e55",
                                 color: "#ffffff",
                                 border: "none",
                                 borderRadius: "12px",
@@ -641,8 +654,8 @@ function PointsPageContent() {
                         onClick={handleCardPaymentClick}
                         style={{
                             flex: 1,
-                            padding: "28px 20px",
-                            fontSize: "1.8rem",
+                            padding: "33px 20px 23px",
+                            fontSize: "1.95rem",
                             fontWeight: "700",
                             backgroundColor: activePaymentButton === "card" ? "#c8d8ea" : "#f5f8fc",
                             color: "#000000",
@@ -653,31 +666,16 @@ function PointsPageContent() {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            justifyContent: "center",
                             gap: "12px",
                             boxShadow: activePaymentButton === "card" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                         }}
                     >
-                        <div style={{
-                            width: "80px",
-                            height: "60px",
-                            border: "2px solid #000",
-                            borderRadius: "8px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "4px",
-                            padding: "8px",
-                        }}>
-                            <div style={{
-                                width: "100%",
-                                height: "20px",
-                                border: "1px solid #000",
-                                borderRadius: "2px",
-                            }}></div>
-                            <div style={{ width: "60%", height: "2px", backgroundColor: "#000" }}></div>
-                            <div style={{ width: "60%", height: "2px", backgroundColor: "#000" }}></div>
-                        </div>
+                        <img
+                            src="/creditcard.png"
+                            alt="신용카드 결제"
+                            style={{ width: "auto", height: "70px", objectFit: "contain", display: "block" }}
+                        />
                         <div>신용카드</div>
                     </button>
 
@@ -685,8 +683,8 @@ function PointsPageContent() {
                         onClick={handlePayPaymentClick}
                         style={{
                             flex: 1,
-                            padding: "28px 20px",
-                            fontSize: "1.8rem",
+                            padding: "33px 20px 23px",
+                            fontSize: "1.95rem",
                             fontWeight: "700",
                             backgroundColor: activePaymentButton === "pay" ? "#c8d8ea" : "#f5f8fc",
                             color: "#000000",
@@ -697,12 +695,18 @@ function PointsPageContent() {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            justifyContent: "center",
                             gap: "12px",
                             boxShadow: activePaymentButton === "pay" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                         }}
                     >
+                        <img
+                            src="/pay.png"
+                            alt="페이 결제"
+                            style={{ width: "auto", height: "70px", objectFit: "contain", display: "block" }}
+                        />
                         <div style={{
-                            display: "flex",
+                            display: "none",
                             gap: "16px",
                             alignItems: "center",
                         }}>
@@ -746,8 +750,8 @@ function PointsPageContent() {
                         onClick={handleCouponPaymentClick}
                         style={{
                             flex: 1,
-                            padding: "28px 20px",
-                            fontSize: "1.8rem",
+                            padding: "33px 20px 23px",
+                            fontSize: "1.95rem",
                             fontWeight: "700",
                             backgroundColor: activePaymentButton === "coupon" ? "#c8d8ea" : "#f5f8fc",
                             color: "#000000",
@@ -758,6 +762,7 @@ function PointsPageContent() {
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            justifyContent: "center",
                             gap: "12px",
                             boxShadow: activePaymentButton === "coupon" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)",
                         }}
@@ -765,7 +770,7 @@ function PointsPageContent() {
                         <img
                             src="/coupon.png"
                             alt="쿠폰 결제"
-                            style={{ width: "90px", height: "90px", objectFit: "contain", display: "block" }}
+                            style={{ width: "auto", height: "70px", objectFit: "contain", display: "block" }}
                         />
                         <div>쿠폰</div>
                     </button>
@@ -871,20 +876,20 @@ function PointsPageContent() {
                                 <button onClick={() => flashDialButton("delete", handleDelete)} style={{ height: "120px", border: activeDialButton === "delete" ? "2px solid #002e55" : "2px solid #d9e3ef", borderRadius: "12px", background: activeDialButton === "delete" ? "#c8d8ea" : "#f5f8fc", cursor: "pointer", fontWeight: "700", fontSize: "2rem", boxShadow: activeDialButton === "delete" ? "0 4px 10px rgba(0,0,0,0.12)" : "0 2px 6px rgba(0,0,0,0.06)" }}>
                                     지움
                                 </button>
-                                <button onClick={confirmPhoneModal} disabled={phoneNumber.length < 10} style={{ flex: 1, border: "none", borderRadius: "8px", background: phoneNumber.length >= 10 ? "#ff0000" : "#bbb", color: "#fff", cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed", fontWeight: "700", fontSize: "2rem" }}>
+                                <button onClick={() => phoneNumber.length >= 10 && flashAction(setIsPhoneConfirmButtonActive, confirmPhoneModal)} disabled={phoneNumber.length < 10} style={{ flex: 1, border: "none", borderRadius: "8px", background: phoneNumber.length < 10 ? "#bbb" : isPhoneConfirmButtonActive ? "#fec315" : "#ff0000", color: "#fff", cursor: phoneNumber.length >= 10 ? "pointer" : "not-allowed", fontWeight: "700", fontSize: "2rem" }}>
                                     확인
                                 </button>
                             </div>
                         </div>
                         <div style={{ display: "flex", justifyContent: "center", marginTop: "18px" }}>
                             <button
-                                onClick={closePhoneModal}
+                                onClick={() => flashAction(setIsPhoneCancelButtonActive, closePhoneModal)}
                                 style={{
                                     width: "fit-content",
                                     padding: "14px 24px",
                                     fontSize: "1.5rem",
                                     fontWeight: "700",
-                                    backgroundColor: "#002e55",
+                                    backgroundColor: isPhoneCancelButtonActive ? "#fec315" : "#002e55",
                                     color: "#ffffff",
                                     border: "none",
                                     borderRadius: "10px",
@@ -964,13 +969,13 @@ function PointsPageContent() {
                         </div>
                         <div style={{ display: "flex", justifyContent: "center", marginTop: "18px" }}>
                             <button
-                                onClick={closeCouponModal}
+                                onClick={() => flashAction(setIsCouponCancelButtonActive, closeCouponModal)}
                                 style={{
                                     width: "fit-content",
                                     padding: "14px 24px",
                                     fontSize: "1.5rem",
                                     fontWeight: "700",
-                                    backgroundColor: "#002e55",
+                                    backgroundColor: isCouponCancelButtonActive ? "#fec315" : "#002e55",
                                     color: "#ffffff",
                                     border: "none",
                                     borderRadius: "10px",
