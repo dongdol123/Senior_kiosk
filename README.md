@@ -4,13 +4,6 @@
 
 ## 개요
 
-<<<<<<< HEAD
-```bash
-##실행방법
-npm install
-npm run dev
-## http://localhost:3000 
-=======
 - 음성으로 메뉴를 검색·선택하고, 옵션·세트 구성, 포인트 적립, 쿠폰 적용, 결제까지 진행하는 키오스크 흐름을 제공.
 - 손쉬운 사용을 위해 큰 버튼 UI, 음성 안내(TTS), 음성 인식(STT)을 결합.
 - 매장 키오스크와 모바일/QR 진입(`?entry=qr`) 두 흐름을 지원.
@@ -43,7 +36,6 @@ src/components/  # 공통 UI 컴포넌트
 server/          # Express 서버 (라우트, DB)
 server/db/       # MySQL 스키마 SQL
 public/          # 메뉴 이미지 등 정적 자원
->>>>>>> d64f533ad8cbd285ea51bb396ae0bfa95ebad4ae
 ```
 
 ## API
