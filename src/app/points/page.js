@@ -674,7 +674,7 @@ function PointsPageContent() {
                         <img
                             src="/creditcard.png"
                             alt="신용카드 결제"
-                            style={{ width: "auto", height: "70px", objectFit: "contain", display: "block" }}
+                            style={{ width: "auto", height: "65px", objectFit: "contain", display: "block" }}
                         />
                         <div>신용카드</div>
                     </button>
@@ -703,7 +703,7 @@ function PointsPageContent() {
                         <img
                             src="/pay.png"
                             alt="페이 결제"
-                            style={{ width: "auto", height: "70px", objectFit: "contain", display: "block" }}
+                            style={{ width: "auto", height: "65px", objectFit: "contain", display: "block" }}
                         />
                         <div style={{
                             display: "none",
@@ -770,7 +770,7 @@ function PointsPageContent() {
                         <img
                             src="/coupon.png"
                             alt="쿠폰 결제"
-                            style={{ width: "auto", height: "70px", objectFit: "contain", display: "block" }}
+                            style={{ width: "auto", height: "65px", objectFit: "contain", display: "block" }}
                         />
                         <div>쿠폰</div>
                     </button>
