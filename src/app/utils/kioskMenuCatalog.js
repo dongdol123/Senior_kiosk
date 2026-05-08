@@ -102,11 +102,51 @@ export const STATIC_MENU = [
         keywords: ["해시", "해쉬", "hash", "브라운", "해시브라운"],
     },
     {
+        id: "drink-cola",
+        name: "콜라",
+        price: 2500,
+        category: "drink",
+        image: "/coke.png",
+        keywords: ["콜라", "코크", "coke", "콜라주스", "탄산"],
+    },
+    {
+        id: "drink-zerocola",
+        name: "제로콜라",
+        price: 2500,
+        category: "drink",
+        image: "/zero_coke.png",
+        keywords: ["제로콜라", "제로", "zero", "제로코크", "다이어트콜라"],
+    },
+    {
+        id: "drink-cider",
+        name: "사이다",
+        price: 2500,
+        category: "drink",
+        image: "/cider.png",
+        keywords: ["사이다", "cider", "사이다주", "soda", "스프라이트"],
+    },
+    {
+        id: "drink-zero-cider",
+        name: "제로사이다",
+        price: 2500,
+        category: "drink",
+        image: "/zero_cider.png",
+        keywords: ["제로사이다", "제로", "zero", "cider", "soda"],
+    },
+    {
+        id: "drink-coffee",
+        name: "아메리카노",
+        price: 2500,
+        category: "drink",
+        image: "/americano.png",
+        keywords: ["아메리카노", "아메", "coffee", "americano", "커피"],
+    },
+    {
         id: "drink-latte",
         name: "카페라떼",
         price: 2500,
         category: "drink",
-        image: "/latte.png",
+        image: "/caffelatte.png",
         keywords: ["카페라떼", "라떼", "latte", "카페"],
     },
     {
@@ -116,38 +156,6 @@ export const STATIC_MENU = [
         category: "drink",
         image: "/icetea.png",
         keywords: ["아이스티", "티", "iced", "icetea", "ice tea"],
-    },
-    {
-        id: "drink-cola",
-        name: "콜라",
-        price: 2500,
-        category: "drink",
-        image: "/coke_main.png",
-        keywords: ["콜라", "코크", "coke", "콜라주스", "탄산"],
-    },
-    {
-        id: "drink-zerocola",
-        name: "제로콜라",
-        price: 2500,
-        category: "drink",
-        image: "/coke_main.png",
-        keywords: ["제로콜라", "제로", "zero", "제로코크", "다이어트콜라"],
-    },
-    {
-        id: "drink-cider",
-        name: "사이다",
-        price: 2500,
-        category: "drink",
-        image: "/cider_main.png",
-        keywords: ["사이다", "cider", "사이다주", "soda", "스프라이트"],
-    },
-    {
-        id: "drink-coffee",
-        name: "커피",
-        price: 2500,
-        category: "drink",
-        image: "/coffee_main.png",
-        keywords: ["커피", "coffee", "아메리카노", "아메", "캬라멜"],
     },
     {
         id: "side-fries",
@@ -171,7 +179,7 @@ export function inferMenuCategory(item) {
     if (item?.category) return item.category;
     const n = normalizeMenuKey(item?.name);
     if (/버거|burger/.test(n)) return "burger";
-    if (/카페라떼|라떼|아이스티|icetea|icedtea|콜라|제로콜라|사이다|커피/.test(n)) return "drink";
+    if (/카페라떼|라떼|아이스티|icetea|icedtea|콜라|제로콜라|사이다|제로사이다|커피|아메리카노|americano/.test(n)) return "drink";
     if (/치킨윙|윙|wing|해쉬브라운|해시브라운|hash|샐러드|salad|감자튀김|감튀/.test(n)) return "side";
     return "";
 }
@@ -230,13 +238,15 @@ export function menuThumbImageSrc(m) {
     if (/치킨/.test(n) && /버거/.test(n)) return "/chicken.png";
     if (/불고기/.test(n) && /버거/.test(n)) return "/bulgogi.png";
     if (/버거/.test(n)) return "/burger.png";
-    if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
-    if (/사이다/.test(n)) return "/cider_main.png";
-    if (/커피/.test(n)) return "/coffee_main.png";
+    if (/제로콜라/.test(n)) return "/zero_coke.png";
+    if (/콜라/.test(n)) return "/coke.png";
+    if (/제로사이다/.test(n)) return "/zero_cider.png";
+    if (/사이다/.test(n)) return "/cider.png";
+    if (/커피|아메리카노|americano/.test(n)) return "/americano.png";
     if (/감자튀김/.test(n)) return "/french_fries_main.png";
     if (/샐러드/.test(n)) return "/salad_main.png";
     if (/치킨텐더/.test(n)) return "/tender_main.png";
-    if (/카페라떼|라떼|latte/.test(n)) return "/latte.png";
+    if (/카페라떼|라떼|latte/.test(n)) return "/caffelatte.png";
     if (/아이스티|icetea/.test(n)) return "/icetea.png";
     if (/치킨윙|윙/.test(n)) return "/wing.png";
     if (/해쉬|해시|hash|브라운/.test(n)) return "/hash.png";

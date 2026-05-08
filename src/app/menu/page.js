@@ -46,12 +46,14 @@ function cartItemImageSrc(it) {
     if (/치킨/.test(n) && /버거/.test(n)) return "/chicken.png";
     if (/치킨윙|윙/.test(n)) return "/wing.png";
     if (/해쉬|해시|hash/.test(n)) return "/hash.png";
-    if (/카페라떼|라떼|latte/.test(n)) return "/latte.png";
+    if (/카페라떼|라떼|latte/.test(n)) return "/caffelatte.png";
     if (/아이스티|icetea/.test(n)) return "/icetea.png";
     if (/불고기/.test(n) && /버거/.test(n)) return "/bulgogi.png";
-    if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
-    if (/사이다/.test(n)) return "/cider_main.png";
-    if (/커피/.test(n)) return "/coffee_main.png";
+    if (/제로콜라/.test(n)) return "/zero_coke.png";
+    if (/콜라/.test(n)) return "/coke.png";
+    if (/제로사이다/.test(n)) return "/zero_cider.png";
+    if (/사이다/.test(n)) return "/cider.png";
+    if (/커피|아메리카노|americano/.test(n)) return "/americano.png";
     if (/감자튀김/.test(n)) return "/french_fries_main.png";
     if (/샐러드/.test(n)) return "/salad_main.png";
     if (/치킨텐더|텐더/.test(n)) return "/tender_main.png";
@@ -431,6 +433,7 @@ function MenuPageContent() {
         });
         setSelectedDrinkMenu(null);
         setActiveDrinkSizeButton("");
+        setActiveMenuCardId(null);
     }
 
     function addSideWithSize(menu, size) {
@@ -458,6 +461,7 @@ function MenuPageContent() {
         });
         setSelectedSideMenu(null);
         setActiveSideSizeButton("");
+        setActiveMenuCardId(null);
     }
 
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
@@ -1702,6 +1706,7 @@ function MenuPageContent() {
                     onClick={() => {
                         setSelectedDrinkMenu(null);
                         setActiveDrinkSizeButton("");
+                        setActiveMenuCardId(null);
                     }}
                 >
                     <div
@@ -1811,6 +1816,7 @@ function MenuPageContent() {
                                 onClick={() => {
                                     setSelectedDrinkMenu(null);
                                     setActiveDrinkSizeButton("");
+                                    setActiveMenuCardId(null);
                                 }}
                                 style={{
                                     width: "fit-content",
@@ -1848,6 +1854,7 @@ function MenuPageContent() {
                     onClick={() => {
                         setSelectedSideMenu(null);
                         setActiveSideSizeButton("");
+                        setActiveMenuCardId(null);
                     }}
                 >
                     <div
@@ -1955,6 +1962,7 @@ function MenuPageContent() {
                                 onClick={() => {
                                     setSelectedSideMenu(null);
                                     setActiveSideSizeButton("");
+                                    setActiveMenuCardId(null);
                                 }}
                                 style={{
                                     width: "fit-content",

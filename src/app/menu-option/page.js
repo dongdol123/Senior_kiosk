@@ -108,13 +108,16 @@ function MenuOptionPageContent() {
             "콜라",
             "제로콜라",
             "사이다",
+            "제로사이다",
             "커피",
+            "아메리카노",
             "latte",
             "icetea",
             "coke",
             "zero",
             "soda",
             "coffee",
+            "americano",
         ];
 
         // 음료 키워드와 정확히 일치하는지 확인
@@ -169,7 +172,7 @@ function MenuOptionPageContent() {
             const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
-                (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "커피", "latte", "icetea", "coke", "zero", "soda", "coffee"].some(k =>
+                (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "제로사이다", "커피", "아메리카노", "latte", "icetea", "coke", "zero", "soda", "coffee", "americano"].some(k =>
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
@@ -362,7 +365,7 @@ function MenuOptionPageContent() {
             // 버거인지 음료인지 확인
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
-                (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "커피", "latte", "icetea", "coke", "zero", "soda", "coffee"].some(k =>
+                (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "제로사이다", "커피", "아메리카노", "latte", "icetea", "coke", "zero", "soda", "coffee", "americano"].some(k =>
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
@@ -1104,14 +1107,16 @@ function MenuOptionPageContent() {
                         >
                             {(() => {
                                 const n = (menuName || "").replace(/\s+/g, "").toLowerCase();
-                                const isCola = ["콜라", "제로콜라", "coke", "zero"].some((k) => n.includes(k));
-                                const isCider = ["사이다", "soda"].some((k) => n.includes(k));
-                                const isCoffee = ["커피", "coffee"].some((k) => n.includes(k));
+                                const isZeroCola = ["제로콜라", "zerocoke", "zero"].some((k) => n.includes(k));
+                                const isCola = !isZeroCola && ["콜라", "coke"].some((k) => n.includes(k));
+                                const isZeroCider = ["제로사이다", "zerocider"].some((k) => n.includes(k));
+                                const isCider = !isZeroCider && ["사이다", "soda", "cider"].some((k) => n.includes(k));
+                                const isCoffee = ["커피", "아메리카노", "coffee", "americano"].some((k) => n.includes(k));
                                 const isLatte = ["카페라떼", "라떼", "latte"].some((k) => n.includes(k));
                                 const isIcedTea = ["아이스티", "icetea", "icedtea"].some((k) => n.includes(k));
                                 return isLatte ? (
                                     <img
-                                        src="/latte.png"
+                                        src="/caffelatte.png"
                                         alt="사이즈 선택"
                                         style={{
                                             width: "100%",
@@ -1131,10 +1136,32 @@ function MenuOptionPageContent() {
                                             display: "block",
                                         }}
                                     />
+                                ) : isZeroCola ? (
+                                    <img
+                                        src="/zero_coke.png"
+                                        alt="?ъ씠利??좏깮"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
                                 ) : isCola ? (
                                     <img
-                                        src="/coke_size.png"
+                                        src="/coke.png"
                                         alt="사이즈 선택"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : isZeroCider ? (
+                                    <img
+                                        src="/zero_cider.png"
+                                        alt="?ъ씠利??좏깮"
                                         style={{
                                             width: "100%",
                                             height: "100%",
@@ -1144,7 +1171,7 @@ function MenuOptionPageContent() {
                                     />
                                 ) : isCider ? (
                                     <img
-                                        src="/cider_size.png"
+                                        src="/cider.png"
                                         alt="사이즈 선택"
                                         style={{
                                             width: "100%",
@@ -1155,7 +1182,7 @@ function MenuOptionPageContent() {
                                     />
                                 ) : isCoffee ? (
                                     <img
-                                        src="/coffee_size.png"
+                                        src="/americano.png"
                                         alt="사이즈 선택"
                                         style={{
                                             width: "100%",

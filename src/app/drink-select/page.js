@@ -15,6 +15,15 @@ import {
 } from "../utils/kioskMenuCatalog";
 
 const NONE_OPTION = "None";
+const DRINK_DISPLAY_ORDER = [
+    "콜라",
+    "제로콜라",
+    "사이다",
+    "제로사이다",
+    "아메리카노",
+    "카페라떼",
+    "아이스티",
+];
 
 function drinkMediumPrice(drinkName, catalog) {
     if (!drinkName || drinkName === NONE_OPTION) return 0;
@@ -84,10 +93,17 @@ function DrinkSelectPageContent() {
     const catalogRef = useRef(catalogItems);
 
     const drinkItems = useMemo(
-        () =>
-            catalogItems
+        () => {
+            const drinkOrder = new Map(DRINK_DISPLAY_ORDER.map((name, index) => [name, index]));
+            return catalogItems
                 .filter((m) => inferMenuCategory(m) === "drink")
-                .sort((a, b) => a.name.localeCompare(b.name, "ko")),
+                .sort((a, b) => {
+                    const aOrder = drinkOrder.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+                    const bOrder = drinkOrder.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+                    if (aOrder !== bOrder) return aOrder - bOrder;
+                    return a.name.localeCompare(b.name, "ko");
+                });
+        },
         [catalogItems]
     );
     const sideItems = useMemo(

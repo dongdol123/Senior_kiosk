@@ -30,8 +30,17 @@ SELECT '사이다', 2500, '사이다,cider,사이다주,soda,스프라이트'
 WHERE NOT EXISTS (SELECT 1 FROM menu m WHERE m.name = '사이다');
 
 INSERT INTO menu (name, price, keywords)
-SELECT '커피', 2500, '커피,coffee,아메리카노,아메,핫커피'
-WHERE NOT EXISTS (SELECT 1 FROM menu m WHERE m.name = '커피');
+SELECT '제로사이다', 2500, '제로사이다,제로,zero,cider,soda'
+WHERE NOT EXISTS (SELECT 1 FROM menu m WHERE m.name = '제로사이다');
+
+INSERT INTO menu (name, price, keywords)
+SELECT '아메리카노', 2500, '아메리카노,아메,americano,coffee,커피'
+WHERE NOT EXISTS (SELECT 1 FROM menu m WHERE m.name = '아메리카노');
+
+UPDATE menu
+SET name = '아메리카노',
+    keywords = '아메리카노,아메,americano,coffee,커피'
+WHERE name = '커피';
 
 INSERT INTO menu (name, price, keywords)
 SELECT '샐러드', 3000, '샐러드,salad,그린샐러드,야채샐러드'
