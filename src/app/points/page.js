@@ -20,7 +20,6 @@ function PointsPageContent() {
     const [showPhoneModal, setShowPhoneModal] = useState(false);
     const [couponCode, setCouponCode] = useState("");
     const [showCouponModal, setShowCouponModal] = useState(false);
-    const phoneModalMode = "phone";
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [voiceLogs, setVoiceLogs] = useState([]);
@@ -66,6 +65,7 @@ function PointsPageContent() {
 
     function handleCouponPaymentClick() {
         setActivePaymentButton("coupon");
+        setActiveDialButton("");
         setCouponCode("");
         setShowCouponModal(true);
     }
@@ -180,11 +180,21 @@ function PointsPageContent() {
     }
 
     function openPhoneModal() {
+        shouldListenRef.current = false;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
+        setCouponCode("");
+        setActiveDialButton("");
         setShowPhoneModal(true);
     }
 
     function closePhoneModal() {
         setShowPhoneModal(false);
+        setActiveDialButton("");
+        shouldListenRef.current = true;
+        setTimeout(() => {
+            if (!mountedRef.current || !shouldListenRef.current || isSpeakingRef.current) return;
+            try { recognitionRef.current && recognitionRef.current.start(); } catch {}
+        }, 300);
     }
 
     function confirmPhoneModal() {
@@ -210,6 +220,7 @@ function PointsPageContent() {
 
     function closeCouponModal() {
         setShowCouponModal(false);
+        setActiveDialButton("");
     }
 
     function confirmCouponModal() {
@@ -579,8 +590,18 @@ function PointsPageContent() {
                     <div style={{ fontSize: "2rem", fontWeight: "700", color: "#000000", marginBottom: "14px" }}>
                         포인트 적립하기
                     </div>
-                    <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            gap: "12px",
+                            flexWrap: "wrap",
+                            justifyContent: "center",
+                            position: "relative",
+                            zIndex: 2,
+                        }}
+                    >
                         <button
+                            type="button"
                             onClick={openPhoneModal}
                             style={{
                                 width: "360px",
@@ -592,7 +613,9 @@ function PointsPageContent() {
                                 color: "#ffffff",
                                 border: "none",
                                 borderRadius: "12px",
-                                cursor: "pointer"
+                                cursor: "pointer",
+                                position: "relative",
+                                zIndex: 2,
                             }}
                         >
                             휴대폰 번호로 적립하기
@@ -815,35 +838,21 @@ function PointsPageContent() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                         </div>
 
-                        <div style={{ borderBottom: "2px solid #333", paddingBottom: "10px", marginBottom: "16px", textAlign: "center", fontSize: "2.5rem", fontWeight: "700", position: "relative", color: "transparent" }}>
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    inset: 0,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    color: "#000000",
-                                    background: "#ffffff",
-                                }}
-                            >
-                                {couponCode.length ? formatCouponCode(couponCode) : "쿠폰 번호 입력"}
-                            </div>
-                            {phoneModalMode === "coupon" && !phoneNumber.length && (
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        inset: 0,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "#000000",
-                                        background: "#ffffff",
-                                    }}
-                                >
-                                    쿠폰 번호 입력
-                                </div>
-                            )}
+                        <div
+                            style={{
+                                borderBottom: "2px solid #333",
+                                paddingBottom: "10px",
+                                marginBottom: "16px",
+                                textAlign: "center",
+                                fontSize: "2.5rem",
+                                fontWeight: "700",
+                                color: "#000000",
+                                minHeight: "62px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
                             {phoneNumber.length ? formatPhoneNumber(phoneNumber) : "휴대폰 번호 입력"}
                         </div>
 
@@ -928,9 +937,9 @@ function PointsPageContent() {
                                     background: "#ffffff",
                                 }}
                             >
-                                {couponCode.length ? formatCouponCode(couponCode) : "쿠폰 번호 입력"}
+                                {couponCode.length ? formatCouponCode(couponCode) : "쿠폰 번호 16자리 입력"}
                             </div>
-                            {couponCode.length ? couponCode : "쿠폰 번호 입력"}
+                            {couponCode.length ? couponCode : "쿠폰 번호 16자리 입력"}
                         </div>
 
                         <div style={{ display: "flex", gap: "16px" }}>
