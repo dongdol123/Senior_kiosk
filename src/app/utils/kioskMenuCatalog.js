@@ -6,36 +6,84 @@ export function normalizeMenuKey(name) {
 
 export const STATIC_MENU = [
     {
-        id: "bur-bacon",
-        name: "베이컨 디럭스 버거",
-        price: 4600,
+        id: "bur-bulgogi",
+        name: "불고기버거",
+        price: 5000,
         category: "burger",
-        image: "/tomato_bur.png",
-        keywords: ["베이컨", "디럭스", "bacon", "deluxe", "토마토"],
+        image: "/bulgogi.png",
+        keywords: ["불고기", "불고기버거", "불버거", "bulgogi"],
     },
     {
         id: "bur-mozza",
-        name: "모짜렐라 치즈 불고기 버거",
+        name: "치즈 불고기버거",
         price: 4800,
         category: "burger",
-        image: "/mozza_bulbur.png",
-        keywords: ["모짜렐라", "모짜", "불고기", "치즈"],
+        image: "/cheese.png",
+        keywords: ["치즈", "치즈불고기버거", "불고기", "cheese", "bulgogi"],
+    },
+    {
+        id: "bur-chicken",
+        name: "치킨버거",
+        price: 4800,
+        category: "burger",
+        image: "/chicken.png",
+        keywords: ["치킨", "치킨버거", "치버거", "chicken"],
+    },
+    {
+        id: "bur-shrimp",
+        name: "새우버거",
+        price: 6000,
+        category: "burger",
+        image: "/shrimp.png",
+        keywords: ["새우", "새우버거", "shrimp"],
     },
     {
         id: "bur-triple",
-        name: "트리플 불고기 버거",
+        name: "더블 불고기버거",
         price: 5500,
         category: "burger",
-        image: "/triple_bur.png",
-        keywords: ["트리플", "triple"],
+        image: "/double_bulgogi.png",
+        keywords: ["더블", "더블불고기버거", "불고기", "double", "bulgogi"],
+    },
+    {
+        id: "bur-bacon",
+        name: "베이컨 불고기버거",
+        price: 4600,
+        category: "burger",
+        image: "/bacon_bulgogi.png",
+        keywords: ["베이컨", "불고기", "베이컨불고기버거", "bacon", "bulgogi", "토마토"],
+    },
+    {
+        id: "bur-chili-shrimp",
+        name: "칠리 새우버거",
+        price: 6200,
+        category: "burger",
+        image: "/chilli_shrimp.png",
+        keywords: ["칠리", "칠리새우", "새우", "shrimp", "chili"],
+    },
+    {
+        id: "bur-truffle-shrimp",
+        name: "크림 새우버거",
+        price: 6500,
+        category: "burger",
+        image: "/cream_shrimp.png",
+        keywords: ["크림", "크림새우", "새우", "shrimp", "cream"],
     },
     {
         id: "bur-mush",
-        name: "머쉬룸 버거",
+        name: "버섯 불고기버거",
         price: 6000,
         category: "burger",
-        image: "/merss.png",
-        keywords: ["머쉬룸", "머시룸", "mushroom"],
+        image: "/mushroom_bulgogi.png",
+        keywords: ["버섯", "버섯불고기버거", "불고기", "머쉬룸", "머시룸", "mushroom"],
+    },
+    {
+        id: "bur-garlic",
+        name: "마늘 불고기버거",
+        price: 5300,
+        category: "burger",
+        image: "/garlic_bulgogi.png",
+        keywords: ["마늘", "마늘불고기버거", "불고기", "garlic", "bulgogi"],
     },
     {
         id: "side-wing",
@@ -47,11 +95,11 @@ export const STATIC_MENU = [
     },
     {
         id: "side-hash",
-        name: "해쉬브라운",
+        name: "해시브라운",
         price: 2500,
         category: "side",
         image: "/hash.png",
-        keywords: ["해쉬", "해시", "hash", "브라운", "해쉬브라운"],
+        keywords: ["해시", "해쉬", "hash", "브라운", "해시브라운"],
     },
     {
         id: "drink-latte",
@@ -75,7 +123,7 @@ export const STATIC_MENU = [
         price: 2500,
         category: "drink",
         image: "/coke_main.png",
-        keywords: ["콜라", "코크", "coke", "콜라주", "탄산"],
+        keywords: ["콜라", "코크", "coke", "콜라주스", "탄산"],
     },
     {
         id: "drink-zerocola",
@@ -99,7 +147,7 @@ export const STATIC_MENU = [
         price: 2500,
         category: "drink",
         image: "/coffee_main.png",
-        keywords: ["커피", "coffee", "아메리카노", "아메", "핫커피"],
+        keywords: ["커피", "coffee", "아메리카노", "아메", "캬라멜"],
     },
     {
         id: "side-fries",
@@ -107,7 +155,7 @@ export const STATIC_MENU = [
         price: 2500,
         category: "side",
         image: "/french_fries_main.png",
-        keywords: ["감자튀김", "감튀", "프렌치프라이", "french", "fries", "후라이드", "포테이토"],
+        keywords: ["감자튀김", "감튀", "프렌치프라이", "french", "fries", "프라이드", "포테이토"],
     },
     {
         id: "side-salad",
@@ -115,7 +163,7 @@ export const STATIC_MENU = [
         price: 3000,
         category: "side",
         image: "/salad_main.png",
-        keywords: ["샐러드", "salad", "그린샐러드", "야채샐러드"],
+        keywords: ["샐러드", "salad", "그린샐러드", "치킨샐러드"],
     },
 ];
 
@@ -163,14 +211,24 @@ export function mergeMenusFromApiResponse(data) {
         }
     });
 
+    const staticOrder = new Map(STATIC_MENU.map((item, index) => [normalizeMenuKey(item.name), index]));
+    canonical.sort((a, b) => {
+        const aOrder = staticOrder.get(normalizeMenuKey(a?.name)) ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = staticOrder.get(normalizeMenuKey(b?.name)) ?? Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder;
+    });
+
     return canonical;
 }
 
 export function menuThumbImageSrc(m) {
     if (m?.image) return m.image;
     const n = normalizeMenuKey(m?.name);
-    if (/칠리/.test(n)) return "/C_srp.png";
-    if (/트러플/.test(n)) return "/T_srp.png";
+    if (/칠리/.test(n)) return "/chilli_shrimp.png";
+    if (/크림|cream/.test(n)) return "/cream_shrimp.png";
+    if (/새우|shrimp/.test(n)) return "/shrimp.png";
+    if (/치킨/.test(n) && /버거/.test(n)) return "/chicken.png";
+    if (/불고기/.test(n) && /버거/.test(n)) return "/bulgogi.png";
     if (/버거/.test(n)) return "/burger.png";
     if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
     if (/사이다/.test(n)) return "/cider_main.png";

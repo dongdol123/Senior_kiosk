@@ -7,16 +7,33 @@ import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
 
-function getMenuImageSrc(menuId) {
+function getMenuImageSrc(menuId, menuName) {
+    const normalizedName = (menuName || "").replace(/\s+/g, "").toLowerCase();
+    if (/칠리/.test(normalizedName) && /새우|shrimp/.test(normalizedName)) {
+        return "/chilli_shrimp.png";
+    }
+    if (/크림|cream/.test(normalizedName) && /새우|shrimp/.test(normalizedName)) {
+        return "/cream_shrimp.png";
+    }
+    if (/새우|shrimp/.test(normalizedName)) {
+        return "/shrimp.png";
+    }
+    if (/치킨/.test(normalizedName) && /버거/.test(normalizedName)) {
+        return "/chicken.png";
+    }
     switch ((menuId || "").toLowerCase()) {
+        case "bur-bulgogi":
+            return "/bulgogi.png";
+        case "bur-garlic":
+            return "/garlic_bulgogi.png";
         case "bur-bacon":
-            return "/tomato_bur.png";
+            return "/bacon_bulgogi.png";
         case "bur-mozza":
-            return "/mozza_bulbur.png";
+            return "/cheese.png";
         case "bur-triple":
-            return "/triple_bur.png";
+            return "/double_bulgogi.png";
         case "bur-mush":
-            return "/merss.png";
+            return "/mushroom_bulgogi.png";
         default:
             return "/burger.png";
     }
@@ -911,7 +928,7 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 <img
-                                    src={getMenuImageSrc(menuId)}
+                                    src={getMenuImageSrc(menuId, menuName)}
                                     alt={menuName}
                                     style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                                 />

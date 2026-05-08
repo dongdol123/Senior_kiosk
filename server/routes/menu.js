@@ -8,7 +8,20 @@ module.exports = (pool) => {
       const conn = await pool.getConnection();
       try {
         const [rows] = await conn.query(
-          'SELECT id, name, price, keywords FROM menu ORDER BY id'
+          `SELECT id, name, price, keywords
+           FROM menu
+           ORDER BY FIELD(name,
+             '불고기버거',
+             '치즈 불고기버거',
+             '치킨버거',
+             '새우버거',
+             '더블 불고기버거',
+             '베이컨 불고기버거',
+             '칠리 새우버거',
+             '크림 새우버거',
+             '버섯 불고기버거',
+             '마늘 불고기버거'
+           ), id`
         );
         
         // Parse keywords string to array

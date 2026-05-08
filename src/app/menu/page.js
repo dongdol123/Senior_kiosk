@@ -35,15 +35,20 @@ function cartItemImageSrc(it) {
             : it?.name || "";
     const raw = baseName.replace(/\s+/g, "").toLowerCase();
     const n = raw.replace(/\(.*?\)/g, "");
-    if (/베이컨|디럭스|토마토/.test(n) && /버거/.test(n)) return "/tomato_bur.png";
-    if (/모짜렐라|모짜/.test(n) && /버거/.test(n)) return "/mozza_bulbur.png";
-    if (/트리플/.test(n) && /버거/.test(n)) return "/triple_bur.png";
-    if (/머쉬룸|머시룸/.test(n)) return "/merss.png";
+    if (/마늘/.test(n) && /불고기/.test(n) && /버거/.test(n)) return "/garlic_bulgogi.png";
+    if (/칠리/.test(n) && /새우|shrimp/.test(n)) return "/chilli_shrimp.png";
+    if (/크림|cream/.test(n) && /새우|shrimp/.test(n)) return "/cream_shrimp.png";
+    if (/새우|shrimp/.test(n)) return "/shrimp.png";
+    if (/베이컨|토마토/.test(n) && /버거/.test(n)) return "/bacon_bulgogi.png";
+    if (/치즈/.test(n) && /불고기/.test(n) && /버거/.test(n)) return "/cheese.png";
+    if (/더블/.test(n) && /버거/.test(n)) return "/double_bulgogi.png";
+    if (/머쉬룸|머시룸/.test(n)) return "/mushroom_bulgogi.png";
+    if (/치킨/.test(n) && /버거/.test(n)) return "/chicken.png";
     if (/치킨윙|윙/.test(n)) return "/wing.png";
     if (/해쉬|해시|hash/.test(n)) return "/hash.png";
     if (/카페라떼|라떼|latte/.test(n)) return "/latte.png";
     if (/아이스티|icetea/.test(n)) return "/icetea.png";
-    if (/불고기/.test(n) && /버거/.test(n)) return "/burger.png";
+    if (/불고기/.test(n) && /버거/.test(n)) return "/bulgogi.png";
     if (/콜라|제로콜라/.test(n)) return "/coke_main.png";
     if (/사이다/.test(n)) return "/cider_main.png";
     if (/커피/.test(n)) return "/coffee_main.png";
@@ -726,7 +731,7 @@ function MenuPageContent() {
             }
 
             // 키워드 기반 추천 감지 (예: "불고기 뭐있지" 등)
-            const recommendationPattern = /(불고기|치즈|트러플).*(뭐|어떤|있|추천|보여|알려)/;
+            const recommendationPattern = /(불고기|치즈|크림).*(뭐|어떤|있|추천|보여|알려)/;
             if (recommendationPattern.test(transcript)) {
                 const recommended = findRecommendedMenus(transcript);
                 if (recommended.length > 0) {

@@ -24,16 +24,16 @@ function ShrimpRecommendPageContent() {
         router.push(path);
     }
 
-    // 새우 관련 메뉴만 필터링 (칠리새우버거, 트러플새우버거)
+    // 새우 관련 메뉴만 필터링 (칠리 새우버거, 크림 새우버거, 새우버거)
     useEffect(() => {
         async function loadShrimpMenus() {
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/menu/search?keyword=새우`);
                 const data = await res.json();
                 if (res.ok && data.menus) {
-                    // 칠리새우버거와 트러플새우버거만 필터링
+                    // 새우버거 계열만 필터링
                     const filtered = data.menus.filter(m =>
-                        m.name.includes("칠리") || m.name.includes("트러플")
+                        m.name.includes("새우")
                     );
                     setShrimpMenus(filtered);
                 }
@@ -105,9 +105,17 @@ function ShrimpRecommendPageContent() {
                 }
             }
 
-            // 트러플 선택
-            if (/트러플|트룰플|트룰피|truffle|고급/.test(normalized)) {
-                const menu = shrimpMenus.find(m => m.name.includes("트러플"));
+            // 크림 선택
+            if (/크림|cream/.test(normalized)) {
+                const menu = shrimpMenus.find(m => m.name.includes("크림"));
+                if (menu) {
+                    handleSelectMenu(menu);
+                    return;
+                }
+            }
+
+            if (/새우버거|새우|shrimp/.test(normalized)) {
+                const menu = shrimpMenus.find(m => m.name.includes("새우버거") && !m.name.includes("칠리") && !m.name.includes("크림"));
                 if (menu) {
                     handleSelectMenu(menu);
                     return;
@@ -124,6 +132,12 @@ function ShrimpRecommendPageContent() {
             if (/두|둘|2|two/.test(normalized)) {
                 if (shrimpMenus[1]) {
                     handleSelectMenu(shrimpMenus[1]);
+                    return;
+                }
+            }
+            if (/세|셋|3|three/.test(normalized)) {
+                if (shrimpMenus[2]) {
+                    handleSelectMenu(shrimpMenus[2]);
                     return;
                 }
             }
@@ -287,7 +301,7 @@ function ShrimpRecommendPageContent() {
                             >
                                 {menu.name.includes("칠리") ? (
                                     <img
-                                        src="/C_srp.png"
+                                        src="/chilli_shrimp.png"
                                         alt={menu.name}
                                         style={{
                                             width: "100%",
@@ -296,9 +310,20 @@ function ShrimpRecommendPageContent() {
                                             display: "block",
                                         }}
                                     />
-                                ) : menu.name.includes("트러플") ? (
+                                ) : menu.name.includes("크림") ? (
                                     <img
-                                        src="/T_srp.png"
+                                        src="/cream_shrimp.png"
+                                        alt={menu.name}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "contain",
+                                            display: "block",
+                                        }}
+                                    />
+                                ) : menu.name.includes("새우") ? (
+                                    <img
+                                        src="/shrimp.png"
                                         alt={menu.name}
                                         style={{
                                             width: "100%",
