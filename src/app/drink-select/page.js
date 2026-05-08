@@ -74,6 +74,12 @@ function DrinkSelectPageContent() {
         router.push(path);
     }
 
+    function menuStateQuery(params = searchParams) {
+        const menuPage = params.get("menuPage") || "1";
+        const menuCategory = params.get("menuCategory") || "burger";
+        return `menuPage=${menuPage}&menuCategory=${menuCategory}`;
+    }
+
     const [catalogItems, setCatalogItems] = useState(() => staticMenuCatalogCopy());
     const catalogRef = useRef(catalogItems);
 
@@ -202,7 +208,7 @@ function DrinkSelectPageContent() {
                 });
                 const cartData = encodeURIComponent(JSON.stringify(newCartItems));
                 const orderType = searchParams.get("orderType") || "takeout";
-                navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+                navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
             }, 800);
             return () => clearTimeout(timer);
         }
@@ -515,7 +521,7 @@ function DrinkSelectPageContent() {
         });
         const cartData = encodeURIComponent(JSON.stringify(newCartItems));
         const orderType = searchParams.get("orderType") || "takeout";
-        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}`);
+        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
         return true;
     }
 
@@ -624,7 +630,7 @@ function DrinkSelectPageContent() {
                         setTimeout(() => {
                             const cartData = encodeURIComponent(JSON.stringify(cartItems));
                             const orderType = searchParams.get("orderType") || "takeout";
-                            navigateTo(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                            navigateTo(`/menu-option?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${menuStateQuery()}&${entryQuery(entry)}`);
                         }, 120);
                     }}
                     style={{

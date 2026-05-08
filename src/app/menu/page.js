@@ -103,6 +103,19 @@ function MenuPageContent() {
     const [selectedSideMenu, setSelectedSideMenu] = useState(null);
     const [activeSideSizeButton, setActiveSideSizeButton] = useState("");
 
+    useEffect(() => {
+        const menuCategory = searchParams.get("menuCategory");
+        const menuPageParam = parseInt(searchParams.get("menuPage") || "", 10);
+
+        if (menuCategory === "burger" || menuCategory === "drink" || menuCategory === "side") {
+            setSelectedCategory(menuCategory);
+        }
+
+        if (Number.isInteger(menuPageParam) && menuPageParam >= 1) {
+            setCurrentPage(menuPageParam);
+        }
+    }, [searchParams]);
+
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
         router.push(path);
@@ -351,6 +364,7 @@ function MenuPageContent() {
         const name = menu.name;
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
+        const menuState = `menuPage=${currentPage}&menuCategory=${selectedCategory}`;
 
         if (isTapToAddSide(menu)) {
             setSelectedSideMenu(menu);
@@ -362,7 +376,7 @@ function MenuPageContent() {
             return;
         }
 
-        navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${menuState}&${entryQuery(entry)}`);
     }
 
     function addDrinkWithSize(menu, size) {
@@ -680,7 +694,7 @@ function MenuPageContent() {
                 
                 // 약간의 딜레이 후 페이지 이동
                 setTimeout(() => {
-                    navigateTo(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                    navigateTo(`/menu-option?menuId=${matchedMenu.id}&menuName=${encodeURIComponent(matchedMenu.name)}&price=${matchedMenu.price}&cart=${cartData}&orderType=${orderType}&menuPage=${currentPage}&menuCategory=${selectedCategory}&${entryQuery(entry)}`);
                 }, 800);
                 return;
             }
