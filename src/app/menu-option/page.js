@@ -198,10 +198,10 @@ function MenuOptionPageContent() {
             "americano",
         ];
 
-        // ?뚮즺 ?ㅼ썙?쒖? ?뺥솗??쇱튂?섎뒗吏 ?뺤씤
+        // 음료 키워드가 정확히 일치하는지 확인
         const isDrinkMenu = drinkKeywords.some((k) => {
             const keywordLower = k.toLowerCase();
-            // ?뺥솗??쇱튂?섍굅?? 硫붾돱 ?대쫫??ㅼ썙?쒕? ?ы븿?섎뒗 寃쎌슦
+            // 정확히 일치하거나 메뉴 이름에 키워드를 포함하는 경우
             return n === keywordLower || n.includes(keywordLower);
         });
 
@@ -323,8 +323,7 @@ function MenuOptionPageContent() {
                     window.speechSynthesis.cancel();
                 }
             } catch (e) {
-                console.log("SpeechSynthesis ?뺣━ 以??ㅻ쪟:", e);
-            }
+                console.log("SpeechSynthesis 정리 중 오류:", e);}
         }
 
         if (recognitionRef.current) {
@@ -376,7 +375,7 @@ function MenuOptionPageContent() {
         };
     }, []);
 
-    // ?뚯꽦 ?몄떇 (吏꾩엯 ?덈궡媛 ?앸궇 ?뚭퉴吏 ?쒖옉?섏? ?딆쓬 ??shouldListenRef??intro effect?먯꽌 true濡??꾪솚)
+    // 음성 인식
     useEffect(() => {
         mountedRef.current = true;
         shouldListenRef.current = false;
@@ -397,20 +396,20 @@ function MenuOptionPageContent() {
         };
         recognition.onend = () => {
             setIsListening(false);
-            // ?먮룞 ?ъ떆??(?ㅼ삤?ㅽ겕 ?쒖뒪?쒖씠誘濡?吏?띿쟻?쇰줈 ?묐룞?댁빞 ??
-            // ?뚯꽦 ?덈궡 ?ъ깮 以묒씠?대룄 ?쇱젙 ?쒓컙 ??ъ떆??쒕룄
+            // 자동 재시작(키오스크 시스템이므로 지속적으로 작동해야 함)
+            // 음성 안내 재생 중이어도 일정 시간 후 재시작 시도
             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                 restartingRef.current = true;
-                const delay = isSpeakingRef.current ? 2000 : 500; // ?뚯꽦 ?덈궡 以묒씠硫??湲??쒕젅??
+                const delay = isSpeakingRef.current ? 2000 : 500; // 음성 안내 중이면 긴 딜레이
                 setTimeout(() => {
                     if (!mountedRef.current || !shouldListenRef.current) {
                         restartingRef.current = false;
                         return;
                     }
-                    // isSpeakingRef媛 ?ъ쟾??true硫??湲곕떎由?
+                    // isSpeakingRef가 아직 true면 기다림
                     if (isSpeakingRef.current) {
                         restartingRef.current = false;
-                        // ?ㅼ떆 ?쒕룄
+                        // 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 restartingRef.current = true;
@@ -419,7 +418,7 @@ function MenuOptionPageContent() {
                                     restartingRef.current = false;
                                 } catch (e) {
                                     restartingRef.current = false;
-                                    // ?ъ떆??ㅽ뙣 ??ㅼ떆 ?쒕룄
+                                    // 재시작 실패 후 다시 시도
                                     setTimeout(() => {
                                         if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                             try {
@@ -439,13 +438,13 @@ function MenuOptionPageContent() {
                         restartingRef.current = false;
                     } catch (e) {
                         restartingRef.current = false;
-                        // ?ъ떆??ㅽ뙣 ??ㅼ떆 ?쒕룄
+                        // 재시작 실패 후 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 try {
                                     recognition.start();
                                 } catch (e2) {
-                                    console.log("?뚯꽦 ?몄떇 ?ъ떆??ъ떆??ㅽ뙣:", e2);
+                                    console.log("음성 인식 재시작 재시도 실패:", e2);
                                 }
                             }
                         }, 1000);
@@ -455,7 +454,7 @@ function MenuOptionPageContent() {
         };
         recognition.onerror = (event) => {
             setIsListening(false);
-            // ?먮윭 諛쒖깮 ?쒖뿉??ъ떆??쒕룄 (?ㅼ삤?ㅽ겕 ?쒖뒪?쒖씠誘濡?吏?띿쟻?쇰줈 ?묐룞?댁빞 ??
+            // 에러 발생 시에도 재시작 시도(키오스크 시스템이므로 지속적으로 작동해야 함)
             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                 restartingRef.current = true;
                 setTimeout(() => {
@@ -463,7 +462,7 @@ function MenuOptionPageContent() {
                         restartingRef.current = false;
                         return;
                     }
-                    // isSpeakingRef媛 true硫??湲곕떎由?
+                    // isSpeakingRef가 true면 기다림
                     if (isSpeakingRef.current) {
                         restartingRef.current = false;
                         setTimeout(() => {
@@ -471,7 +470,7 @@ function MenuOptionPageContent() {
                                 try {
                                     recognition.start();
                                 } catch (e) {
-                                    console.log("?뚯꽦 ?몄떇 ?ъ떆??ㅻ쪟:", e);
+                                    console.log("음성 인식 재시작 오류:", e);
                                 }
                             }
                         }, 2000);
@@ -481,15 +480,15 @@ function MenuOptionPageContent() {
                         recognition.start();
                         restartingRef.current = false;
                     } catch (e) {
-                        console.log("?뚯꽦 ?몄떇 ?ъ떆??ㅻ쪟:", e);
+                        console.log("음성 인식 재시작 오류:", e);
                         restartingRef.current = false;
-                        // ?ъ떆??ㅽ뙣 ??ㅼ떆 ?쒕룄
+                        // 재시작 실패 후 다시 시도
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 try {
                                     recognition.start();
                                 } catch (e2) {
-                                    console.log("?뚯꽦 ?몄떇 ?ъ떆??ъ떆??ㅽ뙣:", e2);
+                                    console.log("음성 인식 재시작 재시도 실패:", e2);
                                 }
                             }
                         }, 2000);
@@ -502,7 +501,7 @@ function MenuOptionPageContent() {
             if (isTtsActive()) {
                 return;
             }
-            // ?뚯꽦 ?덈궡 ?ъ깮 以묒씠硫??뚯꽦 ?몄떇 寃곌낵瑜?臾댁떆
+            // 음성 안내 재생 중이면 음성 인식 결과 무시
             if (isSpeakingRef.current) {
                 console.log("음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
                 return;
@@ -516,29 +515,29 @@ function MenuOptionPageContent() {
             }
             lastHandledVoiceRef.current = { text: normalized, at: now };
 
-            // ?뚯꽦 ?몄떇 濡쒓렇 異붽?
+            // 음성 인식 로그 추가
             const logEntry = {
                 time: new Date().toLocaleTimeString('ko-KR'),
                 transcript: transcript,
                 normalized: normalized
             };
             setVoiceLogs((prev) => {
-                const newLogs = [logEntry, ...prev].slice(0, 10); // 理쒓렐 10媛쒕쭔 ?좎?
+                const newLogs = [logEntry, ...prev].slice(0, 10); // 최근 10개만 유지
                 return newLogs;
             });
 
-            // ?꾩옱 menuName?쇰줈 ?ㅼ떆 ?뺤씤 (?대줈? 臾몄젣 諛⑹?)
+            // 현재 menuName으로 다시 확인
             const currentMenuName = searchParams.get("menuName") || menuName || "";
             const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
 
-            // 踰꾧굅?몄? ?뚮즺?몄? ?뺤씤
+            // 버거인지 음료인지 확인
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
                 (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "제로사이다", "커피", "아메리카노", "latte", "icetea", "coke", "zero", "soda", "coffee", "americano"].some(k =>
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
-            // ?뚮즺??寃쎌슦 ?ъ씠利??뚯꽦 ?좏깮
+            // 음료인 경우 사이즈 음성 선택
             if (isCurrentDrink) {
                 if (/미디움|미디엄|중간|중간사이즈|중자|미디움으로|중간으로|엠사이즈/.test(normalized)) {
                     try {
@@ -549,8 +548,8 @@ function MenuOptionPageContent() {
                     speakKorean("중간 사이즈로 담을게요.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
-                    console.log("?? handleDrinkSize(미디움)) 호출 시작");
+                    // 즉시 함수 호출(터치 버튼과 동일)
+                    console.log("handleDrinkSize(미디움) 호출 시작");
                     setTimeout(() => {
                         handleDrinkSize("미디움");
                     }, 100);
@@ -565,8 +564,8 @@ function MenuOptionPageContent() {
                     speakKorean("큰 사이즈로 담을게요. 500원 추가됩니다.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
-                    console.log("?? handleDrinkSize(라지) 호출 시작");
+                    // 즉시 함수 호출
+                    console.log("handleDrinkSize(라지) 호출 시작");
                     setTimeout(() => {
                         handleDrinkSize("라지");
                     }, 100);
@@ -594,7 +593,7 @@ function MenuOptionPageContent() {
                 return;
             }
 
-            // 踰꾧굅??寃쎌슦 ?⑦뭹/?명듃 ?좏깮
+            // 버거인 경우 단품/세트 선택
             if (isCurrentBurger) {
                 console.log("음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
 
@@ -605,7 +604,7 @@ function MenuOptionPageContent() {
                     );
                 const asksWhatIsDefaultSet = hasDefaultSetWord && hasQuestion;
 
-                // "湲곕낯 ?명듃媛 萸먯빞?" (吏덈Ц) ??좏깮怨?援щ텇: 吏덈Ц??뚮쭔 ?덈궡
+                // "기본 세트가 뭐야?" 질문과 선택 구분: 질문일 때만 안내
                 if (asksWhatIsDefaultSet) {
                     try {
                         recognition.stop();
@@ -628,7 +627,7 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // ?⑦뭹 ?좏깮 - 癒쇱? 泥댄겕const [voiceLogs, setVoiceLogs] = useState([]);
+                // 단품 선택
                 if (/단품|단품으로|단품주문|버거만|단품할게|단품으로할게/.test(normalized)) {
                     console.log("단품 인식 normalized:", normalized);
                     try {
@@ -639,7 +638,7 @@ function MenuOptionPageContent() {
                     speakKorean("단품을 선택했어요.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
+                    // 즉시 함수 호출 (터치 버튼과 동일)
                     console.log("handleSingle() 호출 시작");
                     setTimeout(() => {
                         handleSingle();
@@ -647,7 +646,7 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 湲곕낯 ?명듃 ?좏깮 ("湲곕낯?명듃媛 萸먯빞?" 媛숈? 吏덈Ц? ?꾩뿉??泥섎━)
+                // 기본 세트 선택
                 if (/기본세트|기본 적용|기본으로|기본 세트로|기본 세트 주문|기본 세트 할게|기본으로 할게/.test(normalized) || (/기본/.test(normalized) && /세트/.test(normalized) && !hasQuestion)) {
                     console.log("기본세트 인식 normalized:", normalized);
                     try {
@@ -658,7 +657,7 @@ function MenuOptionPageContent() {
                     speakKorean("기본 세트를 선택했어요.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
+                    // 즉시 함수 호출 (터치 버튼과 동일)
                     console.log("handleDefaultSet() 호출 시작");
                     setTimeout(() => {
                         handleDefaultSet();
@@ -666,7 +665,7 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // "?명듃 吏곸젒 ?좏깮" ?좏깮
+                // "세트 직접 선택" 선택
                 if (/세트직접선택|세트직접|직접선택|세트로|세트 주문|세트 할게|세트로 할게/.test(normalized)) {
                     try {
                         recognition.stop();
@@ -675,7 +674,7 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // ?꾩?留?(踰꾧굅??寃쎌슦)
+                // 마지막 안내(버거인 경우)
                 const msg = "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
                 setAssistantMessage(msg);
                 try {
@@ -717,13 +716,13 @@ function MenuOptionPageContent() {
     }, [isDrink, menuName]);
 
     function handleDrinkSize(size) {
-        // searchParams?먯꽌 吏곸젒 ?쎄린
+        // searchParams에서 직접 읽기
         const currentMenuId = searchParams.get("menuId") || menuId;
         const currentMenuName = decodeURIComponent(searchParams.get("menuName") || menuName || "");
         const currentMenuPrice = parseInt(searchParams.get("price") || menuPrice || "0");
         const price = currentMenuPrice + (size === "라지" ? 500 : 0);
 
-        // searchParams?먯꽌 cart 吏곸젒 ?쎄린
+        // searchParams에서 cart 직접 읽기
         let currentCartItems = [];
         const cartParam = searchParams.get("cart");
         if (cartParam) {
@@ -742,7 +741,7 @@ function MenuOptionPageContent() {
         if (idx >= 0) {
             currentCartItems[idx] = { ...currentCartItems[idx], qty: currentCartItems[idx].qty + 1 };
         } else {
-            // ?ъ씠利덉뿉 留욊쾶 ?대쫫 ?쒖떆 (誘몃뵒? -> 以묎컙, ?쇱? -> ??
+            // 사이즈에 맞게 이름 표시(미디움 -> 중간, 라지 -> 큰)
             const sizeDisplayName = size === "미디움" ? "중간" : "큰";
             currentCartItems.push({ id, name: `${currentMenuName}(${sizeDisplayName})`, price, qty: 1, type: "drink", size });
         }
@@ -750,11 +749,11 @@ function MenuOptionPageContent() {
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         const orderType = searchParams.get("orderType") || "takeout";
         console.log("handleDrinkSize - cartData:", cartData, "size:", size);
-        // 諛붾줈 硫붾돱 ?섏씠吏濡??대룞
+        // 바로 메뉴 페이지로 이동
         navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
     }
 
-    // ?⑦뭹 異붽? ?⑥닔 (?덈줈 ?묒꽦)
+    // 단품 추가 함수
     const addSingleToCart = useCallback(() => {
         const currentSearchParams = searchParamsRef.current;
         const currentRouter = routerRef.current;
@@ -769,7 +768,7 @@ function MenuOptionPageContent() {
             return;
         }
 
-        // searchParams?먯꽌 cart ?쎄린
+        // searchParams에서 cart 읽기
         let currentCartItems = [];
         const cartParam = currentSearchParams.get("cart");
         if (cartParam) {
@@ -781,7 +780,7 @@ function MenuOptionPageContent() {
             }
         }
 
-        // ?λ컮援щ땲??⑦뭹 異붽?
+        // 장바구니에 단품 추가
         const idx = currentCartItems.findIndex((p) => p.id === currentMenuId);
         if (idx >= 0) {
             currentCartItems[idx] = { ...currentCartItems[idx], qty: currentCartItems[idx].qty + 1 };
@@ -814,13 +813,13 @@ function MenuOptionPageContent() {
     }
 
     function handleSet() {
-        // ?명듃 ?좏깮 ??뚮즺 ?좏깮 ?섏씠吏濡?
+        // 세트 선택 시 음료 선택 페이지로 이동
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
         navigateTo(`/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${menuStateQuery()}&${entryQuery(entry)}`);
     }
 
-    // 湲곕낯?명듃 異붽? ?⑥닔 (?덈줈 ?묒꽦)
+    // 기본 세트 추가 함수
     function adjustCartItemQty(itemId, delta) {
         setCartItems((prev) => {
             const idx = prev.findIndex((item) => item.id === itemId);
@@ -1009,7 +1008,7 @@ function MenuOptionPageContent() {
             return;
         }
 
-        // searchParams?먯꽌 cart ?쎄린
+        // searchParams에서 cart 읽기
         let currentCartItems = [];
         const cartParam = currentSearchParams.get("cart");
         if (cartParam) {
@@ -1021,12 +1020,12 @@ function MenuOptionPageContent() {
             }
         }
 
-        // 湲곕낯?명듃: 硫붿씤 + 媛먯옄?源 M + 肄쒕씪 M
+        // 기본 세트: 메인 + 감자튀김 M + 콜라 M
         const drinkP = 2500;
         const sideP = 2500;
         const setPrice = currentMenuPrice + drinkP + sideP;
 
-        // ?λ컮援щ땲??湲곕낯?명듃 異붽?
+        // 장바구니에 기본 세트 추가
         const setId = `${currentMenuId}_set_default`;
         const idx = currentCartItems.findIndex((p) => p.id === setId);
         if (idx >= 0) {
@@ -1075,7 +1074,7 @@ function MenuOptionPageContent() {
                 overflow: "hidden",
             }}
         >
-            {/* ?뚯꽦 ?몄떇 濡쒓렇李?*/}
+            {/* 음성 인식 로그창 */}
             {false && voiceLogs.length > 0 && (
                 <div
                     style={{
@@ -1122,7 +1121,7 @@ function MenuOptionPageContent() {
                 </div>
             )}
 
-            {/* ?곷떒 ?ㅻ뜑 */}
+            {/* 상단 헤더 */}
             <div
                 style={{
                     flexShrink: 0,
@@ -1203,7 +1202,7 @@ function MenuOptionPageContent() {
                 <div style={{ width: "120px" }}></div>
             </div>
 
-            {/* ?뚯꽦 ?덈궡 硫붿떆吏 (?붾㈃ ?쒖떆??띿뒪?? */}
+            {/* 음성 안내 메시지 */}
             {/*
             {assistantMessage && (
                 <div
@@ -1221,7 +1220,7 @@ function MenuOptionPageContent() {
             )}
             */}
 
-            {/* 硫붿씤 而⑦뀗痢?*/}
+            {/* 메인 콘텐츠 */}
             <div
                 style={{
                     flex: 1,
@@ -1236,7 +1235,7 @@ function MenuOptionPageContent() {
             >
                 {!isDrink ? (
                     <>
-                        {/* 以묒븰 硫붾돱 ?대?吏 */}
+                        {/* 중앙 메뉴 이미지 */}
                         <div
                             style={{
                                 width: "100%",
@@ -1246,7 +1245,7 @@ function MenuOptionPageContent() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 gap: "16px",
-                                transform: "translateY(-20px)", /* ?대?吏 + 硫붾돱紐?+ 媛寃??꾩껜 臾띠쓬 ?꾨줈 */
+                                transform: "translateY(-20px)", /* 이미지 + 메뉴명 + 가격 전체 묶음 위로 */
                             }}
                         >
                             <div
@@ -1298,7 +1297,7 @@ function MenuOptionPageContent() {
                             </div>
                         </div>
 
-                        {/* ?⑦뭹/湲곕낯 ?명듃/?명듃 吏곸젒 ?좏깮 踰꾪듉 - ?숈씪 ?ш린 ??以??뺣젹 */}
+                        {/* 단품/기본 세트/세트 직접 선택 버튼 */}
                         <div
                             style={{
                                 display: "flex",
@@ -2404,7 +2403,7 @@ function MenuOptionPageContent() {
                         }}
                     >
                         {cartItems.length === 0 ? (
-                            <div style={{ color: "#c8d8ea", fontSize: "34px" }}>?닿릿 ?곹뭹??놁뒿?덈떎</div>
+                            <div style={{ color: "#c8d8ea", fontSize: "34px" }}>담긴 상품이 없습니다</div>
                         ) : (
                             cartItems.map((it) => (
                                 <div
@@ -2439,7 +2438,7 @@ function MenuOptionPageContent() {
                                             return src ? (
                                                 <img src={src} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                                             ) : (
-                                                <div style={{ fontSize: "10px", color: "#999" }}>?대?吏</div>
+                                                <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
                                             );
                                         })()}
                                     </div>
@@ -2450,7 +2449,7 @@ function MenuOptionPageContent() {
                                         </div>
                                         <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
                                             <div style={{ fontWeight: "700", fontSize: "20px", color: "#002e55" }}>
-                                                {it.price.toLocaleString()}??                                            </div>
+                                                {it.price.toLocaleString()}원                                            </div>
                                             <button
                                                 onClick={() => handleCartDeleteClick(it.id)}
                                                 style={{
@@ -2468,7 +2467,7 @@ function MenuOptionPageContent() {
                                                     justifyContent: "center",
                                                 }}
                                             >
-                                                횞
+                                                ×
                                             </button>
                                         </div>
                                     </div>
@@ -2480,7 +2479,7 @@ function MenuOptionPageContent() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0, minWidth: "262px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
                             <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                                珥??섎웾 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}媛?                            </div>
+                                총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개                            </div>
                             <button
                                 onClick={handleClearCartClick}
                                 disabled={cartItems.length === 0}
@@ -2496,12 +2495,12 @@ function MenuOptionPageContent() {
                                     fontWeight: "700",
                                 }}
                             >
-                                ?꾩껜 痍⑥냼
+                                전체 취소
                             </button>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
                             <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                                珥?湲덉븸 | {cartTotal.toLocaleString()}??                            </div>
+                                총 금액 | {cartTotal.toLocaleString()}원                            </div>
                             <button
                                 onClick={handleOrderClick}
                                 disabled={cartItems.length === 0}
@@ -2517,7 +2516,7 @@ function MenuOptionPageContent() {
                                     fontWeight: "700",
                                 }}
                             >
-                                寃곗젣?섍린
+                                결제하기
                             </button>
                         </div>
                     </div>
