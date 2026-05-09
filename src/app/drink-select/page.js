@@ -47,7 +47,7 @@ function sideBasePriceFromCatalog(sideName, catalog) {
     if (!sideName || sideName === NONE_OPTION) return 0;
     const row = catalog?.find((m) => m.name === sideName);
     if (row?.price != null) return row.price;
-    if (sideName === "치킨윙 4개") return 4000;
+    if (sideName === "치킨윙") return 4000;
     return 2500;
 }
 

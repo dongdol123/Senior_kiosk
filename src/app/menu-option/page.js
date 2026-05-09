@@ -6,6 +6,64 @@ import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
+import {
+    inferMenuCategory,
+    mergeMenusFromApiResponse,
+    menuThumbImageSrc,
+    staticMenuCatalogCopy,
+} from "../utils/kioskMenuCatalog";
+
+const NONE_OPTION = "None";
+const DRINK_DISPLAY_ORDER = [
+    "콜라",
+    "제로콜라",
+    "사이다",
+    "제로사이다",
+    "아메리카노",
+    "카페라떼",
+    "아이스티",
+];
+const SIDE_DISPLAY_ORDER = [
+    "감자튀김",
+    "해쉬브라운",
+    "치킨윙",
+    "코울슬로",
+];
+function buildDefaultCartItem(menuId, menuName, menuPrice) {
+    return {
+        id: menuId || "menu-item",
+        name: menuName || "메뉴",
+        price: menuPrice || 0,
+        qty: 1,
+        type: "single",
+    };
+}
+
+function drinkMediumPrice(drinkName, catalog) {
+    if (!drinkName || drinkName === NONE_OPTION) return 0;
+    const row = catalog?.find((m) => m.name === drinkName);
+    return row?.price != null ? row.price : 2500;
+}
+
+function sideBasePriceFromCatalog(sideName, catalog) {
+    if (!sideName || sideName === NONE_OPTION) return 0;
+    const row = catalog?.find((m) => m.name === sideName);
+    if (row?.price != null) return row.price;
+    if (sideName === "치킨윙") return 4000;
+    return 2500;
+}
+
+function sideUnitPriceCatalog(sideName, size, catalog) {
+    if (!sideName || sideName === NONE_OPTION || size === NONE_OPTION) return 0;
+    const base = sideBasePriceFromCatalog(sideName, catalog);
+    return size === "라지" ? base + 500 : base;
+}
+
+function cartItemImageSrc(item) {
+    if (!item) return null;
+    if (item.image) return item.image;
+    return getMenuImageSrc(item.id, item.name);
+}
 
 function getMenuImageSrc(menuId, menuName) {
     const normalizedName = (menuName || "").replace(/\s+/g, "").toLowerCase();
@@ -46,11 +104,27 @@ function MenuOptionPageContent() {
     const [menuName, setMenuName] = useState("");
     const [menuPrice, setMenuPrice] = useState(0);
     const [menuId, setMenuId] = useState("");
+    const [baseCartItems, setBaseCartItems] = useState([]);
     const [cartItems, setCartItems] = useState([]);
     const [isListening, setIsListening] = useState(false);
     const [assistantMessage, setAssistantMessage] = useState("");
     const [isBackButtonActive, setIsBackButtonActive] = useState(false);
     const [activeOptionButton, setActiveOptionButton] = useState("");
+    const [isClearCartButtonActive, setIsClearCartButtonActive] = useState(false);
+    const [isOrderButtonActive, setIsOrderButtonActive] = useState(false);
+    const [activeCartAdjustButton, setActiveCartAdjustButton] = useState("");
+    const [activeCartDeleteButton, setActiveCartDeleteButton] = useState("");
+    const [catalogItems, setCatalogItems] = useState(() => staticMenuCatalogCopy());
+    const [selectedAdditionalDrink, setSelectedAdditionalDrink] = useState("");
+    const [selectedAdditionalDrinkSize, setSelectedAdditionalDrinkSize] = useState("");
+    const [selectedDrinkChoice, setSelectedDrinkChoice] = useState(null);
+    const [pendingAdditionalDrinkSize, setPendingAdditionalDrinkSize] = useState("");
+    const [isDrinkAddCancelButtonActive, setIsDrinkAddCancelButtonActive] = useState(false);
+    const [selectedAdditionalSide, setSelectedAdditionalSide] = useState("");
+    const [selectedAdditionalSideSize, setSelectedAdditionalSideSize] = useState("");
+    const [selectedSideChoice, setSelectedSideChoice] = useState(null);
+    const [pendingAdditionalSideSize, setPendingAdditionalSideSize] = useState("");
+    const [isSideAddCancelButtonActive, setIsSideAddCancelButtonActive] = useState(false);
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
@@ -131,20 +205,109 @@ function MenuOptionPageContent() {
         return isDrinkMenu;
     }, [menuName]);
 
+    const drinkItems = useMemo(() => {
+        const drinkOrder = new Map(DRINK_DISPLAY_ORDER.map((name, index) => [name, index]));
+        return catalogItems
+            .filter((m) => inferMenuCategory(m) === "drink")
+            .sort((a, b) => {
+                const aOrder = drinkOrder.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+                const bOrder = drinkOrder.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+                if (aOrder !== bOrder) return aOrder - bOrder;
+                return a.name.localeCompare(b.name, "ko");
+            });
+    }, [catalogItems]);
+
+    const sideItems = useMemo(() => {
+        const sideOrder = new Map(SIDE_DISPLAY_ORDER.map((name, index) => [name, index]));
+        return catalogItems
+            .filter((m) => inferMenuCategory(m) === "side")
+            .sort((a, b) => {
+                const aOrder = sideOrder.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+                const bOrder = sideOrder.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+                if (aOrder !== bOrder) return aOrder - bOrder;
+                return a.name.localeCompare(b.name, "ko");
+            });
+    }, [catalogItems]);
+
+    const additionalDrinkSizeButtons =
+        selectedAdditionalDrink && selectedAdditionalDrink !== NONE_OPTION
+            ? (() => {
+                  const med = drinkMediumPrice(selectedAdditionalDrink, catalogItems);
+                  return [
+                      { name: "미디움", price: med },
+                      { name: "라지", price: med + 500 },
+                  ];
+              })()
+            : [];
+
+    const sideSizeOptions = [{ name: "미디움" }, { name: "라지" }];
+    const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+
     useEffect(() => {
-        setMenuName(decodeURIComponent(searchParams.get("menuName") || ""));
-        setMenuPrice(parseInt(searchParams.get("price") || "0"));
-        setMenuId(searchParams.get("menuId") || "");
+        const currentMenuName = decodeURIComponent(searchParams.get("menuName") || "");
+        const currentMenuPrice = parseInt(searchParams.get("price") || "0");
+        const currentMenuId = searchParams.get("menuId") || "";
+
+        setMenuName(currentMenuName);
+        setMenuPrice(currentMenuPrice);
+        setMenuId(currentMenuId);
 
         const cartParam = searchParams.get("cart");
         if (cartParam) {
             try {
-                setCartItems(JSON.parse(decodeURIComponent(cartParam)));
+                const parsedCart = JSON.parse(decodeURIComponent(cartParam));
+                const safeBaseCart = Array.isArray(parsedCart) ? parsedCart : [];
+                setBaseCartItems(safeBaseCart);
+                setCartItems(
+                    safeBaseCart.length > 0
+                        ? safeBaseCart
+                        : [buildDefaultCartItem(currentMenuId, currentMenuName, currentMenuPrice)]
+                );
             } catch (e) {
                 console.error("Failed to load cart:", e);
+                setBaseCartItems([]);
+                setCartItems([buildDefaultCartItem(currentMenuId, currentMenuName, currentMenuPrice)]);
+            }
+        } else {
+            setBaseCartItems([]);
+            setCartItems([buildDefaultCartItem(currentMenuId, currentMenuName, currentMenuPrice)]);
+        }
+        setSelectedDrinkChoice(null);
+        setSelectedSideChoice(null);
+    }, [searchParams]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadCatalog() {
+            const fallback = staticMenuCatalogCopy();
+            const base = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001").replace(/\/$/, "");
+            try {
+                const res = await fetch(`${base}/api/menu`, { cache: "no-store" });
+                const data = await res.json().catch(() => ({}));
+                if (cancelled) return;
+                if (res.ok) {
+                    const merged = mergeMenusFromApiResponse(data);
+                    if (merged?.length) {
+                        setCatalogItems(merged);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error("menu-option menu load:", e);
+            }
+
+            if (!cancelled) {
+                setCatalogItems(fallback);
             }
         }
-    }, [searchParams]);
+
+        loadCatalog();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // 페이지 진입 직후 음성 안내 → 안내 종료 후 1초 뒤 음성 인식 시작 (페이지 마운트당 1회만 실행)
     useEffect(() => {
@@ -657,6 +820,159 @@ function MenuOptionPageContent() {
     }
 
     // 기본세트 추가 함수 (새로 작성)
+    function adjustCartItemQty(itemId, delta) {
+        setCartItems((prev) => {
+            const idx = prev.findIndex((item) => item.id === itemId);
+            if (idx === -1) return prev;
+
+            const next = [...prev];
+            const current = next[idx];
+            const nextQty = (current.qty || 1) + delta;
+
+            if (nextQty <= 0) {
+                return next.filter((item) => item.id !== itemId);
+            }
+
+            next[idx] = { ...current, qty: nextQty };
+            return next;
+        });
+    }
+
+    function deleteCartItem(itemId) {
+        if (itemId.startsWith("extra-drink-")) {
+            setSelectedDrinkChoice((prev) => (prev?.id === itemId ? null : prev));
+        }
+        if (itemId.startsWith("extra-side-")) {
+            setSelectedSideChoice((prev) => (prev?.id === itemId ? null : prev));
+        }
+        setCartItems((prev) => prev.filter((item) => item.id !== itemId));
+    }
+
+    function clearCart() {
+        setCartItems([]);
+    }
+
+    function handleOrder() {
+        if (cartItems.length === 0) return;
+        const parts = [menuName];
+        if (selectedDrinkChoice) {
+            parts.push(`${selectedDrinkChoice.name}(${selectedDrinkChoice.sizeLabel})`);
+        }
+        if (selectedSideChoice) {
+            parts.push(`${selectedSideChoice.name}(${selectedSideChoice.sizeLabel})`);
+        }
+
+        const finalizedItem = {
+            id: `${menuId || "menu-item"}_${Date.now()}`,
+            name: parts.filter(Boolean).join(" + "),
+            price: menuPrice + (selectedDrinkChoice?.price || 0) + (selectedSideChoice?.price || 0),
+            qty: 1,
+            type: selectedDrinkChoice || selectedSideChoice ? "set" : "single",
+        };
+
+        const cartData = encodeURIComponent(JSON.stringify([...baseCartItems, finalizedItem]));
+        const orderType = searchParams.get("orderType") || "takeout";
+        navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
+    }
+
+    function addAdditionalDrinkToCart(drinkName, sizeName) {
+        const unitPrice = drinkMediumPrice(drinkName, catalogItems) + (sizeName === "라지" ? 500 : 0);
+        const sizeLabel = sizeName === "라지" ? "큰" : "중간";
+        const itemId = `extra-drink-${drinkName}-${sizeName}`;
+        const itemName = `${drinkName}(${sizeLabel})`;
+        const catalogRow = catalogItems.find((item) => item.name === drinkName);
+        const itemImage = menuThumbImageSrc(catalogRow || { id: itemId, name: drinkName });
+        setSelectedDrinkChoice({ id: itemId, name: drinkName, size: sizeName, sizeLabel, price: unitPrice });
+
+        setCartItems((prev) => {
+            const idx = prev.findIndex((item) => item.id === itemId);
+            if (idx === -1) {
+                return [
+                    ...prev,
+                    {
+                        id: itemId,
+                        name: itemName,
+                        price: unitPrice,
+                        qty: 1,
+                        type: "drink",
+                        size: sizeName,
+                        image: itemImage,
+                    },
+                ];
+            }
+
+            const next = [...prev];
+            next[idx] = { ...next[idx], qty: (next[idx].qty || 1) + 1, image: next[idx].image || itemImage };
+            return next;
+        });
+    }
+
+    function addAdditionalSideToCart(sideName, sizeName) {
+        const unitPrice = sideUnitPriceCatalog(sideName, sizeName, catalogItems);
+        const sizeLabel = sizeName === "라지" ? "큰" : "중간";
+        const itemId = `extra-side-${sideName}-${sizeName}`;
+        const itemName = `${sideName}(${sizeLabel})`;
+        const catalogRow = catalogItems.find((item) => item.name === sideName);
+        const itemImage = menuThumbImageSrc(catalogRow || { id: itemId, name: sideName });
+        setSelectedSideChoice({ id: itemId, name: sideName, size: sizeName, sizeLabel, price: unitPrice });
+
+        setCartItems((prev) => {
+            const idx = prev.findIndex((item) => item.id === itemId);
+            if (idx === -1) {
+                return [
+                    ...prev,
+                    {
+                        id: itemId,
+                        name: itemName,
+                        price: unitPrice,
+                        qty: 1,
+                        type: "side",
+                        size: sizeName,
+                        image: itemImage,
+                    },
+                ];
+            }
+
+            const next = [...prev];
+            next[idx] = { ...next[idx], qty: (next[idx].qty || 1) + 1, image: next[idx].image || itemImage };
+            return next;
+        });
+    }
+
+    const handleCartAdjustClick = (action, item) => {
+        const key = `${action}-${item.id}`;
+        setActiveCartAdjustButton(key);
+        setTimeout(() => {
+            adjustCartItemQty(item.id, action === "plus" ? 1 : -1);
+            setActiveCartAdjustButton("");
+        }, 120);
+    };
+
+    const handleCartDeleteClick = (itemId) => {
+        setActiveCartDeleteButton(itemId);
+        setTimeout(() => {
+            deleteCartItem(itemId);
+            setActiveCartDeleteButton("");
+        }, 120);
+    };
+
+    const handleClearCartClick = () => {
+        if (cartItems.length === 0) return;
+        setIsClearCartButtonActive(true);
+        setTimeout(() => {
+            clearCart();
+            setIsClearCartButtonActive(false);
+        }, 120);
+    };
+
+    const handleOrderClick = () => {
+        if (cartItems.length === 0) return;
+        setIsOrderButtonActive(true);
+        setTimeout(() => {
+            handleOrder();
+        }, 120);
+    };
+
     const handleSingleClick = () => {
         setActiveOptionButton("single");
         setTimeout(() => {
@@ -755,6 +1071,7 @@ function MenuOptionPageContent() {
                 minHeight: entry === "qr" ? "100%" : "100vh",
                 flex: entry === "qr" ? 1 : undefined,
                 backgroundColor: "#ffffff",
+                overflow: "hidden",
             }}
         >
             {/* 음성 인식 로그창 */}
@@ -991,7 +1308,7 @@ function MenuOptionPageContent() {
                                 maxWidth: "720px",
                             }}
                         >
-                            <button
+                            {false && <button
                                 ref={singleButtonRef}
                                 onClick={handleSingleClick}
                                 style={{
@@ -1020,7 +1337,7 @@ function MenuOptionPageContent() {
                                 <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {menuPrice.toLocaleString()}원
                                 </div>
-                            </button>
+                            </button>}
 
                             <button
                                 ref={defaultSetButtonRef}
@@ -1036,11 +1353,7 @@ function MenuOptionPageContent() {
                                     borderRadius: "16px",
                                     cursor: "pointer",
                                     textAlign: "left",
-                                    paddingLeft: "134px",
-                                    backgroundImage: "url('/option_default.png')",
-                                    backgroundRepeat: "no-repeat",
-                                    backgroundPosition: "24px center",
-                                    backgroundSize: "84px auto",
+                                    paddingLeft: "32px",
                                     boxShadow:
                                         activeOptionButton === "default"
                                             ? "0 4px 10px rgba(0,0,0,0.12)"
@@ -1048,13 +1361,13 @@ function MenuOptionPageContent() {
                                     paddingRight: "10px",
                                 }}
                             >
-                                기본 세트 (감자튀김 중간 + 콜라 중간)
+                                기본 세트 (콜라 중간 + 감자튀김 중간)
                                 <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {(menuPrice + 2500 + 2500).toLocaleString()}원
                                 </div>
                             </button>
 
-                            <button
+                            {false && <button
                                 ref={setButtonRef}
                                 onClick={handleSetClick}
                                 style={{
@@ -1083,7 +1396,224 @@ function MenuOptionPageContent() {
                                 <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     음료 또는 사이드 선택
                                 </div>
-                            </button>
+                            </button>}
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    gap: "16px",
+                                    width: "100%",
+                                }}
+                            >
+                                <button
+                                    onClick={() => {
+                                        setActiveOptionButton("drink-add");
+                                        setSelectedAdditionalDrink("");
+                                        setSelectedAdditionalDrinkSize("");
+                                        setPendingAdditionalDrinkSize("");
+                                    }}
+                                    style={{
+                                        width: "100%",
+                                        height: "130px",
+                                        fontSize: "2rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: activeOptionButton === "drink-add" ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: activeOptionButton === "drink-add" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: "16px",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            activeOptionButton === "drink-add"
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
+                                    }}
+                                >
+                                    음료 추가
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setActiveOptionButton("side-add");
+                                        setSelectedAdditionalSide("");
+                                        setSelectedAdditionalSideSize("");
+                                        setPendingAdditionalSideSize("");
+                                    }}
+                                    style={{
+                                        width: "100%",
+                                        height: "130px",
+                                        fontSize: "2rem",
+                                        fontWeight: "bold",
+                                        backgroundColor: activeOptionButton === "side-add" ? "#c8d8ea" : "#f5f8fc",
+                                        color: "#000",
+                                        border: activeOptionButton === "side-add" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: "16px",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            activeOptionButton === "side-add"
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
+                                    }}
+                                >
+                                    사이드 추가
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <div
+                            style={{
+                                width: "100%",
+                                maxWidth: "720px",
+                                height: "225px",
+                                display: "flex",
+                                flexDirection: "column",
+                                backgroundColor: "#fff",
+                                overflow: "hidden",
+                                marginTop: "-10px",
+                            }}
+                        >
+                        <div
+                            style={{
+                                background: "#fff9db",
+                                border: "2px solid #fec315",
+                                borderRadius: "16px",
+                                display: "grid",
+                                gridTemplateColumns: "2px minmax(0, 1fr) 2px",
+                                gridTemplateRows: "2px minmax(0, 1fr) 2px auto 2px",
+                                flex: 1,
+                                overflow: "hidden",
+                                minHeight: 0,
+                            }}
+                        >
+                            <div aria-hidden="true" />
+                            <div
+                                style={{
+                                    gridColumn: 2,
+                                    gridRow: 2,
+                                    minWidth: 0,
+                                    minHeight: 0,
+                                    overflowX: "auto",
+                                    overflowY: "hidden",
+                                    WebkitOverflowScrolling: "touch",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "inline-flex",
+                                        gap: "12px",
+                                        alignItems: "center",
+                                        minHeight: "100%",
+                                    }}
+                                >
+                                    {cartItems.length === 0 ? (
+                                        <div style={{ color: "#c8d8ea", fontSize: "34px" }}>담긴 상품이 없습니다</div>
+                                    ) : (
+                                        cartItems.map((it) => (
+                                            <div
+                                                key={it.id}
+                                                style={{
+                                                    minWidth: "160px",
+                                                    boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                                    background: "#ffffff",
+                                                    border: "2px solid #d9e3ef",
+                                                    borderRadius: "6px",
+                                                    padding: "12px",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    gap: "8px",
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        width: "80px",
+                                                        height: "80px",
+                                                        background: "#ffffff",
+                                                        borderRadius: "4px",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        flexShrink: 0,
+                                                    }}
+                                                >
+                                                    {(() => {
+                                                        const src = cartItemImageSrc(it);
+                                                        return src ? (
+                                                            <img src={src} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                                        ) : (
+                                                            <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
+                                                        );
+                                                    })()}
+                                                </div>
+
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: "700", fontSize: "20px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                        {it.name}
+                                                    </div>
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
+                                                        <div style={{ fontWeight: "700", fontSize: "20px", color: "#002e55" }}>
+                                                            {it.price.toLocaleString()}원
+                                                        </div>
+                                                        <button
+                                                            onClick={() => handleCartDeleteClick(it.id)}
+                                                            style={{
+                                                                width: "24px",
+                                                                height: "24px",
+                                                                borderRadius: "50%",
+                                                                border: "none",
+                                                                background: activeCartDeleteButton === it.id ? "#fec315" : "#ff3b30",
+                                                                color: "#ffffff",
+                                                                cursor: "pointer",
+                                                                fontSize: "20px",
+                                                                fontWeight: "700",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                            }}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                            <div aria-hidden="true" />
+                            <div aria-hidden="true" />
+                            <div
+                                style={{
+                                    gridColumn: 2,
+                                    gridRow: 4,
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "20px", minWidth: "262px" }}>
+                                    <div style={{ fontSize: "24px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                                        총 금액 | {cartTotal.toLocaleString()}원
+                                    </div>
+                                    <button
+                                        onClick={handleOrderClick}
+                                        disabled={cartItems.length === 0}
+                                        style={{
+                                            width: "130px",
+                                            height: "60px",
+                                            borderRadius: "8px",
+                                            border: "none",
+                                            background: cartItems.length === 0 ? "#c8d8ea" : isOrderButtonActive ? "#fec002" : "#ff3b30",
+                                            color: "#ffffff",
+                                            cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+                                            fontSize: "24px",
+                                            fontWeight: "700",
+                                        }}
+                                    >
+                                        선택 완료
+                                    </button>
+                                </div>
+                            </div>
+                            <div aria-hidden="true" />
+                        </div>
                         </div>
                     </>
                 ) : (
@@ -1256,7 +1786,707 @@ function MenuOptionPageContent() {
                         </div>
                     </div>
                 )}
+
+                {activeOptionButton === "drink-add" &&
+                    (!selectedAdditionalDrink || selectedAdditionalDrink === NONE_OPTION) && (
+                        <div
+                            style={{
+                                position: "fixed",
+                                inset: 0,
+                                backgroundColor: "rgba(0,0,0,0.35)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "24px",
+                                zIndex: 110,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: "min(920px, calc(100vw - 32px))",
+                                    maxHeight: "min(760px, calc(100vh - 48px))",
+                                    overflowY: "auto",
+                                    background: "#ffffff",
+                                    border: "1px solid #d9e3ef",
+                                    borderRadius: "22px",
+                                    padding: "28px",
+                                    boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px" }}>
+                                    <h3 style={{ fontSize: "2rem", fontWeight: "bold", margin: 0 }}>
+                                        음료를 선택하세요
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveOptionButton("");
+                                            setSelectedAdditionalDrink("");
+                                            setSelectedAdditionalDrinkSize("");
+                                        }}
+                                        style={{
+                                            padding: "12px 18px",
+                                            backgroundColor: "#002e55",
+                                            color: "#fff",
+                                            border: "none",
+                                            borderRadius: "10px",
+                                            fontSize: "1rem",
+                                            fontWeight: "700",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        닫기
+                                    </button>
+                                </div>
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                                        gap: "12px",
+                                        maxWidth: "900px",
+                                        margin: "0 auto",
+                                    }}
+                                >
+                                    {drinkItems.map((d) => {
+                                        const thumb = menuThumbImageSrc(d);
+                                        return (
+                                            <button
+                                                key={d.id || d.name}
+                                                onClick={() => {
+                                                    setSelectedAdditionalDrink(d.name);
+                                                    setSelectedAdditionalDrinkSize("");
+                                                }}
+                                                style={{
+                                                    minHeight: "170px",
+                                                    fontSize: "1.1rem",
+                                                    fontWeight: "bold",
+                                                    backgroundColor: selectedAdditionalDrink === d.name ? "#c8d8ea" : "#f5f8fc",
+                                                    color: "#000",
+                                                    border: selectedAdditionalDrink === d.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                                    borderRadius: "12px",
+                                                    cursor: "pointer",
+                                                    boxShadow:
+                                                        selectedAdditionalDrink === d.name
+                                                            ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                            : "0 2px 6px rgba(0,0,0,0.06)",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    gap: 8,
+                                                    padding: "16px 12px",
+                                                }}
+                                            >
+                                                {thumb ? (
+                                                    <img src={thumb} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
+                                                ) : (
+                                                    <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>음료</div>
+                                                )}
+                                                <div
+                                                    style={{
+                                                        fontSize: "1.5rem",
+                                                        fontWeight: "800",
+                                                        textAlign: "center",
+                                                        marginTop: "6px",
+                                                        marginBottom: "-2px",
+                                                        lineHeight: 1,
+                                                        width: "100%",
+                                                        wordBreak: "keep-all",
+                                                    }}
+                                                >
+                                                    {d.name}
+                                                </div>
+                                                <div style={{ fontSize: "1.2rem", marginTop: 0, opacity: 0.85, color: "#002e55" }}>
+                                                    {drinkMediumPrice(d.name, catalogItems).toLocaleString()}원
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                {activeOptionButton === "side-add" &&
+                    (!selectedAdditionalSide || selectedAdditionalSide === NONE_OPTION) && (
+                        <div
+                            style={{
+                                position: "fixed",
+                                inset: 0,
+                                backgroundColor: "rgba(0,0,0,0.35)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "24px",
+                                zIndex: 110,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: "min(920px, calc(100vw - 32px))",
+                                    maxHeight: "min(760px, calc(100vh - 48px))",
+                                    overflowY: "auto",
+                                    background: "#ffffff",
+                                    border: "1px solid #d9e3ef",
+                                    borderRadius: "22px",
+                                    padding: "28px",
+                                    boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                                }}
+                            >
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px" }}>
+                                    <h3 style={{ fontSize: "2rem", fontWeight: "bold", margin: 0 }}>
+                                        사이드를 선택하세요
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveOptionButton("");
+                                            setSelectedAdditionalSide("");
+                                            setSelectedAdditionalSideSize("");
+                                        }}
+                                        style={{
+                                            padding: "12px 18px",
+                                            backgroundColor: "#002e55",
+                                            color: "#fff",
+                                            border: "none",
+                                            borderRadius: "10px",
+                                            fontSize: "1rem",
+                                            fontWeight: "700",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        닫기
+                                    </button>
+                                </div>
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+                                        gap: "12px",
+                                        maxWidth: "900px",
+                                        margin: "0 auto",
+                                    }}
+                                >
+                                    {sideItems.map((item) => {
+                                        const thumb = menuThumbImageSrc(item);
+                                        return (
+                                            <button
+                                                key={item.id || item.name}
+                                                onClick={() => {
+                                                    setSelectedAdditionalSide(item.name);
+                                                    setSelectedAdditionalSideSize("");
+                                                }}
+                                                style={{
+                                                    minHeight: "170px",
+                                                    fontSize: "1.5rem",
+                                                    fontWeight: "bold",
+                                                    backgroundColor: selectedAdditionalSide === item.name ? "#c8d8ea" : "#f5f8fc",
+                                                    color: "#000",
+                                                    border: selectedAdditionalSide === item.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                                    borderRadius: "12px",
+                                                    cursor: "pointer",
+                                                    boxShadow:
+                                                        selectedAdditionalSide === item.name
+                                                            ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                            : "0 2px 6px rgba(0,0,0,0.06)",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    gap: 8,
+                                                    padding: "16px 12px",
+                                                }}
+                                            >
+                                                {thumb ? (
+                                                    <img src={thumb} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
+                                                ) : (
+                                                    <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>사이드</div>
+                                                )}
+                                                <div
+                                                    style={{
+                                                        fontSize: "1.5rem",
+                                                        fontWeight: "800",
+                                                        textAlign: "center",
+                                                        marginTop: "6px",
+                                                        marginBottom: "-2px",
+                                                        lineHeight: 1,
+                                                        width: "100%",
+                                                        wordBreak: "keep-all",
+                                                    }}
+                                                >
+                                                    {item.name}
+                                                </div>
+                                                <div style={{ fontSize: "1.2rem", marginTop: 2, opacity: 0.85, color: "#002e55" }}>
+                                                    {sideBasePriceFromCatalog(item.name, catalogItems).toLocaleString()}원
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                {activeOptionButton === "drink-add" &&
+                    selectedAdditionalDrink &&
+                    selectedAdditionalDrink !== NONE_OPTION &&
+                    !selectedAdditionalDrinkSize && (
+                        <div
+                            style={{
+                                position: "fixed",
+                                left: "50%",
+                                top: "50%",
+                                transform: "translate(-50%, -50%)",
+                                width: "min(560px, calc(100vw - 32px))",
+                                display: "grid",
+                                gridTemplateColumns: "1fr",
+                                gap: "16px",
+                                alignItems: "stretch",
+                                background: "#ffffff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: "18px",
+                                padding: "35px",
+                                boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                                zIndex: 120,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    borderRadius: 0,
+                                    padding: 0,
+                                    minHeight: 220,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    boxShadow: "none",
+                                    overflow: "hidden",
+                                    flexDirection: "column",
+                                    gap: "12px",
+                                }}
+                            >
+                                {(() => {
+                                    const row = catalogItems.find((m) => m.name === selectedAdditionalDrink);
+                                    const src = menuThumbImageSrc(row || { name: selectedAdditionalDrink });
+                                    return src ? (
+                                        <img
+                                            src={src}
+                                            alt="사이즈 선택"
+                                            style={{
+                                                width: "70%",
+                                                height: "70%",
+                                                objectFit: "contain",
+                                                display: "block",
+                                            }}
+                                        />
+                                    ) : (
+                                        <div style={{ color: "#8aa0c5", fontWeight: 700 }}>음료 이미지</div>
+                                    );
+                                })()}
+                                <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                    {selectedAdditionalDrink}
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    borderRadius: 0,
+                                    padding: 0,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 20,
+                                    boxShadow: "none",
+                                }}
+                            >
+                                <div style={{ fontSize: 0, fontWeight: "bold", textAlign: "left" }}>
+                                    <span style={{ fontSize: "2rem" }}>사이즈를 선택하세요</span>
+                                    {selectedAdditionalDrink} 사이즈를 선택하세요
+                                </div>
+                                {additionalDrinkSizeButtons.map((size) => (
+                                    <button
+                                        key={size.name}
+                                        onClick={() => {
+                                            setPendingAdditionalDrinkSize(size.name);
+                                            setTimeout(() => {
+                                                addAdditionalDrinkToCart(selectedAdditionalDrink, size.name);
+                                                setPendingAdditionalDrinkSize("");
+                                                setSelectedAdditionalDrink("");
+                                                setSelectedAdditionalDrinkSize("");
+                                                setActiveOptionButton("");
+                                            }, 120);
+                                        }}
+                                        style={{
+                                            height: "75px",
+                                            fontSize: "1.5rem",
+                                            fontWeight: "bold",
+                                            backgroundColor: pendingAdditionalDrinkSize === size.name ? "#c8d8ea" : "#f5f8fc",
+                                            color: "#000",
+                                            border: pendingAdditionalDrinkSize === size.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                            borderRadius: "12px",
+                                            cursor: "pointer",
+                                            boxShadow:
+                                                pendingAdditionalDrinkSize === size.name
+                                                    ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                    : "0 2px 6px rgba(0,0,0,0.06)",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: "0 20px",
+                                        }}
+                                    >
+                                        <div>
+                                            {size.name === "미디움" ? "중간 사이즈" : "큰 사이즈"}
+                                        </div>
+                                        <span style={{ fontWeight: 800, fontSize: 0 }}>
+                                            <span style={{ fontSize: "1.3rem" }}>{size.price.toLocaleString()}원</span>
+                                        </span>
+                                    </button>
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsDrinkAddCancelButtonActive(true);
+                                        setTimeout(() => {
+                                            setSelectedAdditionalDrink("");
+                                            setSelectedAdditionalDrinkSize("");
+                                            setIsDrinkAddCancelButtonActive(false);
+                                        }, 120);
+                                    }}
+                                    style={{
+                                        width: "fit-content",
+                                        alignSelf: "center",
+                                        marginTop: "8px",
+                                        padding: "14px 24px",
+                                        backgroundColor: isDrinkAddCancelButtonActive ? "#fec315" : "#002e55",
+                                        color: "#ffffff",
+                                        borderRadius: "10px",
+                                        fontSize: "1.5rem",
+                                        fontWeight: "800",
+                                        cursor: "pointer",
+                                        boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                    }}
+                                >
+                                    취소하기
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                {activeOptionButton === "side-add" &&
+                    selectedAdditionalSide &&
+                    selectedAdditionalSide !== NONE_OPTION &&
+                    !selectedAdditionalSideSize && (
+                        <div
+                            style={{
+                                position: "fixed",
+                                left: "50%",
+                                top: "50%",
+                                transform: "translate(-50%, -50%)",
+                                width: "min(560px, calc(100vw - 32px))",
+                                display: "grid",
+                                gridTemplateColumns: "1fr",
+                                gap: "16px",
+                                alignItems: "stretch",
+                                background: "#ffffff",
+                                border: "1px solid #e5e5e5",
+                                borderRadius: "18px",
+                                padding: "35px",
+                                boxShadow: "0 18px 40px rgba(0,0,0,0.18)",
+                                zIndex: 120,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    borderRadius: 0,
+                                    padding: 0,
+                                    minHeight: 220,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    boxShadow: "none",
+                                    overflow: "hidden",
+                                    flexDirection: "column",
+                                    gap: "12px",
+                                }}
+                            >
+                                {(() => {
+                                    const row = catalogItems.find((m) => m.name === selectedAdditionalSide);
+                                    const src = menuThumbImageSrc(row || { name: selectedAdditionalSide });
+                                    return src ? (
+                                        <img
+                                            src={src}
+                                            alt="side-select"
+                                            style={{
+                                                width: "70%",
+                                                height: "70%",
+                                                objectFit: "contain",
+                                                display: "block",
+                                            }}
+                                        />
+                                    ) : (
+                                        <div style={{ color: "#8aa0c5", fontWeight: 700 }}>side image</div>
+                                    );
+                                })()}
+                                <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                    {selectedAdditionalSide}
+                                </div>
+                            </div>
+                            <div
+                                style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    borderRadius: 0,
+                                    padding: 0,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 20,
+                                    boxShadow: "none",
+                                }}
+                            >
+                                <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
+                                    사이즈를 선택하세요
+                                </div>
+                                {sideSizeOptions.map((size) => {
+                                    const p = sideUnitPriceCatalog(selectedAdditionalSide, size.name, catalogItems);
+                                    return (
+                                        <button
+                                            key={size.name}
+                                            onClick={() => {
+                                                setPendingAdditionalSideSize(size.name);
+                                                setTimeout(() => {
+                                                    addAdditionalSideToCart(selectedAdditionalSide, size.name);
+                                                    setPendingAdditionalSideSize("");
+                                                    setSelectedAdditionalSide("");
+                                                    setSelectedAdditionalSideSize("");
+                                                    setActiveOptionButton("");
+                                                }, 120);
+                                            }}
+                                            style={{
+                                                height: "75px",
+                                                fontSize: "1.5rem",
+                                                fontWeight: "bold",
+                                                backgroundColor: pendingAdditionalSideSize === size.name ? "#c8d8ea" : "#f5f8fc",
+                                                color: "#000",
+                                                border: pendingAdditionalSideSize === size.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                                borderRadius: "12px",
+                                                cursor: "pointer",
+                                                boxShadow:
+                                                    pendingAdditionalSideSize === size.name
+                                                        ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                        : "0 2px 6px rgba(0,0,0,0.06)",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                                padding: "0 20px",
+                                            }}
+                                        >
+                                            <div>
+                                                {size.name === "미디움" ? "중간 사이즈" : "라지 사이즈"}
+                                            </div>
+                                            <span style={{ fontWeight: 800, fontSize: 0 }}>
+                                                <span style={{ fontSize: "1.3rem" }}>{p.toLocaleString()}원</span>
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSideAddCancelButtonActive(true);
+                                        setTimeout(() => {
+                                            setSelectedAdditionalSide("");
+                                            setSelectedAdditionalSideSize("");
+                                            setIsSideAddCancelButtonActive(false);
+                                        }, 120);
+                                    }}
+                                    style={{
+                                        width: "fit-content",
+                                        alignSelf: "center",
+                                        marginTop: "8px",
+                                        padding: "14px 24px",
+                                        backgroundColor: isSideAddCancelButtonActive ? "#fec315" : "#002e55",
+                                        color: "#ffffff",
+                                        borderRadius: "10px",
+                                        fontSize: "1.5rem",
+                                        fontWeight: "800",
+                                        cursor: "pointer",
+                                        boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                    }}
+                                >
+                                    취소하기
+                                </button>
+                            </div>
+                        </div>
+                    )}
             </div>
+
+            {false && <div
+                style={{
+                    flexShrink: 0,
+                    height: "180px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    backgroundColor: "#fff",
+                    overflow: "hidden",
+                    transform: "translateY(-120px)",
+                    marginBottom: "-120px",
+                }}
+            >
+                <div
+                    style={{
+                        flex: 1,
+                        width: "100%",
+                        maxWidth: "720px",
+                        background: "#f5f8fc",
+                        borderTop: "2px solid #d9e3ef",
+                        padding: "12px 24px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "20px",
+                        overflow: "hidden",
+                        minHeight: 0,
+                    }}
+                >
+                    <div
+                        style={{
+                            flex: 1,
+                            display: "flex",
+                            gap: "12px",
+                            overflowX: "auto",
+                            overflowY: "hidden",
+                            paddingRight: "20px",
+                            minWidth: 0,
+                        }}
+                    >
+                        {cartItems.length === 0 ? (
+                            <div style={{ color: "#c8d8ea", fontSize: "34px" }}>담긴 상품이 없습니다</div>
+                        ) : (
+                            cartItems.map((it) => (
+                                <div
+                                    key={it.id}
+                                    style={{
+                                        minWidth: "160px",
+                                        boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
+                                        background: "#ffffff",
+                                        border: "2px solid #d9e3ef",
+                                        borderRadius: "6px",
+                                        padding: "12px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: "80px",
+                                            height: "80px",
+                                            background: "#ffffff",
+                                            borderRadius: "4px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        {(() => {
+                                            const src = cartItemImageSrc(it);
+                                            return src ? (
+                                                <img src={src} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                                            ) : (
+                                                <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: "700", fontSize: "20px", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                            {it.name}
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
+                                            <div style={{ fontWeight: "700", fontSize: "20px", color: "#002e55" }}>
+                                                {it.price.toLocaleString()}원
+                                            </div>
+                                            <button
+                                                onClick={() => handleCartDeleteClick(it.id)}
+                                                style={{
+                                                    width: "24px",
+                                                    height: "24px",
+                                                    borderRadius: "50%",
+                                                    border: "none",
+                                                    background: activeCartDeleteButton === it.id ? "#fec315" : "#ff3b30",
+                                                    color: "#ffffff",
+                                                    cursor: "pointer",
+                                                    fontSize: "20px",
+                                                    fontWeight: "700",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0, minWidth: "262px" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
+                            <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                                총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
+                            </div>
+                            <button
+                                onClick={handleClearCartClick}
+                                disabled={cartItems.length === 0}
+                                style={{
+                                    width: "130px",
+                                    height: "60px",
+                                    borderRadius: "8px",
+                                    border: "none",
+                                    background: cartItems.length === 0 ? "#c8d8ea" : isClearCartButtonActive ? "#fec002" : "#002e55",
+                                    color: "#ffffff",
+                                    cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+                                    fontSize: "24px",
+                                    fontWeight: "700",
+                                }}
+                            >
+                                전체 취소
+                            </button>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
+                            <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
+                                총 금액 | {cartTotal.toLocaleString()}원
+                            </div>
+                            <button
+                                onClick={handleOrderClick}
+                                disabled={cartItems.length === 0}
+                                style={{
+                                    width: "130px",
+                                    height: "60px",
+                                    borderRadius: "8px",
+                                    border: "none",
+                                    background: cartItems.length === 0 ? "#c8d8ea" : isOrderButtonActive ? "#fec002" : "#ff3b30",
+                                    color: "#ffffff",
+                                    cursor: cartItems.length === 0 ? "not-allowed" : "pointer",
+                                    fontSize: "24px",
+                                    fontWeight: "700",
+                                }}
+                            >
+                                결제하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>}
         </main>
     );
     return entry === "qr" ? <KioskAspectFrame>{shell}</KioskAspectFrame> : shell;
