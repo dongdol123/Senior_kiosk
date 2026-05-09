@@ -868,6 +868,7 @@ function MenuOptionPageContent() {
             price: menuPrice + (selectedDrinkChoice?.price || 0) + (selectedSideChoice?.price || 0),
             qty: 1,
             type: selectedDrinkChoice || selectedSideChoice ? "set" : "single",
+            image: getMenuImageSrc(menuId, menuName),
         };
 
         const cartData = encodeURIComponent(JSON.stringify([...baseCartItems, finalizedItem]));
@@ -1345,7 +1346,7 @@ function MenuOptionPageContent() {
                                     style={{
                                         width: "100%",
                                         height: "130px",
-                                        fontSize: "2rem",
+                                        fontSize: "2.2rem",
                                         fontWeight: activeOptionButton === "default" ? 700 : 500,
                                         backgroundColor: "#ffffff",
                                         color: "#000",
@@ -1361,7 +1362,7 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 {"기본 세트 (콜라 중간 + 감자튀김 중간)"}
-                                <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
+                                <div style={{ fontSize: "1.6rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {(menuPrice + 2500 + 2500).toLocaleString()}원
                                 </div>
                             </button>
@@ -1417,7 +1418,7 @@ function MenuOptionPageContent() {
                                     style={{
                                         width: "100%",
                                         height: "130px",
-                                        fontSize: "2rem",
+                                        fontSize: "2.2rem",
                                         fontWeight: hasAdditionalDrink ? "bold" : activeOptionButton === "drink-add" ? 700 : 500,
                                         backgroundColor: hasAdditionalDrink
                                             ? "#e7ebf1"
@@ -1453,7 +1454,7 @@ function MenuOptionPageContent() {
                                     style={{
                                         width: "100%",
                                         height: "130px",
-                                        fontSize: "2rem",
+                                        fontSize: "2.2rem",
                                         fontWeight: hasAdditionalSide ? "bold" : activeOptionButton === "side-add" ? 700 : 500,
                                         backgroundColor: hasAdditionalSide
                                             ? "#e7ebf1"
