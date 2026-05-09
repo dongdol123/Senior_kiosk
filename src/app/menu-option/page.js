@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from "react";
@@ -118,12 +118,15 @@ function MenuOptionPageContent() {
     const [selectedAdditionalDrink, setSelectedAdditionalDrink] = useState("");
     const [selectedAdditionalDrinkSize, setSelectedAdditionalDrinkSize] = useState("");
     const [selectedDrinkChoice, setSelectedDrinkChoice] = useState(null);
+    const [pendingAdditionalDrinkSelection, setPendingAdditionalDrinkSelection] = useState("");
     const [pendingAdditionalDrinkSize, setPendingAdditionalDrinkSize] = useState("");
+    const [isDrinkListCloseButtonActive, setIsDrinkListCloseButtonActive] = useState(false);
     const [isDrinkAddCancelButtonActive, setIsDrinkAddCancelButtonActive] = useState(false);
     const [selectedAdditionalSide, setSelectedAdditionalSide] = useState("");
     const [selectedAdditionalSideSize, setSelectedAdditionalSideSize] = useState("");
     const [selectedSideChoice, setSelectedSideChoice] = useState(null);
     const [pendingAdditionalSideSize, setPendingAdditionalSideSize] = useState("");
+    const [isSideListCloseButtonActive, setIsSideListCloseButtonActive] = useState(false);
     const [isSideAddCancelButtonActive, setIsSideAddCancelButtonActive] = useState(false);
     const [voiceLogs, setVoiceLogs] = useState([]);
     const recognitionRef = useRef(null);
@@ -154,7 +157,7 @@ function MenuOptionPageContent() {
     const handleBack = () => {
         setIsBackButtonActive(true);
         setTimeout(() => {
-            const cartData = encodeURIComponent(JSON.stringify(cartItems));
+            const cartData = encodeURIComponent(JSON.stringify(baseCartItems));
             const orderType = searchParams.get("orderType") || "takeout";
             navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
         }, 120);
@@ -166,7 +169,7 @@ function MenuOptionPageContent() {
         searchParamsRef.current = searchParams;
     }, [router, searchParams]);
 
-    // 음료인지 확인하는 함수 (menuName이 변경될 때마다 재계산)
+    // 음료인지 확인하는 함수
     const isDrink = useMemo(() => {
         const n = (menuName || "").replace(/\s+/g, "").toLowerCase();
 
@@ -175,7 +178,7 @@ function MenuOptionPageContent() {
             return false;
         }
 
-        // 음료 키워드 확인 (정확하게 매칭)
+        // 음료 키워드 확인
         const drinkKeywords = [
             "카페라떼",
             "라떼",
@@ -195,10 +198,10 @@ function MenuOptionPageContent() {
             "americano",
         ];
 
-        // 음료 키워드와 정확히 일치하는지 확인
+        // ?뚮즺 ?ㅼ썙?쒖? ?뺥솗??쇱튂?섎뒗吏 ?뺤씤
         const isDrinkMenu = drinkKeywords.some((k) => {
             const keywordLower = k.toLowerCase();
-            // 정확히 일치하거나, 메뉴 이름이 키워드를 포함하는 경우
+            // ?뺥솗??쇱튂?섍굅?? 硫붾돱 ?대쫫??ㅼ썙?쒕? ?ы븿?섎뒗 寃쎌슦
             return n === keywordLower || n.includes(keywordLower);
         });
 
@@ -242,6 +245,8 @@ function MenuOptionPageContent() {
 
     const sideSizeOptions = [{ name: "미디움" }, { name: "라지" }];
     const cartTotal = cartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+    const hasAdditionalDrink = cartItems.some((item) => item.id?.startsWith("extra-drink-"));
+    const hasAdditionalSide = cartItems.some((item) => item.id?.startsWith("extra-side-"));
 
     useEffect(() => {
         const currentMenuName = decodeURIComponent(searchParams.get("menuName") || "");
@@ -258,11 +263,7 @@ function MenuOptionPageContent() {
                 const parsedCart = JSON.parse(decodeURIComponent(cartParam));
                 const safeBaseCart = Array.isArray(parsedCart) ? parsedCart : [];
                 setBaseCartItems(safeBaseCart);
-                setCartItems(
-                    safeBaseCart.length > 0
-                        ? safeBaseCart
-                        : [buildDefaultCartItem(currentMenuId, currentMenuName, currentMenuPrice)]
-                );
+                setCartItems([buildDefaultCartItem(currentMenuId, currentMenuName, currentMenuPrice)]);
             } catch (e) {
                 console.error("Failed to load cart:", e);
                 setBaseCartItems([]);
@@ -309,7 +310,7 @@ function MenuOptionPageContent() {
         };
     }, []);
 
-    // 페이지 진입 직후 음성 안내 → 안내 종료 후 1초 뒤 음성 인식 시작 (페이지 마운트당 1회만 실행)
+    // 페이지 진입 직후 음성 안내
     useEffect(() => {
         if (introStartedRef.current) return;
         introStartedRef.current = true;
@@ -322,7 +323,7 @@ function MenuOptionPageContent() {
                     window.speechSynthesis.cancel();
                 }
             } catch (e) {
-                console.log("SpeechSynthesis 정리 중 오류:", e);
+                console.log("SpeechSynthesis ?뺣━ 以??ㅻ쪟:", e);
             }
         }
 
@@ -353,7 +354,7 @@ function MenuOptionPageContent() {
             await speakKorean(msg).catch((err) => console.error("음성 안내 오류:", err));
             if (cancelled || !mountedRef.current) return;
 
-            // 안내가 끝난 뒤 1초 대기 후에만 음성 인식 시작
+            // 안내가 끝난 후 1초 대기 뒤 음성 인식 시작
             setTimeout(() => {
                 if (cancelled || !mountedRef.current) return;
                 isSpeakingRef.current = false;
@@ -375,7 +376,7 @@ function MenuOptionPageContent() {
         };
     }, []);
 
-    // 음성 인식 (진입 안내가 끝날 때까지 시작하지 않음 — shouldListenRef는 intro effect에서 true로 전환)
+    // ?뚯꽦 ?몄떇 (吏꾩엯 ?덈궡媛 ?앸궇 ?뚭퉴吏 ?쒖옉?섏? ?딆쓬 ??shouldListenRef??intro effect?먯꽌 true濡??꾪솚)
     useEffect(() => {
         mountedRef.current = true;
         shouldListenRef.current = false;
@@ -396,20 +397,20 @@ function MenuOptionPageContent() {
         };
         recognition.onend = () => {
             setIsListening(false);
-            // 자동 재시작 (키오스크 시스템이므로 지속적으로 작동해야 함)
-            // 음성 안내 재생 중이어도 일정 시간 후 재시작 시도
+            // ?먮룞 ?ъ떆??(?ㅼ삤?ㅽ겕 ?쒖뒪?쒖씠誘濡?吏?띿쟻?쇰줈 ?묐룞?댁빞 ??
+            // ?뚯꽦 ?덈궡 ?ъ깮 以묒씠?대룄 ?쇱젙 ?쒓컙 ??ъ떆??쒕룄
             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                 restartingRef.current = true;
-                const delay = isSpeakingRef.current ? 2000 : 500; // 음성 안내 중이면 더 긴 딜레이
+                const delay = isSpeakingRef.current ? 2000 : 500; // ?뚯꽦 ?덈궡 以묒씠硫??湲??쒕젅??
                 setTimeout(() => {
                     if (!mountedRef.current || !shouldListenRef.current) {
                         restartingRef.current = false;
                         return;
                     }
-                    // isSpeakingRef가 여전히 true면 더 기다림
+                    // isSpeakingRef媛 ?ъ쟾??true硫??湲곕떎由?
                     if (isSpeakingRef.current) {
                         restartingRef.current = false;
-                        // 다시 시도
+                        // ?ㅼ떆 ?쒕룄
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 restartingRef.current = true;
@@ -418,7 +419,7 @@ function MenuOptionPageContent() {
                                     restartingRef.current = false;
                                 } catch (e) {
                                     restartingRef.current = false;
-                                    // 재시작 실패 시 다시 시도
+                                    // ?ъ떆??ㅽ뙣 ??ㅼ떆 ?쒕룄
                                     setTimeout(() => {
                                         if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                             try {
@@ -438,13 +439,13 @@ function MenuOptionPageContent() {
                         restartingRef.current = false;
                     } catch (e) {
                         restartingRef.current = false;
-                        // 재시작 실패 시 다시 시도
+                        // ?ъ떆??ㅽ뙣 ??ㅼ떆 ?쒕룄
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 try {
                                     recognition.start();
                                 } catch (e2) {
-                                    console.log("음성 인식 재시작 재시도 실패:", e2);
+                                    console.log("?뚯꽦 ?몄떇 ?ъ떆??ъ떆??ㅽ뙣:", e2);
                                 }
                             }
                         }, 1000);
@@ -454,7 +455,7 @@ function MenuOptionPageContent() {
         };
         recognition.onerror = (event) => {
             setIsListening(false);
-            // 에러 발생 시에도 재시작 시도 (키오스크 시스템이므로 지속적으로 작동해야 함)
+            // ?먮윭 諛쒖깮 ?쒖뿉??ъ떆??쒕룄 (?ㅼ삤?ㅽ겕 ?쒖뒪?쒖씠誘濡?吏?띿쟻?쇰줈 ?묐룞?댁빞 ??
             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                 restartingRef.current = true;
                 setTimeout(() => {
@@ -462,7 +463,7 @@ function MenuOptionPageContent() {
                         restartingRef.current = false;
                         return;
                     }
-                    // isSpeakingRef가 true면 더 기다림
+                    // isSpeakingRef媛 true硫??湲곕떎由?
                     if (isSpeakingRef.current) {
                         restartingRef.current = false;
                         setTimeout(() => {
@@ -470,7 +471,7 @@ function MenuOptionPageContent() {
                                 try {
                                     recognition.start();
                                 } catch (e) {
-                                    console.log("음성 인식 재시작 오류:", e);
+                                    console.log("?뚯꽦 ?몄떇 ?ъ떆??ㅻ쪟:", e);
                                 }
                             }
                         }, 2000);
@@ -480,15 +481,15 @@ function MenuOptionPageContent() {
                         recognition.start();
                         restartingRef.current = false;
                     } catch (e) {
-                        console.log("음성 인식 재시작 오류:", e);
+                        console.log("?뚯꽦 ?몄떇 ?ъ떆??ㅻ쪟:", e);
                         restartingRef.current = false;
-                        // 재시작 실패 시 다시 시도
+                        // ?ъ떆??ㅽ뙣 ??ㅼ떆 ?쒕룄
                         setTimeout(() => {
                             if (mountedRef.current && shouldListenRef.current && !restartingRef.current) {
                                 try {
                                     recognition.start();
                                 } catch (e2) {
-                                    console.log("음성 인식 재시작 재시도 실패:", e2);
+                                    console.log("?뚯꽦 ?몄떇 ?ъ떆??ъ떆??ㅽ뙣:", e2);
                                 }
                             }
                         }, 2000);
@@ -501,9 +502,9 @@ function MenuOptionPageContent() {
             if (isTtsActive()) {
                 return;
             }
-            // 음성 안내 재생 중이면 음성 인식 결과를 무시
+            // ?뚯꽦 ?덈궡 ?ъ깮 以묒씠硫??뚯꽦 ?몄떇 寃곌낵瑜?臾댁떆
             if (isSpeakingRef.current) {
-                console.log("🔇 음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
+                console.log("음성 안내 재생 중이므로 음성 인식 결과 무시:", event.results[0][0].transcript);
                 return;
             }
 
@@ -515,29 +516,29 @@ function MenuOptionPageContent() {
             }
             lastHandledVoiceRef.current = { text: normalized, at: now };
 
-            // 음성 인식 로그 추가
+            // ?뚯꽦 ?몄떇 濡쒓렇 異붽?
             const logEntry = {
                 time: new Date().toLocaleTimeString('ko-KR'),
                 transcript: transcript,
                 normalized: normalized
             };
             setVoiceLogs((prev) => {
-                const newLogs = [logEntry, ...prev].slice(0, 10); // 최근 10개만 유지
+                const newLogs = [logEntry, ...prev].slice(0, 10); // 理쒓렐 10媛쒕쭔 ?좎?
                 return newLogs;
             });
 
-            // 현재 menuName으로 다시 확인 (클로저 문제 방지)
+            // ?꾩옱 menuName?쇰줈 ?ㅼ떆 ?뺤씤 (?대줈? 臾몄젣 諛⑹?)
             const currentMenuName = searchParams.get("menuName") || menuName || "";
             const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
 
-            // 버거인지 음료인지 확인
+            // 踰꾧굅?몄? ?뚮즺?몄? ?뺤씤
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
                 (["카페라떼", "라떼", "아이스티", "콜라", "제로콜라", "사이다", "제로사이다", "커피", "아메리카노", "latte", "icetea", "coke", "zero", "soda", "coffee", "americano"].some(k =>
                     currentMenuNameNormalized === k.toLowerCase() || currentMenuNameNormalized.includes(k.toLowerCase())
                 ));
 
-            // 음료인 경우 사이즈 음성 선택
+            // ?뚮즺??寃쎌슦 ?ъ씠利??뚯꽦 ?좏깮
             if (isCurrentDrink) {
                 if (/미디움|미디엄|중간|중간사이즈|중자|미디움으로|중간으로|엠사이즈/.test(normalized)) {
                     try {
@@ -548,8 +549,8 @@ function MenuOptionPageContent() {
                     speakKorean("중간 사이즈로 담을게요.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 즉시 함수 호출 (터치 버튼과 동일)
-                    console.log("🚀 handleDrinkSize(미디움) 호출 시작");
+                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
+                    console.log("?? handleDrinkSize(미디움)) 호출 시작");
                     setTimeout(() => {
                         handleDrinkSize("미디움");
                     }, 100);
@@ -564,8 +565,8 @@ function MenuOptionPageContent() {
                     speakKorean("큰 사이즈로 담을게요. 500원 추가됩니다.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 즉시 함수 호출 (터치 버튼과 동일)
-                    console.log("🚀 handleDrinkSize(라지) 호출 시작");
+                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
+                    console.log("?? handleDrinkSize(라지) 호출 시작");
                     setTimeout(() => {
                         handleDrinkSize("라지");
                     }, 100);
@@ -593,23 +594,23 @@ function MenuOptionPageContent() {
                 return;
             }
 
-            // 버거인 경우 단품/세트 선택
+            // 踰꾧굅??寃쎌슦 ?⑦뭹/?명듃 ?좏깮
             if (isCurrentBurger) {
-                console.log("🔍 음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
+                console.log("음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
 
                 const hasDefaultSetWord = /기본\s*세트|기본세트/.test(normalized);
                 const hasQuestion =
-                    /뭐야|뭐에요|뭔데|뭔지|무엇|뭐니|뭐죠|뭐임|뭔가요|설명|알려줘|알려|뭐인지|어떤거야|어떤건지|뭔말|무슨말/.test(
+                    /뭐야|뭐에요|뭔데|뭐지|무엇|뭔지|설명|알려줘|알려|뭔가요|어떤거야|어떤거지|무슨말/.test(
                         normalized
                     );
                 const asksWhatIsDefaultSet = hasDefaultSetWord && hasQuestion;
 
-                // "기본 세트가 뭐야?" (질문) — 선택과 구분: 질문일 때만 안내
+                // "湲곕낯 ?명듃媛 萸먯빞?" (吏덈Ц) ??좏깮怨?援щ텇: 吏덈Ц??뚮쭔 ?덈궡
                 if (asksWhatIsDefaultSet) {
                     try {
                         recognition.stop();
                     } catch (e) { }
-                    const explain = "가장 인기 있는 세트 조합입니다.";
+                    const explain = "가장 기본적인 세트 조합입니다.";
                     setAssistantMessage(explain);
                     isSpeakingRef.current = true;
                     await speakKorean(explain).catch((err) => console.error("음성 안내 오류:", err));
@@ -627,46 +628,46 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 단품 선택 - 먼저 체크const [voiceLogs, setVoiceLogs] = useState([]);
-                if (/단품|단품으로|단품주문|버거만|버거만줘|단품할게|단품으로할게/.test(normalized)) {
-                    console.log("✅ 단품 인식됨! normalized:", normalized);
+                // ?⑦뭹 ?좏깮 - 癒쇱? 泥댄겕const [voiceLogs, setVoiceLogs] = useState([]);
+                if (/단품|단품으로|단품주문|버거만|단품할게|단품으로할게/.test(normalized)) {
+                    console.log("단품 인식 normalized:", normalized);
                     try {
                         recognition.stop();
                     } catch (e) { }
-                    setAssistantMessage("단품을 선택하셨어요.");
+                    setAssistantMessage("단품을 선택했어요.");
                     isSpeakingRef.current = true;
-                    speakKorean("단품을 선택하셨어요.").catch(err => console.error("음성 안내 오류:", err));
+                    speakKorean("단품을 선택했어요.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 즉시 함수 호출 (터치 버튼과 동일)
-                    console.log("🚀 handleSingle() 호출 시작");
+                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
+                    console.log("handleSingle() 호출 시작");
                     setTimeout(() => {
                         handleSingle();
                     }, 100);
                     return;
                 }
 
-                // 기본 세트 선택 ("기본세트가 뭐야?" 같은 질문은 위에서 처리)
-                if (/기본세트|기본적용|기본으로|기본세트로|기본세트주문|기본으로할게|기본세트할게|기본으로줘/.test(normalized) || (/기본/.test(normalized) && /세트/.test(normalized) && !hasQuestion)) {
-                    console.log("✅ 기본세트 인식됨! normalized:", normalized);
+                // 湲곕낯 ?명듃 ?좏깮 ("湲곕낯?명듃媛 萸먯빞?" 媛숈? 吏덈Ц? ?꾩뿉??泥섎━)
+                if (/기본세트|기본 적용|기본으로|기본 세트로|기본 세트 주문|기본 세트 할게|기본으로 할게/.test(normalized) || (/기본/.test(normalized) && /세트/.test(normalized) && !hasQuestion)) {
+                    console.log("기본세트 인식 normalized:", normalized);
                     try {
                         recognition.stop();
                     } catch (e) { }
-                    setAssistantMessage("기본 세트를 선택하셨어요.");
+                    setAssistantMessage("기본 세트를 선택했어요.");
                     isSpeakingRef.current = true;
-                    speakKorean("기본 세트를 선택하셨어요.").catch(err => console.error("음성 안내 오류:", err));
+                    speakKorean("기본 세트를 선택했어요.").catch(err => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 2000);
 
-                    // 즉시 함수 호출 (터치 버튼과 동일)
-                    console.log("🚀 handleDefaultSet() 호출 시작");
+                    // 利됱떆 ?⑥닔 ?몄텧 (?곗튂 踰꾪듉怨??숈씪)
+                    console.log("handleDefaultSet() 호출 시작");
                     setTimeout(() => {
                         handleDefaultSet();
                     }, 100);
                     return;
                 }
 
-                // "세트 직접 선택" 선택
-                if (/세트직접선택|세트직접|직접선택|세트로|세트주문|세트할게|세트로줘|세트로할게|세트/.test(normalized)) {
+                // "?명듃 吏곸젒 ?좏깮" ?좏깮
+                if (/세트직접선택|세트직접|직접선택|세트로|세트 주문|세트 할게|세트로 할게/.test(normalized)) {
                     try {
                         recognition.stop();
                     } catch (e) { }
@@ -674,7 +675,7 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // 도움말 (버거인 경우)
+                // ?꾩?留?(踰꾧굅??寃쎌슦)
                 const msg = "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
                 setAssistantMessage(msg);
                 try {
@@ -716,13 +717,13 @@ function MenuOptionPageContent() {
     }, [isDrink, menuName]);
 
     function handleDrinkSize(size) {
-        // searchParams에서 직접 읽기
+        // searchParams?먯꽌 吏곸젒 ?쎄린
         const currentMenuId = searchParams.get("menuId") || menuId;
         const currentMenuName = decodeURIComponent(searchParams.get("menuName") || menuName || "");
         const currentMenuPrice = parseInt(searchParams.get("price") || menuPrice || "0");
         const price = currentMenuPrice + (size === "라지" ? 500 : 0);
 
-        // searchParams에서 cart 직접 읽기
+        // searchParams?먯꽌 cart 吏곸젒 ?쎄린
         let currentCartItems = [];
         const cartParam = searchParams.get("cart");
         if (cartParam) {
@@ -741,7 +742,7 @@ function MenuOptionPageContent() {
         if (idx >= 0) {
             currentCartItems[idx] = { ...currentCartItems[idx], qty: currentCartItems[idx].qty + 1 };
         } else {
-            // 사이즈에 맞게 이름 표시 (미디움 -> 중간, 라지 -> 큰)
+            // ?ъ씠利덉뿉 留욊쾶 ?대쫫 ?쒖떆 (誘몃뵒? -> 以묎컙, ?쇱? -> ??
             const sizeDisplayName = size === "미디움" ? "중간" : "큰";
             currentCartItems.push({ id, name: `${currentMenuName}(${sizeDisplayName})`, price, qty: 1, type: "drink", size });
         }
@@ -749,11 +750,11 @@ function MenuOptionPageContent() {
         const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
         const orderType = searchParams.get("orderType") || "takeout";
         console.log("handleDrinkSize - cartData:", cartData, "size:", size);
-        // 바로 메뉴 페이지로 이동
+        // 諛붾줈 硫붾돱 ?섏씠吏濡??대룞
         navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
     }
 
-    // 단품 추가 함수 (새로 작성)
+    // ?⑦뭹 異붽? ?⑥닔 (?덈줈 ?묒꽦)
     const addSingleToCart = useCallback(() => {
         const currentSearchParams = searchParamsRef.current;
         const currentRouter = routerRef.current;
@@ -768,7 +769,7 @@ function MenuOptionPageContent() {
             return;
         }
 
-        // searchParams에서 cart 읽기
+        // searchParams?먯꽌 cart ?쎄린
         let currentCartItems = [];
         const cartParam = currentSearchParams.get("cart");
         if (cartParam) {
@@ -780,7 +781,7 @@ function MenuOptionPageContent() {
             }
         }
 
-        // 장바구니에 단품 추가
+        // ?λ컮援щ땲??⑦뭹 異붽?
         const idx = currentCartItems.findIndex((p) => p.id === currentMenuId);
         if (idx >= 0) {
             currentCartItems[idx] = { ...currentCartItems[idx], qty: currentCartItems[idx].qty + 1 };
@@ -802,8 +803,8 @@ function MenuOptionPageContent() {
     }, []);
 
     function handleSingle() {
-        console.log("📞 handleSingle() 호출됨");
-        console.log("📋 현재 searchParams:", {
+        console.log("handleSingle() 호출");
+        console.log("현재 searchParams:", {
             menuId: searchParams.get("menuId"),
             menuName: searchParams.get("menuName"),
             price: searchParams.get("price"),
@@ -813,13 +814,13 @@ function MenuOptionPageContent() {
     }
 
     function handleSet() {
-        // 세트 선택 시 음료 선택 페이지로
+        // ?명듃 ?좏깮 ??뚮즺 ?좏깮 ?섏씠吏濡?
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
         const orderType = searchParams.get("orderType") || "takeout";
         navigateTo(`/drink-select?menuId=${menuId}&menuName=${encodeURIComponent(menuName)}&price=${menuPrice}&cart=${cartData}&orderType=${orderType}&${menuStateQuery()}&${entryQuery(entry)}`);
     }
 
-    // 기본세트 추가 함수 (새로 작성)
+    // 湲곕낯?명듃 異붽? ?⑥닔 (?덈줈 ?묒꽦)
     function adjustCartItemQty(itemId, delta) {
         setCartItems((prev) => {
             const idx = prev.findIndex((item) => item.id === itemId);
@@ -1004,11 +1005,11 @@ function MenuOptionPageContent() {
         const orderType = currentSearchParams.get("orderType") || "takeout";
 
         if (!currentMenuId) {
-            console.error("기본세트 추가 실패: menuId가 없습니다.");
+            console.error("기본 세트 추가 실패: menuId가 없습니다.");
             return;
         }
 
-        // searchParams에서 cart 읽기
+        // searchParams?먯꽌 cart ?쎄린
         let currentCartItems = [];
         const cartParam = currentSearchParams.get("cart");
         if (cartParam) {
@@ -1020,12 +1021,12 @@ function MenuOptionPageContent() {
             }
         }
 
-        // 기본세트: 메인 + 감자튀김 M + 콜라 M
+        // 湲곕낯?명듃: 硫붿씤 + 媛먯옄?源 M + 肄쒕씪 M
         const drinkP = 2500;
         const sideP = 2500;
         const setPrice = currentMenuPrice + drinkP + sideP;
 
-        // 장바구니에 기본세트 추가
+        // ?λ컮援щ땲??湲곕낯?명듃 異붽?
         const setId = `${currentMenuId}_set_default`;
         const idx = currentCartItems.findIndex((p) => p.id === setId);
         if (idx >= 0) {
@@ -1053,8 +1054,8 @@ function MenuOptionPageContent() {
     }, []);
 
     function handleDefaultSet() {
-        console.log("📞 handleDefaultSet() 호출됨");
-        console.log("📋 현재 searchParams:", {
+        console.log("handleDefaultSet() 호출");
+        console.log("현재 searchParams:", {
             menuId: searchParams.get("menuId"),
             menuName: searchParams.get("menuName"),
             price: searchParams.get("price"),
@@ -1074,7 +1075,7 @@ function MenuOptionPageContent() {
                 overflow: "hidden",
             }}
         >
-            {/* 음성 인식 로그창 */}
+            {/* ?뚯꽦 ?몄떇 濡쒓렇李?*/}
             {false && voiceLogs.length > 0 && (
                 <div
                     style={{
@@ -1093,7 +1094,7 @@ function MenuOptionPageContent() {
                     }}
                 >
                     <div style={{ fontWeight: "bold", marginBottom: "8px", color: "#1e7a39", fontSize: "0.9rem" }}>
-                        🎤 음성 인식 로그
+                        실시간 음성 인식 로그
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         {voiceLogs.map((log, index) => (
@@ -1121,7 +1122,7 @@ function MenuOptionPageContent() {
                 </div>
             )}
 
-            {/* 상단 헤더 */}
+            {/* ?곷떒 ?ㅻ뜑 */}
             <div
                 style={{
                     flexShrink: 0,
@@ -1150,7 +1151,7 @@ function MenuOptionPageContent() {
                         }}
                     >
                         <span style={{ width: 8, height: 8, background: isListening ? "#34c759" : "#bbb", borderRadius: "50%" }} />
-                        {isListening ? "음성 인식 중" : "대화로 선택 가능"}
+                        {isListening ? "음성 인식 중" : "터치로 선택 가능"}
                     </div>
                 </div>
                 <button
@@ -1175,7 +1176,7 @@ function MenuOptionPageContent() {
                         aria-hidden="true"
                         style={{ width: "22px", height: "22px", objectFit: "contain" }}
                     />
-                    뒤로가기
+                    {"뒤로가기"}
                 </button>
                 <div
                     style={{
@@ -1202,7 +1203,7 @@ function MenuOptionPageContent() {
                 <div style={{ width: "120px" }}></div>
             </div>
 
-            {/* 음성 안내 메시지 (화면 표시용 텍스트) */}
+            {/* ?뚯꽦 ?덈궡 硫붿떆吏 (?붾㈃ ?쒖떆??띿뒪?? */}
             {/*
             {assistantMessage && (
                 <div
@@ -1220,7 +1221,7 @@ function MenuOptionPageContent() {
             )}
             */}
 
-            {/* 메인 컨텐츠 */}
+            {/* 硫붿씤 而⑦뀗痢?*/}
             <div
                 style={{
                     flex: 1,
@@ -1235,7 +1236,7 @@ function MenuOptionPageContent() {
             >
                 {!isDrink ? (
                     <>
-                        {/* 중앙 메뉴 이미지 */}
+                        {/* 以묒븰 硫붾돱 ?대?吏 */}
                         <div
                             style={{
                                 width: "100%",
@@ -1245,7 +1246,7 @@ function MenuOptionPageContent() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 gap: "16px",
-                                transform: "translateY(-20px)", /* 이미지 + 메뉴명 + 가격 전체 묶음 위로 */
+                                transform: "translateY(-20px)", /* ?대?吏 + 硫붾돱紐?+ 媛寃??꾩껜 臾띠쓬 ?꾨줈 */
                             }}
                         >
                             <div
@@ -1297,7 +1298,7 @@ function MenuOptionPageContent() {
                             </div>
                         </div>
 
-                        {/* 단품/기본 세트/세트 직접 선택 버튼 - 동일 크기 한 줄 정렬 */}
+                        {/* ?⑦뭹/湲곕낯 ?명듃/?명듃 吏곸젒 ?좏깮 踰꾪듉 - ?숈씪 ?ш린 ??以??뺣젹 */}
                         <div
                             style={{
                                 display: "flex",
@@ -1333,7 +1334,7 @@ function MenuOptionPageContent() {
                                             : "0 2px 6px rgba(0,0,0,0.06)",
                                 }}
                             >
-                                단품
+                                {"단품"}
                                 <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {menuPrice.toLocaleString()}원
                                 </div>
@@ -1342,26 +1343,25 @@ function MenuOptionPageContent() {
                             <button
                                 ref={defaultSetButtonRef}
                                 onClick={handleDefaultSetClick}
-                                style={{
-                                    width: "100%",
-                                    height: "130px",
-                                    fontSize: "2rem",
-                                    fontWeight: "bold",
-                                    backgroundColor: activeOptionButton === "default" ? "#c8d8ea" : "#f5f8fc",
-                                    color: "#000",
-                                    border: activeOptionButton === "default" ? "2px solid #002e55" : "2px solid #d9e3ef",
-                                    borderRadius: "16px",
-                                    cursor: "pointer",
-                                    textAlign: "left",
-                                    paddingLeft: "32px",
-                                    boxShadow:
-                                        activeOptionButton === "default"
-                                            ? "0 4px 10px rgba(0,0,0,0.12)"
+                                    style={{
+                                        width: "100%",
+                                        height: "130px",
+                                        fontSize: "2rem",
+                                        fontWeight: activeOptionButton === "default" ? 700 : 500,
+                                        backgroundColor: "#ffffff",
+                                        color: "#000",
+                                        border: activeOptionButton === "default" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: "16px",
+                                        cursor: "pointer",
+                                        textAlign: "center",
+                                        transition: "all 0.2s",
+                                        boxShadow:
+                                            activeOptionButton === "default"
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
                                             : "0 2px 6px rgba(0,0,0,0.06)",
-                                    paddingRight: "10px",
                                 }}
                             >
-                                기본 세트 (콜라 중간 + 감자튀김 중간)
+                                {"기본 세트 (콜라 중간 + 감자튀김 중간)"}
                                 <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
                                     {(menuPrice + 2500 + 2500).toLocaleString()}원
                                 </div>
@@ -1392,9 +1392,9 @@ function MenuOptionPageContent() {
                                             : "0 2px 6px rgba(0,0,0,0.06)",
                                 }}
                             >
-                                세트 직접 선택
+                                {"세트 직접 선택"}
                                 <div style={{ fontSize: "1.4rem", marginTop: "3px", opacity: 0.9, color: "#002e55" }}>
-                                    음료 또는 사이드 선택
+                                    {"음료 또는 사이드 선택"}
                                 </div>
                             </button>}
                             <div
@@ -1407,53 +1407,76 @@ function MenuOptionPageContent() {
                             >
                                 <button
                                     onClick={() => {
+                                        if (hasAdditionalDrink) return;
                                         setActiveOptionButton("drink-add");
                                         setSelectedAdditionalDrink("");
                                         setSelectedAdditionalDrinkSize("");
+                                        setPendingAdditionalDrinkSelection("");
                                         setPendingAdditionalDrinkSize("");
                                     }}
+                                    disabled={hasAdditionalDrink}
                                     style={{
                                         width: "100%",
                                         height: "130px",
                                         fontSize: "2rem",
-                                        fontWeight: "bold",
-                                        backgroundColor: activeOptionButton === "drink-add" ? "#c8d8ea" : "#f5f8fc",
-                                        color: "#000",
-                                        border: activeOptionButton === "drink-add" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        fontWeight: hasAdditionalDrink ? "bold" : activeOptionButton === "drink-add" ? 700 : 500,
+                                        backgroundColor: hasAdditionalDrink
+                                            ? "#e7ebf1"
+                                            : "#ffffff",
+                                        color: hasAdditionalDrink ? "#7f8b99" : "#000",
+                                        border: hasAdditionalDrink
+                                            ? "2px solid #d9e3ef"
+                                            : activeOptionButton === "drink-add"
+                                                ? "2px solid #002e55"
+                                                : "2px solid #d9e3ef",
                                         borderRadius: "16px",
-                                        cursor: "pointer",
+                                        cursor: hasAdditionalDrink ? "not-allowed" : "pointer",
+                                        transition: "all 0.2s",
                                         boxShadow:
-                                            activeOptionButton === "drink-add"
+                                            hasAdditionalDrink
+                                                ? "0 1px 3px rgba(0,0,0,0.04)"
+                                                : activeOptionButton === "drink-add"
                                                 ? "0 4px 10px rgba(0,0,0,0.12)"
                                                 : "0 2px 6px rgba(0,0,0,0.06)",
                                     }}
                                 >
-                                    음료 추가
+                                    {"음료 추가"}
                                 </button>
                                 <button
                                     onClick={() => {
+                                        if (hasAdditionalSide) return;
                                         setActiveOptionButton("side-add");
                                         setSelectedAdditionalSide("");
                                         setSelectedAdditionalSideSize("");
                                         setPendingAdditionalSideSize("");
                                     }}
+                                    disabled={hasAdditionalSide}
                                     style={{
                                         width: "100%",
                                         height: "130px",
                                         fontSize: "2rem",
-                                        fontWeight: "bold",
-                                        backgroundColor: activeOptionButton === "side-add" ? "#c8d8ea" : "#f5f8fc",
-                                        color: "#000",
-                                        border: activeOptionButton === "side-add" ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        fontWeight: hasAdditionalSide ? "bold" : activeOptionButton === "side-add" ? 700 : 500,
+                                        backgroundColor: hasAdditionalSide
+                                            ? "#e7ebf1"
+                                            : "#ffffff",
+                                        color: hasAdditionalSide ? "#7f8b99" : "#000",
+                                        border: hasAdditionalSide
+                                            ? "2px solid #d9e3ef"
+                                            : activeOptionButton === "side-add"
+                                                ? "2px solid #002e55"
+                                                : "2px solid #d9e3ef",
                                         borderRadius: "16px",
-                                        cursor: "pointer",
+                                        cursor: hasAdditionalSide ? "not-allowed" : "pointer",
+                                        transition: "all 0.2s",
                                         boxShadow:
-                                            activeOptionButton === "side-add"
+                                            hasAdditionalSide
+                                                ? "0 1px 3px rgba(0,0,0,0.04)"
+                                                : activeOptionButton === "side-add"
                                                 ? "0 4px 10px rgba(0,0,0,0.12)"
                                                 : "0 2px 6px rgba(0,0,0,0.06)",
                                     }}
                                 >
-                                    사이드 추가
+                                    {"사이드 추가"}
                                 </button>
                             </div>
 
@@ -1468,44 +1491,43 @@ function MenuOptionPageContent() {
                                 flexDirection: "column",
                                 backgroundColor: "#fff",
                                 overflow: "hidden",
-                                marginTop: "-10px",
+                                marginTop: "6px",
                             }}
                         >
                         <div
                             style={{
-                                background: "#fff9db",
-                                border: "2px solid #fec315",
+                                background: "#f5f8fc",
+                                border: "2px solid #d9e3ef",
                                 borderRadius: "16px",
-                                display: "grid",
-                                gridTemplateColumns: "2px minmax(0, 1fr) 2px",
-                                gridTemplateRows: "2px minmax(0, 1fr) 2px auto 2px",
+                                display: "flex",
+                                flexDirection: "column",
                                 flex: 1,
                                 overflow: "hidden",
                                 minHeight: 0,
+                                padding: "16px",
+                                boxSizing: "border-box",
+                                gap: "16px",
                             }}
                         >
-                            <div aria-hidden="true" />
                             <div
                                 style={{
-                                    gridColumn: 2,
-                                    gridRow: 2,
-                                    minWidth: 0,
-                                    minHeight: 0,
+                                    flex: 1,
                                     overflowX: "auto",
                                     overflowY: "hidden",
                                     WebkitOverflowScrolling: "touch",
+                                    minWidth: 0,
+                                    minHeight: 0,
                                 }}
                             >
                                 <div
                                     style={{
                                         display: "inline-flex",
                                         gap: "12px",
-                                        alignItems: "center",
-                                        minHeight: "100%",
+                                        alignItems: "flex-start",
                                     }}
                                 >
                                     {cartItems.length === 0 ? (
-                                        <div style={{ color: "#c8d8ea", fontSize: "34px" }}>담긴 상품이 없습니다</div>
+                                        <div style={{ color: "#c8d8ea", fontSize: "34px" }}>{"담긴 상품이 없습니다"}</div>
                                     ) : (
                                         cartItems.map((it) => (
                                             <div
@@ -1540,7 +1562,7 @@ function MenuOptionPageContent() {
                                                         return src ? (
                                                             <img src={src} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                                                         ) : (
-                                                            <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
+                                                            <div style={{ fontSize: "10px", color: "#999" }}>{"이미지"}</div>
                                                         );
                                                     })()}
                                                 </div>
@@ -1551,10 +1573,12 @@ function MenuOptionPageContent() {
                                                     </div>
                                                     <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
                                                         <div style={{ fontWeight: "700", fontSize: "20px", color: "#002e55" }}>
-                                                            {it.price.toLocaleString()}원
-                                                        </div>
+                                                            {it.price.toLocaleString()}원                                                        </div>
                                                         <button
-                                                            onClick={() => handleCartDeleteClick(it.id)}
+                                                            onClick={() => {
+                                                                if (it.type === "single") return;
+                                                                handleCartDeleteClick(it.id);
+                                                            }}
                                                             style={{
                                                                 width: "24px",
                                                                 height: "24px",
@@ -1565,7 +1589,7 @@ function MenuOptionPageContent() {
                                                                 cursor: "pointer",
                                                                 fontSize: "20px",
                                                                 fontWeight: "700",
-                                                                display: "flex",
+                                                                display: it.type === "single" ? "none" : "flex",
                                                                 alignItems: "center",
                                                                 justifyContent: "center",
                                                             }}
@@ -1579,20 +1603,16 @@ function MenuOptionPageContent() {
                                     )}
                                 </div>
                             </div>
-                            <div aria-hidden="true" />
-                            <div aria-hidden="true" />
                             <div
                                 style={{
-                                    gridColumn: 2,
-                                    gridRow: 4,
                                     display: "flex",
                                     justifyContent: "flex-end",
+                                    flexShrink: 0,
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "20px", minWidth: "262px" }}>
                                     <div style={{ fontSize: "24px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                                        총 금액 | {cartTotal.toLocaleString()}원
-                                    </div>
+                                        {"총 금액 | "}{cartTotal.toLocaleString()}원                                    </div>
                                     <button
                                         onClick={handleOrderClick}
                                         disabled={cartItems.length === 0}
@@ -1608,11 +1628,10 @@ function MenuOptionPageContent() {
                                             fontWeight: "700",
                                         }}
                                     >
-                                        선택 완료
+                                        {"선택 완료"}
                                     </button>
                                 </div>
                             </div>
-                            <div aria-hidden="true" />
                         </div>
                         </div>
                     </>
@@ -1674,7 +1693,7 @@ function MenuOptionPageContent() {
                                 ) : isZeroCola ? (
                                     <img
                                         src="/zero_coke.png"
-                                        alt="?ъ씠利??좏깮"
+                                        alt="제로 콜라"
                                         style={{
                                             width: "100%",
                                             height: "100%",
@@ -1696,7 +1715,7 @@ function MenuOptionPageContent() {
                                 ) : isZeroCider ? (
                                     <img
                                         src="/zero_cider.png"
-                                        alt="?ъ씠利??좏깮"
+                                        alt="제로 사이다"
                                         style={{
                                             width: "100%",
                                             height: "100%",
@@ -1728,7 +1747,7 @@ function MenuOptionPageContent() {
                                     />
                                 ) : (
                                     <div style={{ color: "#8aa0c5", fontWeight: 700 }}>
-                                        음료 이미지 추가 영역
+                                        {"음료 이미지"}
                                     </div>
                                 );
                             })()}
@@ -1746,7 +1765,7 @@ function MenuOptionPageContent() {
                             }}
                         >
                             <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-                                {menuName} 사이즈를 선택하세요
+                                {menuName} {"사이즈를 선택하세요"}
                             </div>
                             {["미디움", "라지"].map((size) => (
                                 <button
@@ -1775,7 +1794,7 @@ function MenuOptionPageContent() {
                                             {size === "미디움" ? "중간 사이즈로 주문하기" : "큰 사이즈로 주문하기 (+500원)"}
                                         </div>
                                         <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>
-                                            {size === "라지" ? `+500원 (총 ${(menuPrice + 500).toLocaleString()}원)` : `${menuPrice.toLocaleString()}원`}
+                                            {size === "라지" ? `+500원 (총 ${ (menuPrice + 500).toLocaleString() }원)` : `${menuPrice.toLocaleString()}원`}
                                         </div>
                                     </div>
                                     <span style={{ fontWeight: 800, fontSize: "1rem" }}>
@@ -1803,9 +1822,9 @@ function MenuOptionPageContent() {
                         >
                             <div
                                 style={{
-                                    width: "min(920px, calc(100vw - 32px))",
-                                    maxHeight: "min(760px, calc(100vh - 48px))",
-                                    overflowY: "auto",
+                                    width: "min(1080px, calc(100vw - 32px))",
+                                    maxHeight: "calc(100vh - 48px)",
+                                    overflowY: "visible",
                                     background: "#ffffff",
                                     border: "1px solid #d9e3ef",
                                     borderRadius: "22px",
@@ -1814,35 +1833,39 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px" }}>
-                                    <h3 style={{ fontSize: "2rem", fontWeight: "bold", margin: 0 }}>
-                                        음료를 선택하세요
-                                    </h3>
+                                    <h3 style={{ fontSize: "2.4rem", fontWeight: "bold", margin: 0 }}>
+                                        {"음료를 선택하세요"}</h3>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setActiveOptionButton("");
-                                            setSelectedAdditionalDrink("");
-                                            setSelectedAdditionalDrinkSize("");
+                                            setIsDrinkListCloseButtonActive(true);
+                                            setTimeout(() => {
+                                                setActiveOptionButton("");
+                                                setSelectedAdditionalDrink("");
+                                                setSelectedAdditionalDrinkSize("");
+                                                setPendingAdditionalDrinkSelection("");
+                                                setIsDrinkListCloseButtonActive(false);
+                                            }, 120);
                                         }}
                                         style={{
                                             padding: "12px 18px",
-                                            backgroundColor: "#002e55",
+                                            backgroundColor: isDrinkListCloseButtonActive ? "#fec315" : "#002e55",
                                             color: "#fff",
                                             border: "none",
                                             borderRadius: "10px",
-                                            fontSize: "1rem",
+                                            fontSize: "1.5rem",
                                             fontWeight: "700",
                                             cursor: "pointer",
                                         }}
                                     >
-                                        닫기
+                                        {"닫기"}
                                     </button>
                                 </div>
                                 <div
                                     style={{
                                         display: "grid",
-                                        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                                        gap: "12px",
+                                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                                        gap: "20px",
                                         maxWidth: "900px",
                                         margin: "0 auto",
                                     }}
@@ -1853,52 +1876,64 @@ function MenuOptionPageContent() {
                                             <button
                                                 key={d.id || d.name}
                                                 onClick={() => {
-                                                    setSelectedAdditionalDrink(d.name);
-                                                    setSelectedAdditionalDrinkSize("");
+                                                    setPendingAdditionalDrinkSelection(d.name);
+                                                    setTimeout(() => {
+                                                        setSelectedAdditionalDrink(d.name);
+                                                        setSelectedAdditionalDrinkSize("");
+                                                        setPendingAdditionalDrinkSelection("");
+                                                    }, 120);
                                                 }}
                                                 style={{
-                                                    minHeight: "170px",
+                                                    aspectRatio: "1 / 1",
                                                     fontSize: "1.1rem",
                                                     fontWeight: "bold",
-                                                    backgroundColor: selectedAdditionalDrink === d.name ? "#c8d8ea" : "#f5f8fc",
+                                                    backgroundColor:
+                                                        pendingAdditionalDrinkSelection === d.name || selectedAdditionalDrink === d.name
+                                                            ? "#c8d8ea"
+                                                            : "#f5f8fc",
                                                     color: "#000",
-                                                    border: selectedAdditionalDrink === d.name ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                                    border:
+                                                        pendingAdditionalDrinkSelection === d.name || selectedAdditionalDrink === d.name
+                                                            ? "2px solid #002e55"
+                                                            : "2px solid #d9e3ef",
                                                     borderRadius: "12px",
                                                     cursor: "pointer",
+                                                    boxSizing: "border-box",
+                                                    overflow: "hidden",
                                                     boxShadow:
-                                                        selectedAdditionalDrink === d.name
+                                                        pendingAdditionalDrinkSelection === d.name || selectedAdditionalDrink === d.name
                                                             ? "0 4px 10px rgba(0,0,0,0.12)"
                                                             : "0 2px 6px rgba(0,0,0,0.06)",
                                                     display: "flex",
                                                     flexDirection: "column",
                                                     alignItems: "center",
                                                     justifyContent: "center",
-                                                    gap: 8,
-                                                    padding: "16px 12px",
+                                                    gap: 5,
+                                                    padding: "4px 4px",
+                                                    width: "100%",
                                                 }}
                                             >
                                                 {thumb ? (
-                                                    <img src={thumb} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
+                                                    <img src={thumb} alt="" style={{ width: 110, height: 110, objectFit: "contain", flexShrink: 0 }} />
                                                 ) : (
-                                                    <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>음료</div>
+                                                    <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>{"음료"}</div>
                                                 )}
                                                 <div
                                                     style={{
-                                                        fontSize: "1.5rem",
+                                                        fontSize: "1.8rem",
                                                         fontWeight: "800",
                                                         textAlign: "center",
-                                                        marginTop: "6px",
+                                                        marginTop: "0px",
                                                         marginBottom: "-2px",
-                                                        lineHeight: 1,
+                                                        lineHeight: 1.05,
                                                         width: "100%",
                                                         wordBreak: "keep-all",
                                                     }}
                                                 >
                                                     {d.name}
                                                 </div>
-                                                <div style={{ fontSize: "1.2rem", marginTop: 0, opacity: 0.85, color: "#002e55" }}>
-                                                    {drinkMediumPrice(d.name, catalogItems).toLocaleString()}원
-                                                </div>
+                                                <div style={{ fontSize: "1.45rem", marginTop: 0, opacity: 0.85, color: "#002e55" }}>
+                                                    {drinkMediumPrice(d.name, catalogItems).toLocaleString()}원                                                </div>
                                             </button>
                                         );
                                     })}
@@ -1934,35 +1969,38 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", marginBottom: "20px" }}>
-                                    <h3 style={{ fontSize: "2rem", fontWeight: "bold", margin: 0 }}>
-                                        사이드를 선택하세요
-                                    </h3>
+                                    <h3 style={{ fontSize: "2.4rem", fontWeight: "bold", margin: 0 }}>
+                                        {"사이드를 선택하세요"}</h3>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setActiveOptionButton("");
-                                            setSelectedAdditionalSide("");
-                                            setSelectedAdditionalSideSize("");
+                                            setIsSideListCloseButtonActive(true);
+                                            setTimeout(() => {
+                                                setActiveOptionButton("");
+                                                setSelectedAdditionalSide("");
+                                                setSelectedAdditionalSideSize("");
+                                                setIsSideListCloseButtonActive(false);
+                                            }, 120);
                                         }}
                                         style={{
                                             padding: "12px 18px",
-                                            backgroundColor: "#002e55",
+                                            backgroundColor: isSideListCloseButtonActive ? "#fec315" : "#002e55",
                                             color: "#fff",
                                             border: "none",
                                             borderRadius: "10px",
-                                            fontSize: "1rem",
+                                            fontSize: "1.5rem",
                                             fontWeight: "700",
                                             cursor: "pointer",
                                         }}
                                     >
-                                        닫기
+                                        {"닫기"}
                                     </button>
                                 </div>
                                 <div
                                     style={{
                                         display: "grid",
-                                        gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-                                        gap: "12px",
+                                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                                        gap: "20px",
                                         maxWidth: "900px",
                                         margin: "0 auto",
                                     }}
@@ -1977,7 +2015,7 @@ function MenuOptionPageContent() {
                                                     setSelectedAdditionalSideSize("");
                                                 }}
                                                 style={{
-                                                    minHeight: "170px",
+                                                    aspectRatio: "1 / 1",
                                                     fontSize: "1.5rem",
                                                     fontWeight: "bold",
                                                     backgroundColor: selectedAdditionalSide === item.name ? "#c8d8ea" : "#f5f8fc",
@@ -1985,6 +2023,8 @@ function MenuOptionPageContent() {
                                                     border: selectedAdditionalSide === item.name ? "2px solid #002e55" : "2px solid #d9e3ef",
                                                     borderRadius: "12px",
                                                     cursor: "pointer",
+                                                    boxSizing: "border-box",
+                                                    overflow: "hidden",
                                                     boxShadow:
                                                         selectedAdditionalSide === item.name
                                                             ? "0 4px 10px rgba(0,0,0,0.12)"
@@ -1993,32 +2033,32 @@ function MenuOptionPageContent() {
                                                     flexDirection: "column",
                                                     alignItems: "center",
                                                     justifyContent: "center",
-                                                    gap: 8,
-                                                    padding: "16px 12px",
+                                                    gap: 5,
+                                                    padding: "4px 4px",
+                                                    width: "100%",
                                                 }}
                                             >
                                                 {thumb ? (
-                                                    <img src={thumb} alt="" style={{ width: 72, height: 72, objectFit: "contain" }} />
+                                                    <img src={thumb} alt="" style={{ width: 110, height: 110, objectFit: "contain", flexShrink: 0 }} />
                                                 ) : (
-                                                    <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>사이드</div>
+                                                    <div style={{ width: 72, height: 72, color: "#8aa0c5", fontSize: 12 }}>{"사이드"}</div>
                                                 )}
                                                 <div
                                                     style={{
-                                                        fontSize: "1.5rem",
+                                                        fontSize: "1.8rem",
                                                         fontWeight: "800",
                                                         textAlign: "center",
-                                                        marginTop: "6px",
+                                                        marginTop: "0px",
                                                         marginBottom: "-2px",
-                                                        lineHeight: 1,
+                                                        lineHeight: 1.05,
                                                         width: "100%",
                                                         wordBreak: "keep-all",
                                                     }}
                                                 >
                                                     {item.name}
                                                 </div>
-                                                <div style={{ fontSize: "1.2rem", marginTop: 2, opacity: 0.85, color: "#002e55" }}>
-                                                    {sideBasePriceFromCatalog(item.name, catalogItems).toLocaleString()}원
-                                                </div>
+                                                <div style={{ fontSize: "1.45rem", marginTop: 0, opacity: 0.85, color: "#002e55" }}>
+                                                    {sideBasePriceFromCatalog(item.name, catalogItems).toLocaleString()}원                                                </div>
                                             </button>
                                         );
                                     })}
@@ -2063,7 +2103,7 @@ function MenuOptionPageContent() {
                                     boxShadow: "none",
                                     overflow: "hidden",
                                     flexDirection: "column",
-                                    gap: "12px",
+                                    gap: "0px",
                                 }}
                             >
                                 {(() => {
@@ -2081,10 +2121,10 @@ function MenuOptionPageContent() {
                                             }}
                                         />
                                     ) : (
-                                        <div style={{ color: "#8aa0c5", fontWeight: 700 }}>음료 이미지</div>
+                                        <div style={{ color: "#8aa0c5", fontWeight: 700 }}>{"음료 이미지"}</div>
                                     );
                                 })()}
-                                <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                <div style={{ fontSize: "3rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
                                     {selectedAdditionalDrink}
                                 </div>
                             </div>
@@ -2101,9 +2141,8 @@ function MenuOptionPageContent() {
                                 }}
                             >
                                 <div style={{ fontSize: 0, fontWeight: "bold", textAlign: "left" }}>
-                                    <span style={{ fontSize: "2rem" }}>사이즈를 선택하세요</span>
-                                    {selectedAdditionalDrink} 사이즈를 선택하세요
-                                </div>
+                                    <span style={{ fontSize: "2.4rem" }}>{"사이즈를 선택하세요"}</span>
+                                    {selectedAdditionalDrink} {"사이즈를 선택하세요"}                                </div>
                                 {additionalDrinkSizeButtons.map((size) => (
                                     <button
                                         key={size.name}
@@ -2119,7 +2158,7 @@ function MenuOptionPageContent() {
                                         }}
                                         style={{
                                             height: "75px",
-                                            fontSize: "1.5rem",
+                                            fontSize: "1.7rem",
                                             fontWeight: "bold",
                                             backgroundColor: pendingAdditionalDrinkSize === size.name ? "#c8d8ea" : "#f5f8fc",
                                             color: "#000",
@@ -2140,7 +2179,7 @@ function MenuOptionPageContent() {
                                             {size.name === "미디움" ? "중간 사이즈" : "큰 사이즈"}
                                         </div>
                                         <span style={{ fontWeight: 800, fontSize: 0 }}>
-                                            <span style={{ fontSize: "1.3rem" }}>{size.price.toLocaleString()}원</span>
+                                            <span style={{ fontSize: "1.5rem", color: "#002e55" }}>{size.price.toLocaleString()}원</span>
                                         </span>
                                     </button>
                                 ))}
@@ -2148,12 +2187,13 @@ function MenuOptionPageContent() {
                                     type="button"
                                     onClick={() => {
                                         setIsDrinkAddCancelButtonActive(true);
-                                        setTimeout(() => {
-                                            setSelectedAdditionalDrink("");
-                                            setSelectedAdditionalDrinkSize("");
-                                            setIsDrinkAddCancelButtonActive(false);
-                                        }, 120);
-                                    }}
+                                          setTimeout(() => {
+                                              setSelectedAdditionalDrink("");
+                                              setSelectedAdditionalDrinkSize("");
+                                              setPendingAdditionalDrinkSelection("");
+                                              setIsDrinkAddCancelButtonActive(false);
+                                          }, 120);
+                                      }}
                                     style={{
                                         width: "fit-content",
                                         alignSelf: "center",
@@ -2168,7 +2208,7 @@ function MenuOptionPageContent() {
                                         boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                                     }}
                                 >
-                                    취소하기
+                                    {"취소하기"}
                                 </button>
                             </div>
                         </div>
@@ -2210,7 +2250,7 @@ function MenuOptionPageContent() {
                                     boxShadow: "none",
                                     overflow: "hidden",
                                     flexDirection: "column",
-                                    gap: "12px",
+                                    gap: "0px",
                                 }}
                             >
                                 {(() => {
@@ -2231,7 +2271,7 @@ function MenuOptionPageContent() {
                                         <div style={{ color: "#8aa0c5", fontWeight: 700 }}>side image</div>
                                     );
                                 })()}
-                                <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                                <div style={{ fontSize: "3rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
                                     {selectedAdditionalSide}
                                 </div>
                             </div>
@@ -2247,9 +2287,8 @@ function MenuOptionPageContent() {
                                     boxShadow: "none",
                                 }}
                             >
-                                <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
-                                    사이즈를 선택하세요
-                                </div>
+                                <div style={{ fontSize: "2.4rem", fontWeight: "bold", textAlign: "left" }}>
+                                    {"사이즈를 선택하세요"}                                </div>
                                 {sideSizeOptions.map((size) => {
                                     const p = sideUnitPriceCatalog(selectedAdditionalSide, size.name, catalogItems);
                                     return (
@@ -2267,7 +2306,7 @@ function MenuOptionPageContent() {
                                             }}
                                             style={{
                                                 height: "75px",
-                                                fontSize: "1.5rem",
+                                                fontSize: "1.7rem",
                                                 fontWeight: "bold",
                                                 backgroundColor: pendingAdditionalSideSize === size.name ? "#c8d8ea" : "#f5f8fc",
                                                 color: "#000",
@@ -2285,10 +2324,10 @@ function MenuOptionPageContent() {
                                             }}
                                         >
                                             <div>
-                                                {size.name === "미디움" ? "중간 사이즈" : "라지 사이즈"}
+                                                {size.name === "미디움" ? "중간 사이즈" : "큰 사이즈"}
                                             </div>
                                             <span style={{ fontWeight: 800, fontSize: 0 }}>
-                                                <span style={{ fontSize: "1.3rem" }}>{p.toLocaleString()}원</span>
+                                                <span style={{ fontSize: "1.5rem", color: "#002e55" }}>{p.toLocaleString()}원</span>
                                             </span>
                                         </button>
                                     );
@@ -2317,7 +2356,7 @@ function MenuOptionPageContent() {
                                         boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
                                     }}
                                 >
-                                    취소하기
+                                    {"취소하기"}
                                 </button>
                             </div>
                         </div>
@@ -2365,7 +2404,7 @@ function MenuOptionPageContent() {
                         }}
                     >
                         {cartItems.length === 0 ? (
-                            <div style={{ color: "#c8d8ea", fontSize: "34px" }}>담긴 상품이 없습니다</div>
+                            <div style={{ color: "#c8d8ea", fontSize: "34px" }}>?닿릿 ?곹뭹??놁뒿?덈떎</div>
                         ) : (
                             cartItems.map((it) => (
                                 <div
@@ -2400,7 +2439,7 @@ function MenuOptionPageContent() {
                                             return src ? (
                                                 <img src={src} alt={it.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                                             ) : (
-                                                <div style={{ fontSize: "10px", color: "#999" }}>이미지</div>
+                                                <div style={{ fontSize: "10px", color: "#999" }}>?대?吏</div>
                                             );
                                         })()}
                                     </div>
@@ -2411,8 +2450,7 @@ function MenuOptionPageContent() {
                                         </div>
                                         <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
                                             <div style={{ fontWeight: "700", fontSize: "20px", color: "#002e55" }}>
-                                                {it.price.toLocaleString()}원
-                                            </div>
+                                                {it.price.toLocaleString()}??                                            </div>
                                             <button
                                                 onClick={() => handleCartDeleteClick(it.id)}
                                                 style={{
@@ -2430,7 +2468,7 @@ function MenuOptionPageContent() {
                                                     justifyContent: "center",
                                                 }}
                                             >
-                                                ×
+                                                횞
                                             </button>
                                         </div>
                                     </div>
@@ -2442,8 +2480,7 @@ function MenuOptionPageContent() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0, minWidth: "262px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
                             <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                                총 수량 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}개
-                            </div>
+                                珥??섎웾 | {cartItems.reduce((sum, it) => sum + it.qty, 0)}媛?                            </div>
                             <button
                                 onClick={handleClearCartClick}
                                 disabled={cartItems.length === 0}
@@ -2459,13 +2496,12 @@ function MenuOptionPageContent() {
                                     fontWeight: "700",
                                 }}
                             >
-                                전체 취소
+                                ?꾩껜 痍⑥냼
                             </button>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "20px" }}>
                             <div style={{ fontSize: "22px", fontWeight: "700", color: "#000000", whiteSpace: "nowrap" }}>
-                                총 금액 | {cartTotal.toLocaleString()}원
-                            </div>
+                                珥?湲덉븸 | {cartTotal.toLocaleString()}??                            </div>
                             <button
                                 onClick={handleOrderClick}
                                 disabled={cartItems.length === 0}
@@ -2481,7 +2517,7 @@ function MenuOptionPageContent() {
                                     fontWeight: "700",
                                 }}
                             >
-                                결제하기
+                                寃곗젣?섍린
                             </button>
                         </div>
                     </div>
@@ -2499,4 +2535,5 @@ export default function MenuOptionPage() {
         </Suspense>
     );
 }
+
 
