@@ -64,6 +64,7 @@ function MenuOptionPageContent() {
     const shouldListenRef = useRef(true); // 자동 재시작 제어
     const restartingRef = useRef(false); // 재시작 중인지 추적
     const lastHandledVoiceRef = useRef({ text: "", at: 0 });
+    const introStartedRef = useRef(false); // 진입 안내 중복 재생 방지
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -145,8 +146,11 @@ function MenuOptionPageContent() {
         }
     }, [searchParams]);
 
-    // 페이지 진입 직후 음성 안내 → 안내 종료 후 1초 뒤 음성 인식 시작 (인식은 이 타이밍까지 시작하지 않음)
+    // 페이지 진입 직후 음성 안내 → 안내 종료 후 1초 뒤 음성 인식 시작 (페이지 마운트당 1회만 실행)
     useEffect(() => {
+        if (introStartedRef.current) return;
+        introStartedRef.current = true;
+
         let cancelled = false;
 
         if (typeof window !== "undefined") {
@@ -168,7 +172,8 @@ function MenuOptionPageContent() {
         isSpeakingRef.current = true;
 
         const runIntro = async () => {
-            const currentMenuName = decodeURIComponent(searchParams.get("menuName") || menuName || "");
+            const sp = searchParamsRef.current;
+            const currentMenuName = decodeURIComponent(sp.get("menuName") || "");
             const currentMenuNameNormalized = currentMenuName.replace(/\s+/g, "").toLowerCase();
             const isCurrentBurger = currentMenuNameNormalized.includes("버거") || currentMenuNameNormalized.includes("burger");
             const isCurrentDrink = !isCurrentBurger &&
@@ -205,7 +210,7 @@ function MenuOptionPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [searchParams, menuName]);
+    }, []);
 
     // 음성 인식 (진입 안내가 끝날 때까지 시작하지 않음 — shouldListenRef는 intro effect에서 true로 전환)
     useEffect(() => {
