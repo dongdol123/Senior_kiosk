@@ -1757,7 +1757,7 @@ function MenuPageContent() {
                                     <div style={{ color: "#8aa0c5", fontWeight: 700 }}>음료 이미지</div>
                                 );
                             })()}
-                            <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                            <div style={{ fontSize: "3rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
                                 {selectedDrinkMenu.name}
                             </div>
                         </div>
@@ -1773,7 +1773,7 @@ function MenuPageContent() {
                                 boxShadow: "none",
                             }}
                         >
-                            <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
+                            <div style={{ fontSize: "2.4rem", fontWeight: "bold", textAlign: "left" }}>
                                 사이즈를 선택하세요
                             </div>
                             {[
@@ -1790,7 +1790,7 @@ function MenuPageContent() {
                                     }}
                                     style={{
                                         height: "75px",
-                                        fontSize: "1.5rem",
+                                        fontSize: "1.7rem",
                                         fontWeight: "bold",
                                         backgroundColor: activeDrinkSizeButton === size.name ? "#c8d8ea" : "#f5f8fc",
                                         color: "#000",
@@ -1808,7 +1808,7 @@ function MenuPageContent() {
                                     }}
                                 >
                                     <div style={{ fontWeight: 700, lineHeight: 1.2 }}>{size.label}</div>
-                                    <span style={{ fontWeight: 800, fontSize: "1.3rem" }}>{size.price.toLocaleString()}원</span>
+                                    <span style={{ fontWeight: 800, fontSize: "1.5rem", color: "#002e55" }}>{size.price.toLocaleString()}원</span>
                                 </button>
                             ))}
                             <button
@@ -1903,7 +1903,7 @@ function MenuPageContent() {
                                     />
                                 ) : null;
                             })()}
-                            <div style={{ fontSize: "2.5rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
+                            <div style={{ fontSize: "3rem", fontWeight: "800", color: "#111", textAlign: "center" }}>
                                 {selectedSideMenu.name}
                             </div>
                         </div>
@@ -1919,7 +1919,7 @@ function MenuPageContent() {
                                 boxShadow: "none",
                             }}
                         >
-                            <div style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "left" }}>
+                            <div style={{ fontSize: "2.4rem", fontWeight: "bold", textAlign: "left" }}>
                                 사이즈를 선택하세요
                             </div>
                             {[
@@ -1940,7 +1940,7 @@ function MenuPageContent() {
                                     }}
                                     style={{
                                         height: "75px",
-                                        fontSize: "1.5rem",
+                                        fontSize: "1.7rem",
                                         fontWeight: "bold",
                                         backgroundColor: activeSideSizeButton === size.name ? "#c8d8ea" : "#f5f8fc",
                                         color: "#000",
@@ -1958,7 +1958,7 @@ function MenuPageContent() {
                                     }}
                                 >
                                     <div style={{ fontWeight: 700, lineHeight: 1.2 }}>{size.label}</div>
-                                    <span style={{ fontWeight: 800, fontSize: "1.3rem" }}>{size.price.toLocaleString()}원</span>
+                                    <span style={{ fontWeight: 800, fontSize: "1.5rem", color: "#002e55" }}>{size.price.toLocaleString()}원</span>
                                 </button>
                             ))}
                             <button

@@ -1276,7 +1276,7 @@ function MenuOptionPageContent() {
                             >
                                 <div
                                     style={{
-                                        fontSize: "2.5rem",
+                                        fontSize: "3rem",
                                         fontWeight: "800",
                                         color: "#111",
                                         lineHeight: "1.2",
@@ -1286,7 +1286,7 @@ function MenuOptionPageContent() {
                                 </div>
                                 <div
                                     style={{
-                                        fontSize: "2rem",
+                                        fontSize: "2.2rem",
                                         fontWeight: "700",
                                         color: "#002e55",
                                         lineHeight: "1.2",
@@ -2534,5 +2534,3 @@ export default function MenuOptionPage() {
         </Suspense>
     );
 }
-
-
