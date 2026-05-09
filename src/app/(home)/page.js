@@ -39,9 +39,7 @@ export default function HomePage() {
 
   function goKioskVoice(orderType) {
     setActiveOrderType(orderType);
-    setTimeout(() => {
-      router.push(`/menu?entry=voice&orderType=${orderType}`);
-    }, 120);
+    router.push(`/menu?entry=voice&orderType=${orderType}`);
   }
 
   const blue = "#002e55";

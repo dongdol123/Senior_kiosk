@@ -1285,7 +1285,7 @@ function MenuPageContent() {
                                             fontSize: 12,
                                         }}
                                     >
-                                        ""
+                                        &nbsp;
                                     </div>
                                 ))}
                             </>
