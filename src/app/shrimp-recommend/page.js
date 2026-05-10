@@ -6,6 +6,7 @@ import { isTtsActive, speakKorean } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
+import { STATIC_MENU } from "../utils/kioskMenuCatalog";
 
 function ShrimpRecommendPageContent() {
     const router = useRouter();
@@ -24,22 +25,48 @@ function ShrimpRecommendPageContent() {
         router.push(path);
     }
 
-    // 새우 관련 메뉴만 필터링 (칠리 새우버거, 크림 새우버거, 새우버거)
+    // 칠리 새우버거 / 크림 새우버거 두 개만 추천 (일반 새우버거 제외)
     useEffect(() => {
+        const isChiliShrimp = (n) => n.includes("새우") && n.includes("칠리");
+        const isCreamShrimp = (n) => n.includes("새우") && (n.includes("크림") || /cream/i.test(n));
+
         async function loadShrimpMenus() {
+            let serverMenus = [];
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/menu/search?keyword=새우`);
                 const data = await res.json();
-                if (res.ok && data.menus) {
-                    // 새우버거 계열만 필터링
-                    const filtered = data.menus.filter(m =>
-                        m.name.includes("새우")
-                    );
-                    setShrimpMenus(filtered);
+                if (res.ok && data?.menus?.length) {
+                    serverMenus = data.menus.filter((m) => {
+                        const n = m?.name || "";
+                        return isChiliShrimp(n) || isCreamShrimp(n);
+                    });
                 }
             } catch (e) {
                 console.error('Failed to load shrimp menus:', e);
             }
+
+            // 부족하면 카탈로그(static)에서 채움
+            const fallback = STATIC_MENU.filter((m) =>
+                m.id === "bur-chili-shrimp" || m.id === "bur-truffle-shrimp"
+            );
+            const byKey = new Map();
+            for (const m of [...serverMenus, ...fallback]) {
+                const key = (m.name || "").replace(/\s+/g, "").toLowerCase();
+                if (!byKey.has(key)) byKey.set(key, m);
+            }
+
+            // 칠리 → 크림 순으로 정렬, 두 개만
+            const merged = Array.from(byKey.values())
+                .filter((m) => isChiliShrimp(m.name || "") || isCreamShrimp(m.name || ""))
+                .sort((a, b) => {
+                    const ac = isChiliShrimp(a.name || "");
+                    const bc = isChiliShrimp(b.name || "");
+                    if (ac && !bc) return -1;
+                    if (!ac && bc) return 1;
+                    return 0;
+                })
+                .slice(0, 2);
+            setShrimpMenus(merged);
         }
         loadShrimpMenus();
 
@@ -55,7 +82,7 @@ function ShrimpRecommendPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        const message = "원하시는 메뉴를 골라주세요";
+        const message = "칠리 새우버거와 크림 새우버거를 추천해 드릴게요. 원하시는 메뉴가 있으신가요?";
         setAssistantMessage(message);
         speakKorean(message).catch(() => {});
     }, []);
@@ -114,15 +141,7 @@ function ShrimpRecommendPageContent() {
                 }
             }
 
-            if (/새우버거|새우|shrimp/.test(normalized)) {
-                const menu = shrimpMenus.find(m => m.name.includes("새우버거") && !m.name.includes("칠리") && !m.name.includes("크림"));
-                if (menu) {
-                    handleSelectMenu(menu);
-                    return;
-                }
-            }
-
-            // 첫번째, 두번째 선택
+            // 첫번째, 두번째 선택 (칠리 → 크림 순)
             if (/첫|일|1|one/.test(normalized)) {
                 if (shrimpMenus[0]) {
                     handleSelectMenu(shrimpMenus[0]);
@@ -132,12 +151,6 @@ function ShrimpRecommendPageContent() {
             if (/두|둘|2|two/.test(normalized)) {
                 if (shrimpMenus[1]) {
                     handleSelectMenu(shrimpMenus[1]);
-                    return;
-                }
-            }
-            if (/세|셋|3|three/.test(normalized)) {
-                if (shrimpMenus[2]) {
-                    handleSelectMenu(shrimpMenus[2]);
                     return;
                 }
             }

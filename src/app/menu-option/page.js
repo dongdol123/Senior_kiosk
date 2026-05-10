@@ -148,11 +148,14 @@ function MenuOptionPageContent() {
     const selectedAdditionalSideRef = useRef("");
     const selectedAdditionalSideSizeRef = useRef("");
 
+    const cartItemsRef = useRef([]);
+
     useEffect(() => { activeOptionButtonRef.current = activeOptionButton; }, [activeOptionButton]);
     useEffect(() => { selectedAdditionalDrinkRef.current = selectedAdditionalDrink; }, [selectedAdditionalDrink]);
     useEffect(() => { selectedAdditionalDrinkSizeRef.current = selectedAdditionalDrinkSize; }, [selectedAdditionalDrinkSize]);
     useEffect(() => { selectedAdditionalSideRef.current = selectedAdditionalSide; }, [selectedAdditionalSide]);
     useEffect(() => { selectedAdditionalSideSizeRef.current = selectedAdditionalSideSize; }, [selectedAdditionalSideSize]);
+    useEffect(() => { cartItemsRef.current = cartItems; }, [cartItems]);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -608,6 +611,19 @@ function MenuOptionPageContent() {
             if (isCurrentBurger) {
                 console.log("음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
 
+                // "이대로 담아줘 / 이대로 주문 / 그대로 담아줘" — 현재 구성 그대로 카트에 담고 메뉴로 복귀
+                const orderAsIsPattern = /이대로|그대로|이걸로|이거로|지금이대로|지금구성|지금구성그대로/;
+                const orderActionPattern = /담아|담아줘|담아주세요|담을게|담아둬|담아라|주문|주문해|주문해줘|주문할게|결제까진아니|장바구니/;
+                if (orderAsIsPattern.test(normalized) && (orderActionPattern.test(normalized) || /^이대로$|^그대로$/.test(normalized))) {
+                    try { recognition.stop(); } catch (e) { }
+                    setAssistantMessage("장바구니에 담을게요.");
+                    isSpeakingRef.current = true;
+                    speakKorean("장바구니에 담을게요.").catch((err) => console.error("음성 안내 오류:", err));
+                    setTimeout(() => { isSpeakingRef.current = false; }, 1200);
+                    setTimeout(() => { handleOrder(); }, 200);
+                    return;
+                }
+
                 // === 음료/사이드 팝업 음성 흐름 ===
                 const drinkNames = catalogItems.filter((m) => inferMenuCategory(m) === "drink").map((m) => m.name);
                 const sideNames = catalogItems.filter((m) => inferMenuCategory(m) === "side").map((m) => m.name);
@@ -773,9 +789,18 @@ function MenuOptionPageContent() {
                     return;
                 }
 
-                // (E) 음료 팝업 트리거 ("음료는 뭐있어?" 등) — 음료 추가가 이미 있으면 무시
-                const drinkPickerPattern = /(음료).*(뭐|있|어떤|보여|알려|뭔가|종류|선택|추천|골라|주세요)|^음료뭐|^음료종류|^음료목록|^음료보여|^음료추천/;
-                if (drinkPickerPattern.test(normalized) && !hasAdditionalDrink) {
+                // === 음료/사이드 팝업 열기 트리거 ===
+                // "음료" 또는 "사이드" 단어 + 요청/질문 의미 단어가 같이 나오면 팝업 열기
+                const askWordRegex = /뭐|있|있어|있나|있어요|어떤|보여|보여줘|알려|알려줘|뭔가|뭔지|종류|선택|선택해|추천|골라|골라줘|주세요|줘|줘봐|줄래|추가|추가해|꺼내|꺼내줘|띄워|띄워줘|올려|올려줘|보고싶|먹고싶/;
+                const drinkWordRegex = /음료|드링크|마실|마시/;
+                const sideWordRegex = /사이드|side/;
+
+                const liveCart = cartItemsRef.current || [];
+                const liveHasDrink = liveCart.some((it) => it.id?.startsWith("extra-drink-"));
+                const liveHasSide = liveCart.some((it) => it.id?.startsWith("extra-side-"));
+
+                // (E) 음료 팝업 트리거 — 음료 추가가 이미 있으면 무시
+                if (drinkWordRegex.test(normalized) && askWordRegex.test(normalized) && !liveHasDrink) {
                     try { recognition.stop(); } catch (e) { }
                     setActiveOptionButton("drink-add");
                     setSelectedAdditionalDrink("");
@@ -796,8 +821,7 @@ function MenuOptionPageContent() {
                 }
 
                 // (F) 사이드 팝업 트리거
-                const sidePickerPattern = /(사이드).*(뭐|있|어떤|보여|알려|뭔가|종류|선택|추천|골라|주세요)|^사이드뭐|^사이드종류|^사이드목록|^사이드보여|^사이드추천/;
-                if (sidePickerPattern.test(normalized) && !hasAdditionalSide) {
+                if (sideWordRegex.test(normalized) && askWordRegex.test(normalized) && !liveHasSide) {
                     try { recognition.stop(); } catch (e) { }
                     setActiveOptionButton("side-add");
                     setSelectedAdditionalSide("");

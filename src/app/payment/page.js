@@ -72,29 +72,34 @@ function PaymentPageContent() {
         }, 120);
     };
 
+    function clearOrderFlowFlags() {
+        try {
+            if (typeof window !== "undefined") {
+                window.sessionStorage.removeItem("menuGreetingPlayed");
+            }
+        } catch { }
+    }
+
     // 카드 결제 처리
     const handleCardPayment = async () => {
         console.log("카드 결제 처리 시작");
-        const msg = "카드 결제를 선택하셨습니다. 결제가 완료되었습니다.";
+        const msg = "카드를 넣어주세요.";
         setAssistantMessage(msg);
-        console.log("음성 합성 시작");
+        shouldListenRef.current = false;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
 
-        // 음성 합성과 페이지 이동을 동시에 시작
-        const speakPromise = speakKorean(msg).catch(error => {
+        const speakPromise = speakKorean(msg).catch((error) => {
             console.error("음성 합성 에러:", error);
         });
 
-        // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
+        // 안내 음성이 충분히 들리도록 약간 대기 후 홈 이동
         setTimeout(() => {
-            console.log("타임아웃으로 페이지 이동");
+            clearOrderFlowFlags();
             navigateTo(entry === "qr" ? "/qr-order" : "/");
-        }, 1000);
+        }, 1800);
 
-        // 음성이 끝나면 즉시 페이지 이동 시도
         try {
             await speakPromise;
-            console.log("음성 합성 완료");
-            // 음성이 끝났어도 이미 타임아웃으로 이동했으므로 추가 이동은 하지 않음
         } catch (error) {
             console.error("음성 합성 대기 중 에러:", error);
         }
@@ -103,26 +108,22 @@ function PaymentPageContent() {
     // 페이 결제 처리
     const handlePayPayment = async () => {
         console.log("페이 결제 처리 시작");
-        const msg = "페이 결제를 선택하셨습니다. 결제가 완료되었습니다.";
+        const msg = "바코드를 찍어주세요.";
         setAssistantMessage(msg);
-        console.log("음성 합성 시작");
+        shouldListenRef.current = false;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
 
-        // 음성 합성과 페이지 이동을 동시에 시작
-        const speakPromise = speakKorean(msg).catch(error => {
+        const speakPromise = speakKorean(msg).catch((error) => {
             console.error("음성 합성 에러:", error);
         });
 
-        // 1초 후에 강제로 페이지 이동 (음성이 끝나든 말든)
         setTimeout(() => {
-            console.log("타임아웃으로 페이지 이동");
+            clearOrderFlowFlags();
             navigateTo(entry === "qr" ? "/qr-order" : "/");
-        }, 1000);
+        }, 1800);
 
-        // 음성이 끝나면 즉시 페이지 이동 시도
         try {
             await speakPromise;
-            console.log("음성 합성 완료");
-            // 음성이 끝났어도 이미 타임아웃으로 이동했으므로 추가 이동은 하지 않음
         } catch (error) {
             console.error("음성 합성 대기 중 에러:", error);
         }

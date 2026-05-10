@@ -658,27 +658,67 @@ function MenuPageContent() {
 
             // 메뉴 이름 직접 말하기 - 가장 먼저 체크 (부가 설명 없이 바로 담기)
             let matchedMenu = null;
-            
-            // 1. 정확한 메뉴 이름 매칭 (예: "불고기버거", "치킨버거")
-            matchedMenu = MENU_ITEMS.find((item) => {
-                const menuNameNormalized = item.name.replaceAll(" ", "").toLowerCase();
-                // 정확히 일치하거나 메뉴 이름이 사용자 입력에 포함되어 있는지 확인
-                if (normalized === menuNameNormalized || normalized.includes(menuNameNormalized)) {
-                    return true;
+
+            // 0. 변종 우선 매칭 (변종 키워드를 일반(불고기버거/새우버거)보다 먼저 잡기)
+            //    - 불고기 계열: 치즈/더블/베이컨/버섯·머쉬룸·머시룸·mushroom/마늘·garlic
+            //    - 새우 계열: 칠리/크림·cream
+            const findById = (id) => MENU_ITEMS.find((m) => m.id === id);
+            const isBulgogiContext = /불고기|bulgogi/.test(normalized);
+            const isShrimpContext = /새우|shrimp/.test(normalized);
+            if (isBulgogiContext) {
+                if (/치즈|cheese/.test(normalized)) matchedMenu = findById("bur-mozza");
+                else if (/더블|double/.test(normalized)) matchedMenu = findById("bur-triple");
+                else if (/베이컨|bacon/.test(normalized)) matchedMenu = findById("bur-bacon");
+                else if (/버섯|머쉬룸|머시룸|mushroom/.test(normalized)) matchedMenu = findById("bur-mush");
+                else if (/마늘|galic|garlic/.test(normalized)) matchedMenu = findById("bur-garlic");
+                else if (/^(불고기|불고기버거|불버거|bulgogi)$/.test(normalized) || /불고기버거/.test(normalized)) {
+                    matchedMenu = findById("bur-bulgogi");
                 }
-                // 사용자 입력이 메뉴 이름에 포함되어 있는지 확인 (예: "불고기" -> "불고기버거")
-                if (menuNameNormalized.includes(normalized) && normalized.length >= 2) {
-                    return true;
+            } else if (isShrimpContext) {
+                if (/칠리|chili/.test(normalized)) matchedMenu = findById("bur-chili-shrimp");
+                else if (/크림|cream/.test(normalized)) matchedMenu = findById("bur-truffle-shrimp");
+                else if (/^(새우|새우버거|shrimp)$/.test(normalized) || /새우버거/.test(normalized)) {
+                    matchedMenu = findById("bur-shrimp");
                 }
-                return false;
-            });
+            }
+            // 치즈 단독 발화 시(불고기 컨텍스트 없이) 치즈 불고기버거로 매칭
+            if (!matchedMenu && /^(치즈|치즈버거|치즈불고기|치즈불고기버거|cheese)$/.test(normalized)) {
+                matchedMenu = findById("bur-mozza");
+            }
+
+            // 1. 정확한 메뉴 이름 매칭 (긴 이름부터 우선해서 변종이 먼저 잡히도록)
+            if (!matchedMenu) {
+                const sortedByName = [...MENU_ITEMS].sort((a, b) => {
+                    const an = (a.name || "").replace(/\s+/g, "").length;
+                    const bn = (b.name || "").replace(/\s+/g, "").length;
+                    return bn - an;
+                });
+                matchedMenu = sortedByName.find((item) => {
+                    const menuNameNormalized = item.name.replaceAll(" ", "").toLowerCase();
+                    // 정확히 일치하거나 메뉴 이름이 사용자 입력에 포함되어 있는지 확인
+                    if (normalized === menuNameNormalized || normalized.includes(menuNameNormalized)) {
+                        return true;
+                    }
+                    // 사용자 입력이 메뉴 이름에 포함되어 있는지 확인 (예: "불고기" -> "불고기버거")
+                    if (menuNameNormalized.includes(normalized) && normalized.length >= 2) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
 
             // 2. 키워드로 매칭 (예: "불고기" -> "불고기버거")
+            //    단, 이미 변종 키워드(치즈/더블/베이컨/버섯/마늘/칠리/크림)가 발화된 경우엔
+            //    기본 "불고기버거"/"새우버거"로 빠지지 않도록 가드
             if (!matchedMenu) {
+                const hasBulgogiVariantWord = /치즈|cheese|더블|double|베이컨|bacon|버섯|머쉬룸|머시룸|mushroom|마늘|garlic|galic/.test(normalized);
+                const hasShrimpVariantWord = /칠리|chili|크림|cream/.test(normalized);
                 matchedMenu = MENU_ITEMS.find((item) => {
+                    // 변종 단어가 같이 들어왔는데 후보가 기본 불고기버거/새우버거면 스킵
+                    if (item.id === "bur-bulgogi" && hasBulgogiVariantWord) return false;
+                    if (item.id === "bur-shrimp" && hasShrimpVariantWord) return false;
                     if (item.keywords && item.keywords.some((kw) => {
                         const kwNormalized = kw.replaceAll(" ", "").toLowerCase();
-                        // 키워드가 정확히 일치하거나 포함되어 있는지 확인
                         return normalized === kwNormalized || normalized.includes(kwNormalized);
                     })) {
                         return true;
@@ -905,8 +945,20 @@ function MenuPageContent() {
         if (voiceOrderMode) {
             const startVoiceFlow = async () => {
                 if (!mountedRef.current || !shouldListenRef.current) return;
-                if (!hasPlayedInitialGreetingRef.current) {
+                // 한 주문 흐름(포장/매장 선택 ~ 결제완료)에서 1회만 안내되도록 sessionStorage 사용
+                let alreadyPlayed = false;
+                try {
+                    if (typeof window !== "undefined") {
+                        alreadyPlayed = window.sessionStorage.getItem("menuGreetingPlayed") === "1";
+                    }
+                } catch { }
+                if (!hasPlayedInitialGreetingRef.current && !alreadyPlayed) {
                     hasPlayedInitialGreetingRef.current = true;
+                    try {
+                        if (typeof window !== "undefined") {
+                            window.sessionStorage.setItem("menuGreetingPlayed", "1");
+                        }
+                    } catch { }
                     const greeting = "무엇을 주문하시겠어요?";
                     setAssistantMessage(greeting);
                     isSpeakingRef.current = true;
@@ -917,6 +969,8 @@ function MenuPageContent() {
                     } finally {
                         isSpeakingRef.current = false;
                     }
+                } else {
+                    hasPlayedInitialGreetingRef.current = true;
                 }
 
                 if (!mountedRef.current || !shouldListenRef.current || ordered) return;

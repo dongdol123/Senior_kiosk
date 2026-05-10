@@ -10,6 +10,12 @@ export default function HomePage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
+        // 새 주문 시작: 1회 안내 플래그 리셋
+        window.sessionStorage.removeItem("menuGreetingPlayed");
+      } catch (e) {
+        console.log("sessionStorage 정리 중 오류:", e);
+      }
+      try {
         const SpeechRecognition =
           window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition && window.currentRecognition) {
