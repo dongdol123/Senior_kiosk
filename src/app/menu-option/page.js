@@ -612,10 +612,18 @@ function MenuOptionPageContent() {
             if (isCurrentBurger) {
                 console.log("음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
 
-                // "이대로 담아줘 / 이대로 주문 / 그대로 담아줘" — 현재 구성 그대로 카트에 담고 메뉴로 복귀
-                const orderAsIsPattern = /이대로|그대로|이걸로|이거로|지금이대로|지금구성|지금구성그대로/;
-                const orderActionPattern = /담아|담아줘|담아주세요|담을게|담아둬|담아라|주문|주문해|주문해줘|주문할게|결제까진아니|장바구니/;
-                if (orderAsIsPattern.test(normalized) && (orderActionPattern.test(normalized) || /^이대로$|^그대로$/.test(normalized))) {
+                // "이대로/그대로/이렇게/이걸로 담아줘", "장바구니에 담아줘", "이렇게 주문할게" 등
+                // — 현재 구성 그대로 카트에 담고 메뉴로 복귀
+                const orderAsIsPattern = /이대로|그대로|이걸로|이거로|이렇게|이렇게요|지금이대로|지금구성|지금구성그대로/;
+                const orderActionPattern = /담아|담아줘|담아주세요|담을게|담아둬|담아라|담아주|넣어|넣어줘|주문|주문해|주문해줘|주문할게|결제까진아니/;
+                // 장바구니 맥락은 "담아/넣어"에만 반응 (추가는 음료/사이드 팝업 트리거와 겹치므로 제외)
+                const cartContextPattern = /장바구니|카트/;
+                const cartContextActionPattern = /담아|담아줘|담아주세요|담을게|담아둬|담아라|담아주|넣어|넣어줘/;
+                const triggerOrderAsIs =
+                    (orderAsIsPattern.test(normalized) && orderActionPattern.test(normalized)) ||
+                    (cartContextPattern.test(normalized) && cartContextActionPattern.test(normalized)) ||
+                    /^이대로$|^그대로$|^이렇게$|^이걸로$/.test(normalized);
+                if (triggerOrderAsIs) {
                     try { recognition.stop(); } catch (e) { }
                     setAssistantMessage("장바구니에 담을게요.");
                     isSpeakingRef.current = true;

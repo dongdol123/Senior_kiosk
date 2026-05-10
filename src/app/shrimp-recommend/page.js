@@ -82,9 +82,11 @@ function ShrimpRecommendPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        const message = "칠리 새우버거와 크림 새우버거를 추천해 드릴게요. 원하시는 메뉴가 있으신가요?";
+        const message =
+            "새우가 들어간 버거는 칠리 새우버거랑 크림 새우버거가 있어요. 원하시는 메뉴가 있으신가요?";
         setAssistantMessage(message);
-        speakKorean(message).catch(() => {});
+        // TTS 끝까지 재생되도록 await (이후 음성 인식 시작 시 자기 음성 인식되는 것 방지)
+        speakKorean(message).catch(() => { });
     }, []);
 
     // 음성 인식으로 메뉴 선택
@@ -106,8 +108,9 @@ function ShrimpRecommendPageContent() {
         recognition.onstart = () => setIsListening(true);
         recognition.onend = () => {
             setIsListening(false);
-            if (mountedRef.current && shouldListenRef.current) {
+            if (mountedRef.current && shouldListenRef.current && !isTtsActive()) {
                 setTimeout(() => {
+                    if (!mountedRef.current || !shouldListenRef.current || isTtsActive()) return;
                     try { recognition.start(); } catch { }
                 }, 500);
             }
@@ -122,48 +125,69 @@ function ShrimpRecommendPageContent() {
             }
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
-            
-            // 칠리 선택
+
+            // 칠리 새우버거
             if (/칠리|매운|매콤|chili/.test(normalized)) {
-                const menu = shrimpMenus.find(m => m.name.includes("칠리"));
+                const menu = shrimpMenus.find((m) => (m.name || "").includes("칠리"));
                 if (menu) {
                     handleSelectMenu(menu);
                     return;
                 }
             }
 
-            // 크림 선택
-            if (/크림|cream/.test(normalized)) {
-                const menu = shrimpMenus.find(m => m.name.includes("크림"));
+            // 크림 새우버거
+            if (/크림|cream|크리미|크리림/.test(normalized)) {
+                const menu = shrimpMenus.find((m) => (m.name || "").includes("크림"));
                 if (menu) {
                     handleSelectMenu(menu);
                     return;
                 }
             }
 
-            // 첫번째, 두번째 선택 (칠리 → 크림 순)
-            if (/첫|일|1|one/.test(normalized)) {
+            // 첫번째, 두번째 선택 (칠리 → 크림 순으로 정렬되어 있음)
+            if (/첫번째|첫째|첫|일번|1번|^일$|^1$|one/.test(normalized)) {
                 if (shrimpMenus[0]) {
                     handleSelectMenu(shrimpMenus[0]);
                     return;
                 }
             }
-            if (/두|둘|2|two/.test(normalized)) {
+            if (/두번째|둘째|두|이번|2번|^이$|^2$|^둘$|two/.test(normalized)) {
                 if (shrimpMenus[1]) {
                     handleSelectMenu(shrimpMenus[1]);
                     return;
                 }
+            }
+
+            // 인식 실패 시 안내
+            if (/뭐|있|어떤|메뉴|추천|골라|골라줘|뭐있/.test(normalized)) {
+                const reMsg = "칠리 새우버거랑 크림 새우버거 중 골라주세요.";
+                setAssistantMessage(reMsg);
+                try { recognition.stop(); } catch { }
+                shouldListenRef.current = false;
+                await speakKorean(reMsg).catch(() => { });
+                shouldListenRef.current = true;
+                setTimeout(() => {
+                    if (mountedRef.current && shouldListenRef.current && !isTtsActive()) {
+                        try { recognition.start(); } catch { }
+                    }
+                }, 400);
+                return;
             }
         };
 
         recognitionRef.current = recognition;
         registerVoiceSession(recognition);
 
-        try {
-            recognition.start();
-        } catch (e) {
-            // 권한 오류는 무시
-        }
+        // TTS 재생 중이면 끝난 뒤에 시작 (자기 음성이 인식되는 것 방지)
+        const tryStart = () => {
+            if (!mountedRef.current || !shouldListenRef.current) return;
+            if (isTtsActive()) {
+                setTimeout(tryStart, 300);
+                return;
+            }
+            try { recognition.start(); } catch (e) { /* 권한 오류는 무시 */ }
+        };
+        tryStart();
 
         return () => {
             mountedRef.current = false;
