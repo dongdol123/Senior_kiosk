@@ -268,14 +268,14 @@ function PhoneInputPageContent() {
             return;
         }
 
-        // 결제 페이지로 이동
+        // 결제 페이지로 이동 (단일 결제 페이지 = /points)
         const cartData = searchParams.get("cart");
-        navigateTo(`/payment?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${currentPhone}&${entryQuery(entry)}`);
+        navigateTo(`/points?cart=${cartData}&total=${total}&orderType=${orderType}&phone=${currentPhone}&${entryQuery(entry)}`);
     }
 
     function handleBack() {
         const cartData = searchParams.get("cart");
-        navigateTo(`/points?cart=${cartData}&total=${total}&orderType=${orderType}&${entryQuery(entry)}`);
+        navigateTo(`/menu?cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
     }
 
     const shell = (

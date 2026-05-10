@@ -795,7 +795,7 @@ function MenuPageContent() {
                 const cartData = encodeURIComponent(JSON.stringify(currentCartItems));
                 const orderType = searchParams.get("orderType") || "takeout";
                 stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
-                router.push(`/payment?cart=${cartData}&total=${cartTotal}&orderType=${orderType}&${entryQuery(entry)}`);
+                router.push(`/points?cart=${cartData}&total=${cartTotal}&orderType=${orderType}&${entryQuery(entry)}`);
                 return;
             }
 
