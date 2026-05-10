@@ -19,6 +19,12 @@ function ShrimpRecommendPageContent() {
     const recognitionRef = useRef(null);
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
+    const shrimpMenusRef = useRef([]);
+    const introStartedRef = useRef(false);
+
+    useEffect(() => {
+        shrimpMenusRef.current = shrimpMenus;
+    }, [shrimpMenus]);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef);
@@ -82,11 +88,16 @@ function ShrimpRecommendPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
+        if (introStartedRef.current) return;
+        introStartedRef.current = true;
         const message =
             "새우가 들어간 버거는 칠리 새우버거랑 크림 새우버거가 있어요. 원하시는 메뉴가 있으신가요?";
         setAssistantMessage(message);
-        // TTS 끝까지 재생되도록 await (이후 음성 인식 시작 시 자기 음성 인식되는 것 방지)
-        speakKorean(message).catch(() => { });
+        // 페이지 진입 직후 즉시 안내 (브라우저 TTS fallback이 다른 cleanup에 의해 취소되지 않도록 한 프레임 대기)
+        const timer = setTimeout(() => {
+            try { speakKorean(message).catch(() => { }); } catch { }
+        }, 30);
+        return () => { clearTimeout(timer); };
     }, []);
 
     // 음성 인식으로 메뉴 선택
@@ -125,10 +136,11 @@ function ShrimpRecommendPageContent() {
             }
             const transcript = event.results[0][0].transcript || "";
             const normalized = transcript.toLowerCase().replace(/\s/g, "");
+            const liveMenus = shrimpMenusRef.current || [];
 
             // 칠리 새우버거
             if (/칠리|매운|매콤|chili/.test(normalized)) {
-                const menu = shrimpMenus.find((m) => (m.name || "").includes("칠리"));
+                const menu = liveMenus.find((m) => (m.name || "").includes("칠리"));
                 if (menu) {
                     handleSelectMenu(menu);
                     return;
@@ -137,7 +149,7 @@ function ShrimpRecommendPageContent() {
 
             // 크림 새우버거
             if (/크림|cream|크리미|크리림/.test(normalized)) {
-                const menu = shrimpMenus.find((m) => (m.name || "").includes("크림"));
+                const menu = liveMenus.find((m) => (m.name || "").includes("크림"));
                 if (menu) {
                     handleSelectMenu(menu);
                     return;
@@ -146,14 +158,14 @@ function ShrimpRecommendPageContent() {
 
             // 첫번째, 두번째 선택 (칠리 → 크림 순으로 정렬되어 있음)
             if (/첫번째|첫째|첫|일번|1번|^일$|^1$|one/.test(normalized)) {
-                if (shrimpMenus[0]) {
-                    handleSelectMenu(shrimpMenus[0]);
+                if (liveMenus[0]) {
+                    handleSelectMenu(liveMenus[0]);
                     return;
                 }
             }
             if (/두번째|둘째|두|이번|2번|^이$|^2$|^둘$|two/.test(normalized)) {
-                if (shrimpMenus[1]) {
-                    handleSelectMenu(shrimpMenus[1]);
+                if (liveMenus[1]) {
+                    handleSelectMenu(liveMenus[1]);
                     return;
                 }
             }
@@ -203,7 +215,7 @@ function ShrimpRecommendPageContent() {
             } catch { }
             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch { }
         };
-    }, [shrimpMenus]);
+    }, []);
 
     function handleBack() {
         const cartData = encodeURIComponent(JSON.stringify(cartItems));
