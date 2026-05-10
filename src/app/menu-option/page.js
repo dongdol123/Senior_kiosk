@@ -149,6 +149,7 @@ function MenuOptionPageContent() {
     const selectedAdditionalSideSizeRef = useRef("");
 
     const cartItemsRef = useRef([]);
+    const handleOrderRef = useRef(null);
 
     useEffect(() => { activeOptionButtonRef.current = activeOptionButton; }, [activeOptionButton]);
     useEffect(() => { selectedAdditionalDrinkRef.current = selectedAdditionalDrink; }, [selectedAdditionalDrink]);
@@ -620,7 +621,14 @@ function MenuOptionPageContent() {
                     isSpeakingRef.current = true;
                     speakKorean("장바구니에 담을게요.").catch((err) => console.error("음성 안내 오류:", err));
                     setTimeout(() => { isSpeakingRef.current = false; }, 1200);
-                    setTimeout(() => { handleOrder(); }, 200);
+                    // ref로 최신 handleOrder를 호출 (closure stale 방지)
+                    setTimeout(() => {
+                        if (typeof handleOrderRef.current === "function") {
+                            handleOrderRef.current();
+                        } else {
+                            handleOrder();
+                        }
+                    }, 200);
                     return;
                 }
 
@@ -718,12 +726,22 @@ function MenuOptionPageContent() {
                         }, 600);
                         return;
                     }
-                    if (/취소|닫기|그만|나가|됐어|됐다|안할래/.test(normalized)) {
+                    if (/취소|닫기|그만|나가|됐어|됐다|안할래|안마실|안마셔|안먹을|안먹어|괜찮아|괜찮습|필요없|아니|음료없이/.test(normalized)) {
                         try { recognition.stop(); } catch (e) { }
                         setActiveOptionButton("");
                         setSelectedAdditionalDrink("");
                         setSelectedAdditionalDrinkSize("");
                         setPendingAdditionalDrinkSelection("");
+                        const sayMsg = "음료를 빼고 진행할게요.";
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => {
+                            isSpeakingRef.current = false;
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 600);
                         return;
                     }
                     return;
@@ -779,11 +797,21 @@ function MenuOptionPageContent() {
                         }, 600);
                         return;
                     }
-                    if (/취소|닫기|그만|나가|됐어|됐다|안할래/.test(normalized)) {
+                    if (/취소|닫기|그만|나가|됐어|됐다|안할래|안먹을|안먹어|안먹|괜찮아|괜찮습|필요없|아니|사이드없이/.test(normalized)) {
                         try { recognition.stop(); } catch (e) { }
                         setActiveOptionButton("");
                         setSelectedAdditionalSide("");
                         setSelectedAdditionalSideSize("");
+                        const sayMsg = "사이드를 빼고 진행할게요.";
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => {
+                            isSpeakingRef.current = false;
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 600);
                         return;
                     }
                     return;
@@ -791,9 +819,10 @@ function MenuOptionPageContent() {
 
                 // === 음료/사이드 팝업 열기 트리거 ===
                 // "음료" 또는 "사이드" 단어 + 요청/질문 의미 단어가 같이 나오면 팝업 열기
-                const askWordRegex = /뭐|있|있어|있나|있어요|어떤|보여|보여줘|알려|알려줘|뭔가|뭔지|종류|선택|선택해|추천|골라|골라줘|주세요|줘|줘봐|줄래|추가|추가해|꺼내|꺼내줘|띄워|띄워줘|올려|올려줘|보고싶|먹고싶/;
-                const drinkWordRegex = /음료|드링크|마실|마시/;
-                const sideWordRegex = /사이드|side/;
+                const askWordRegex = /뭐|있|있어|있나|있어요|어떤|보여|보여줘|알려|알려줘|뭔가|뭔지|종류|선택|선택해|추천|골라|골라줘|주세요|줘|줘봐|줄래|추가|추가해|꺼내|꺼내줘|띄워|띄워줘|올려|올려줘|보고싶|먹고싶|마실|마시|먹|할/;
+                // STT가 가끔 "음료"를 "음로/음뇨" 등으로 듣는 케이스 포함
+                const drinkWordRegex = /음료|음료수|음로|음뇨|음표|드링크|마실|마실거|마실것|마시|drink/;
+                const sideWordRegex = /사이드|사이드메뉴|side/;
 
                 const liveCart = cartItemsRef.current || [];
                 const liveHasDrink = liveCart.some((it) => it.id?.startsWith("extra-drink-"));
@@ -1118,6 +1147,11 @@ function MenuOptionPageContent() {
         const orderType = searchParams.get("orderType") || "takeout";
         navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
     }
+
+    // 음성으로 호출되는 경로(closure stale 방지)에서 항상 최신 handleOrder 사용
+    useEffect(() => {
+        handleOrderRef.current = handleOrder;
+    });
 
     function addAdditionalDrinkToCart(drinkName, sizeName) {
         const unitPrice = drinkMediumPrice(drinkName, catalogItems) + (sizeName === "라지" ? 500 : 0);

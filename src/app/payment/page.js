@@ -80,53 +80,36 @@ function PaymentPageContent() {
         } catch { }
     }
 
+    // 안내 음성이 끝난 뒤 홈으로 이동 (TTS 끝까지 재생되도록 보장, 안전장치 6초)
+    async function speakThenGoHome(msg) {
+        setAssistantMessage(msg);
+        shouldListenRef.current = false;
+        isSpeakingRef.current = true;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
+
+        const speakDone = speakKorean(msg).catch((error) => {
+            console.error("음성 합성 에러:", error);
+        });
+        const safetyTimeout = new Promise((resolve) => setTimeout(resolve, 6000));
+        await Promise.race([speakDone, safetyTimeout]);
+        // 마지막 발음이 잘리지 않도록 짧은 여유
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        isSpeakingRef.current = false;
+        clearOrderFlowFlags();
+        navigateTo(entry === "qr" ? "/qr-order" : "/");
+    }
+
     // 카드 결제 처리
     const handleCardPayment = async () => {
         console.log("카드 결제 처리 시작");
-        const msg = "카드를 넣어주세요.";
-        setAssistantMessage(msg);
-        shouldListenRef.current = false;
-        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
-
-        const speakPromise = speakKorean(msg).catch((error) => {
-            console.error("음성 합성 에러:", error);
-        });
-
-        // 안내 음성이 충분히 들리도록 약간 대기 후 홈 이동
-        setTimeout(() => {
-            clearOrderFlowFlags();
-            navigateTo(entry === "qr" ? "/qr-order" : "/");
-        }, 1800);
-
-        try {
-            await speakPromise;
-        } catch (error) {
-            console.error("음성 합성 대기 중 에러:", error);
-        }
+        await speakThenGoHome("카드를 넣어주세요.");
     };
 
     // 페이 결제 처리
     const handlePayPayment = async () => {
         console.log("페이 결제 처리 시작");
-        const msg = "바코드를 찍어주세요.";
-        setAssistantMessage(msg);
-        shouldListenRef.current = false;
-        try { recognitionRef.current && recognitionRef.current.stop(); } catch { }
-
-        const speakPromise = speakKorean(msg).catch((error) => {
-            console.error("음성 합성 에러:", error);
-        });
-
-        setTimeout(() => {
-            clearOrderFlowFlags();
-            navigateTo(entry === "qr" ? "/qr-order" : "/");
-        }, 1800);
-
-        try {
-            await speakPromise;
-        } catch (error) {
-            console.error("음성 합성 대기 중 에러:", error);
-        }
+        await speakThenGoHome("바코드를 찍어주세요.");
     };
 
     // 페이지 진입 시 즉시 음성 안내
