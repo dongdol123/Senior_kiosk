@@ -645,7 +645,17 @@ function MenuPageContent() {
 
             const normalized = transcript.replaceAll(" ", "").toLowerCase();
             console.log("🎤 음성 인식 결과:", transcript, "normalized:", normalized);
-            
+
+            // 새우 추천 요청 - 메뉴 매칭보다 먼저 (그러지 않으면 "새우" 키워드 때문에 새우버거로 잡힘)
+            const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)|(들어간|메뉴|추천|보여|알려).*새우/;
+            if (shrimpRecommendPattern.test(normalized)) {
+                const cartData = encodeURIComponent(JSON.stringify(cartItemsRef.current || cartItems));
+                const orderType = searchParams.get("orderType") || "takeout";
+                try { recognition.stop(); } catch { }
+                navigateTo(`/shrimp-recommend?cart=${cartData}&orderType=${orderType}&${entryQuery(entry)}`);
+                return;
+            }
+
             // 메뉴 이름 직접 말하기 - 가장 먼저 체크 (부가 설명 없이 바로 담기)
             let matchedMenu = null;
             
@@ -763,15 +773,6 @@ function MenuPageContent() {
                 
                 // 주문 처리
                 await handleOrder();
-                return;
-            }
-
-            // 새우 추천 요청 감지 - "새우 추천", "새우 메뉴 추천", "새우 들어간 메뉴 추천해줘" 같은 맥락만
-            const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)/;
-            if (shrimpRecommendPattern.test(normalized)) {
-                const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                navigateTo(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}&${entryQuery(entry)}`);
-                try { recognition.stop(); } catch { }
                 return;
             }
 
