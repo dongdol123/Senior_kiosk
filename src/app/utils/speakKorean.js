@@ -118,20 +118,28 @@ export async function speakKorean(text) {
         return;
     }
 
-    // 현재 재생 중인 음성이 있으면 취소하고 큐 비우기
+    // 현재 재생 중인 음성이 있으면 취소
+    // 주의: pause()는 onended를 발화시키지 않아 이전 playNext의 await가 영영 풀리지 않음.
+    // 따라서 큐/상태 플래그를 강제로 리셋해 새 호출이 즉시 진행될 수 있도록 한다.
     if (currentAudio) {
         try {
+            // onended를 null 처리해 두면 혹시 남은 핸들러가 늦게 호출돼도 영향 없음
+            try { currentAudio.onended = null; } catch (_) {}
+            try { currentAudio.onerror = null; } catch (_) {}
             currentAudio.pause();
             currentAudio.currentTime = 0;
-            currentAudio = null;
         } catch (e) {
             console.error('Error stopping current audio:', e);
         }
+        currentAudio = null;
     }
+
+    // 이전 호출이 await 중이었더라도 새 호출은 막히지 않도록 상태 플래그 리셋
+    isPlaying = false;
 
     // 브라우저 TTS도 취소
     if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+        try { window.speechSynthesis.cancel(); } catch (_) {}
     }
 
     // 큐 비우기

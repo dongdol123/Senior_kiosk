@@ -142,6 +142,21 @@ function MenuOptionPageContent() {
     const restartingRef = useRef(false); // 재시작 중인지 추적
     const lastHandledVoiceRef = useRef({ text: "", at: 0 });
     const introStartedRef = useRef(false); // 진입 안내 중복 재생 방지
+    const activeOptionButtonRef = useRef("");
+    const selectedAdditionalDrinkRef = useRef("");
+    const selectedAdditionalDrinkSizeRef = useRef("");
+    const selectedAdditionalSideRef = useRef("");
+    const selectedAdditionalSideSizeRef = useRef("");
+
+    const cartItemsRef = useRef([]);
+    const handleOrderRef = useRef(null);
+
+    useEffect(() => { activeOptionButtonRef.current = activeOptionButton; }, [activeOptionButton]);
+    useEffect(() => { selectedAdditionalDrinkRef.current = selectedAdditionalDrink; }, [selectedAdditionalDrink]);
+    useEffect(() => { selectedAdditionalDrinkSizeRef.current = selectedAdditionalDrinkSize; }, [selectedAdditionalDrinkSize]);
+    useEffect(() => { selectedAdditionalSideRef.current = selectedAdditionalSide; }, [selectedAdditionalSide]);
+    useEffect(() => { selectedAdditionalSideSizeRef.current = selectedAdditionalSideSize; }, [selectedAdditionalSideSize]);
+    useEffect(() => { cartItemsRef.current = cartItems; }, [cartItems]);
 
     function navigateTo(path) {
         stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
@@ -346,7 +361,7 @@ function MenuOptionPageContent() {
 
             const msg = isCurrentDrink
                 ? "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?"
-                : "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
+                : "원하시는 구성을 골라주세요.";
             if (!cancelled) {
                 setAssistantMessage(msg);
             }
@@ -597,6 +612,271 @@ function MenuOptionPageContent() {
             if (isCurrentBurger) {
                 console.log("음성인식 결과 (버거):", normalized, "isCurrentBurger:", isCurrentBurger);
 
+                // "이대로/그대로/이렇게/이걸로 담아줘", "장바구니에 담아줘", "이렇게 주문할게" 등
+                // — 현재 구성 그대로 카트에 담고 메뉴로 복귀
+                const orderAsIsPattern = /이대로|그대로|이걸로|이거로|이렇게|이렇게요|지금이대로|지금구성|지금구성그대로/;
+                const orderActionPattern = /담아|담아줘|담아주세요|담을게|담아둬|담아라|담아주|넣어|넣어줘|주문|주문해|주문해줘|주문할게|결제까진아니/;
+                // 장바구니 맥락은 "담아/넣어"에만 반응 (추가는 음료/사이드 팝업 트리거와 겹치므로 제외)
+                const cartContextPattern = /장바구니|카트/;
+                const cartContextActionPattern = /담아|담아줘|담아주세요|담을게|담아둬|담아라|담아주|넣어|넣어줘/;
+                const triggerOrderAsIs =
+                    (orderAsIsPattern.test(normalized) && orderActionPattern.test(normalized)) ||
+                    (cartContextPattern.test(normalized) && cartContextActionPattern.test(normalized)) ||
+                    /^이대로$|^그대로$|^이렇게$|^이걸로$/.test(normalized);
+                if (triggerOrderAsIs) {
+                    try { recognition.stop(); } catch (e) { }
+                    setAssistantMessage("장바구니에 담을게요.");
+                    isSpeakingRef.current = true;
+                    speakKorean("장바구니에 담을게요.").catch((err) => console.error("음성 안내 오류:", err));
+                    setTimeout(() => { isSpeakingRef.current = false; }, 1200);
+                    // ref로 최신 handleOrder를 호출 (closure stale 방지)
+                    setTimeout(() => {
+                        if (typeof handleOrderRef.current === "function") {
+                            handleOrderRef.current();
+                        } else {
+                            handleOrder();
+                        }
+                    }, 200);
+                    return;
+                }
+
+                // === 음료/사이드 팝업 음성 흐름 ===
+                const drinkNames = catalogItems.filter((m) => inferMenuCategory(m) === "drink").map((m) => m.name);
+                const sideNames = catalogItems.filter((m) => inferMenuCategory(m) === "side").map((m) => m.name);
+                const findByVoice = (names) => {
+                    for (const name of names) {
+                        const n = (name || "").replace(/\s+/g, "").toLowerCase();
+                        if (!n) continue;
+                        if (normalized === n || normalized.includes(n)) return name;
+                    }
+                    return "";
+                };
+                const drinkAliasMap = [
+                    { name: "콜라", regex: /콜라|코크|coke/ },
+                    { name: "제로콜라", regex: /제로콜라|제로코크|다이어트콜라/ },
+                    { name: "사이다", regex: /사이다|스프라이트|sprite/ },
+                    { name: "제로사이다", regex: /제로사이다/ },
+                    { name: "아메리카노", regex: /아메리카노|아메|커피|americano|coffee/ },
+                    { name: "카페라떼", regex: /카페라떼|라떼|latte/ },
+                    { name: "아이스티", regex: /아이스티|icetea|icedtea|ice tea/ },
+                ];
+                const sideAliasMap = [
+                    { name: "감자튀김", regex: /감자튀김|감튀|프렌치프라이|프라이드|fries|포테이토/ },
+                    { name: "해시브라운", regex: /해시브라운|해쉬브라운|해시|해쉬|hash/ },
+                    { name: "치킨윙", regex: /치킨윙|윙|wing/ },
+                    { name: "코울슬로", regex: /코울슬로|coleslaw|샐러드/ },
+                ];
+                const matchDrinkByAlias = () => {
+                    for (const m of drinkAliasMap) {
+                        if (m.regex.test(normalized) && drinkNames.includes(m.name)) return m.name;
+                    }
+                    return findByVoice(drinkNames);
+                };
+                const matchSideByAlias = () => {
+                    for (const m of sideAliasMap) {
+                        if (m.regex.test(normalized) && sideNames.includes(m.name)) return m.name;
+                    }
+                    return findByVoice(sideNames);
+                };
+
+                // (A) 음료 사이즈 단계: 음료 선택 후 사이즈 미선택
+                if (
+                    activeOptionButtonRef.current === "drink-add" &&
+                    selectedAdditionalDrinkRef.current &&
+                    selectedAdditionalDrinkRef.current !== NONE_OPTION &&
+                    !selectedAdditionalDrinkSizeRef.current
+                ) {
+                    let pickedSize = "";
+                    if (/미디움|미디엄|중간|중자|엠사이즈|중간사이즈|중간으로|미디움으로/.test(normalized)) pickedSize = "미디움";
+                    else if (/라지|큰사이즈|큰\s|^큰$|큰거|대자|엘사이즈|라지로|큰\s*걸로/.test(normalized)) pickedSize = "라지";
+                    if (pickedSize) {
+                        try { recognition.stop(); } catch (e) { }
+                        const drinkName = selectedAdditionalDrinkRef.current;
+                        addAdditionalDrinkToCart(drinkName, pickedSize);
+                        setPendingAdditionalDrinkSize("");
+                        setSelectedAdditionalDrink("");
+                        setSelectedAdditionalDrinkSize("");
+                        setActiveOptionButton("");
+                        const sizeLabel = pickedSize === "라지" ? "큰" : "중간";
+                        const sayMsg = `${drinkName} ${sizeLabel} 사이즈로 담을게요.`;
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                        return;
+                    }
+                    return; // 사이즈 단계에서는 다른 분기로 빠지지 않음
+                }
+
+                // (B) 음료 선택 단계: 팝업이 열려 있고 음료 미선택
+                if (
+                    activeOptionButtonRef.current === "drink-add" &&
+                    (!selectedAdditionalDrinkRef.current || selectedAdditionalDrinkRef.current === NONE_OPTION)
+                ) {
+                    const drinkName = matchDrinkByAlias();
+                    if (drinkName) {
+                        try { recognition.stop(); } catch (e) { }
+                        setPendingAdditionalDrinkSelection(drinkName);
+                        setTimeout(() => {
+                            setSelectedAdditionalDrink(drinkName);
+                            setSelectedAdditionalDrinkSize("");
+                            setPendingAdditionalDrinkSelection("");
+                        }, 120);
+                        const sayMsg = "사이즈 선택해주세요.";
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => {
+                            isSpeakingRef.current = false;
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 600);
+                        return;
+                    }
+                    if (/취소|닫기|그만|나가|됐어|됐다|안할래|안마실|안마셔|안먹을|안먹어|괜찮아|괜찮습|필요없|아니|음료없이/.test(normalized)) {
+                        try { recognition.stop(); } catch (e) { }
+                        setActiveOptionButton("");
+                        setSelectedAdditionalDrink("");
+                        setSelectedAdditionalDrinkSize("");
+                        setPendingAdditionalDrinkSelection("");
+                        const sayMsg = "음료를 빼고 진행할게요.";
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => {
+                            isSpeakingRef.current = false;
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 600);
+                        return;
+                    }
+                    return;
+                }
+
+                // (C) 사이드 사이즈 단계
+                if (
+                    activeOptionButtonRef.current === "side-add" &&
+                    selectedAdditionalSideRef.current &&
+                    selectedAdditionalSideRef.current !== NONE_OPTION &&
+                    !selectedAdditionalSideSizeRef.current
+                ) {
+                    let pickedSize = "";
+                    if (/미디움|미디엄|중간|중자|엠사이즈|중간사이즈|중간으로|미디움으로|여섯|6개/.test(normalized)) pickedSize = "미디움";
+                    else if (/라지|큰사이즈|큰\s|^큰$|큰거|대자|엘사이즈|라지로|여덟|8개/.test(normalized)) pickedSize = "라지";
+                    if (pickedSize) {
+                        try { recognition.stop(); } catch (e) { }
+                        const sideName = selectedAdditionalSideRef.current;
+                        addAdditionalSideToCart(sideName, pickedSize);
+                        setSelectedAdditionalSide("");
+                        setSelectedAdditionalSideSize("");
+                        setActiveOptionButton("");
+                        const sizeLabel = pickedSize === "라지" ? "큰" : "중간";
+                        const sayMsg = `${sideName} ${sizeLabel} 사이즈로 담을게요.`;
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                        return;
+                    }
+                    return;
+                }
+
+                // (D) 사이드 선택 단계
+                if (
+                    activeOptionButtonRef.current === "side-add" &&
+                    (!selectedAdditionalSideRef.current || selectedAdditionalSideRef.current === NONE_OPTION)
+                ) {
+                    const sideName = matchSideByAlias();
+                    if (sideName) {
+                        try { recognition.stop(); } catch (e) { }
+                        setSelectedAdditionalSide(sideName);
+                        setSelectedAdditionalSideSize("");
+                        const sayMsg = "사이즈 선택해주세요.";
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => {
+                            isSpeakingRef.current = false;
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 600);
+                        return;
+                    }
+                    if (/취소|닫기|그만|나가|됐어|됐다|안할래|안먹을|안먹어|안먹|괜찮아|괜찮습|필요없|아니|사이드없이/.test(normalized)) {
+                        try { recognition.stop(); } catch (e) { }
+                        setActiveOptionButton("");
+                        setSelectedAdditionalSide("");
+                        setSelectedAdditionalSideSize("");
+                        const sayMsg = "사이드를 빼고 진행할게요.";
+                        setAssistantMessage(sayMsg);
+                        isSpeakingRef.current = true;
+                        await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                        setTimeout(() => {
+                            isSpeakingRef.current = false;
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 600);
+                        return;
+                    }
+                    return;
+                }
+
+                // === 음료/사이드 팝업 열기 트리거 ===
+                // "음료" 또는 "사이드" 단어 + 요청/질문 의미 단어가 같이 나오면 팝업 열기
+                const askWordRegex = /뭐|있|있어|있나|있어요|어떤|보여|보여줘|알려|알려줘|뭔가|뭔지|종류|선택|선택해|추천|골라|골라줘|주세요|줘|줘봐|줄래|추가|추가해|꺼내|꺼내줘|띄워|띄워줘|올려|올려줘|보고싶|먹고싶|마실|마시|먹|할/;
+                // STT가 가끔 "음료"를 "음로/음뇨" 등으로 듣는 케이스 포함
+                const drinkWordRegex = /음료|음료수|음로|음뇨|음표|드링크|마실|마실거|마실것|마시|drink/;
+                const sideWordRegex = /사이드|사이드메뉴|side/;
+
+                const liveCart = cartItemsRef.current || [];
+                const liveHasDrink = liveCart.some((it) => it.id?.startsWith("extra-drink-"));
+                const liveHasSide = liveCart.some((it) => it.id?.startsWith("extra-side-"));
+
+                // (E) 음료 팝업 트리거 — 음료 추가가 이미 있으면 무시
+                if (drinkWordRegex.test(normalized) && askWordRegex.test(normalized) && !liveHasDrink) {
+                    try { recognition.stop(); } catch (e) { }
+                    setActiveOptionButton("drink-add");
+                    setSelectedAdditionalDrink("");
+                    setSelectedAdditionalDrinkSize("");
+                    setPendingAdditionalDrinkSelection("");
+                    setPendingAdditionalDrinkSize("");
+                    const sayMsg = "원하시는 종류를 선택해주세요.";
+                    setAssistantMessage(sayMsg);
+                    isSpeakingRef.current = true;
+                    await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                    setTimeout(() => {
+                        isSpeakingRef.current = false;
+                        if (mountedRef.current && shouldListenRef.current) {
+                            try { recognition.start(); } catch (e) { }
+                        }
+                    }, 600);
+                    return;
+                }
+
+                // (F) 사이드 팝업 트리거
+                if (sideWordRegex.test(normalized) && askWordRegex.test(normalized) && !liveHasSide) {
+                    try { recognition.stop(); } catch (e) { }
+                    setActiveOptionButton("side-add");
+                    setSelectedAdditionalSide("");
+                    setSelectedAdditionalSideSize("");
+                    setPendingAdditionalSideSize("");
+                    const sayMsg = "원하시는 종류를 선택해주세요.";
+                    setAssistantMessage(sayMsg);
+                    isSpeakingRef.current = true;
+                    await speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
+                    setTimeout(() => {
+                        isSpeakingRef.current = false;
+                        if (mountedRef.current && shouldListenRef.current) {
+                            try { recognition.start(); } catch (e) { }
+                        }
+                    }, 600);
+                    return;
+                }
+
                 const hasDefaultSetWord = /기본\s*세트|기본세트/.test(normalized);
                 const hasQuestion =
                     /뭐야|뭐에요|뭔데|뭐지|무엇|뭔지|설명|알려줘|알려|뭔가요|어떤거야|어떤거지|무슨말/.test(
@@ -675,7 +955,7 @@ function MenuOptionPageContent() {
                 }
 
                 // 마지막 안내(버거인 경우)
-                const msg = "단품, 기본 세트, 세트 직접 선택 중 선택해 주세요.";
+                const msg = "원하시는 구성을 골라주세요.";
                 setAssistantMessage(msg);
                 try {
                     recognition.stop();
@@ -875,6 +1155,11 @@ function MenuOptionPageContent() {
         const orderType = searchParams.get("orderType") || "takeout";
         navigateTo(`/menu?${entryQuery(entry)}&orderType=${orderType}&cart=${cartData}&${menuStateQuery()}`);
     }
+
+    // 음성으로 호출되는 경로(closure stale 방지)에서 항상 최신 handleOrder 사용
+    useEffect(() => {
+        handleOrderRef.current = handleOrder;
+    });
 
     function addAdditionalDrinkToCart(drinkName, sizeName) {
         const unitPrice = drinkMediumPrice(drinkName, catalogItems) + (sizeName === "라지" ? 500 : 0);

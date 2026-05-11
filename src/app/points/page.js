@@ -244,26 +244,38 @@ function PointsPageContent() {
         navigateTo(entry === "qr" ? "/qr-order" : "/");
     }
 
-    async function handleCardPayment() {
-        const msg = "카드 결제를 선택하셨습니다. 결제가 완료되었습니다.";
-        shouldListenRef.current = false;
-        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
+    function clearOrderFlowFlags() {
+        try {
+            if (typeof window !== "undefined") {
+                window.sessionStorage.removeItem("menuGreetingPlayed");
+            }
+        } catch { }
+    }
+
+    // 안내 음성이 끝까지 재생된 뒤 홈으로 이동 (안전장치 6초)
+    async function speakThenGoHome(msg) {
         setAssistantMessage(msg);
-        speakKorean(msg).catch(() => {});
-        setTimeout(() => {
-            navigateTo(entry === "qr" ? "/qr-order" : "/");
-        }, 1000);
+        shouldListenRef.current = false;
+        isSpeakingRef.current = true;
+        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
+
+        const speakDone = speakKorean(msg).catch(() => {});
+        const safetyTimeout = new Promise((resolve) => setTimeout(resolve, 6000));
+        await Promise.race([speakDone, safetyTimeout]);
+        // 마지막 발음이 잘리지 않도록 짧은 여유
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        isSpeakingRef.current = false;
+        clearOrderFlowFlags();
+        navigateTo(entry === "qr" ? "/qr-order" : "/");
+    }
+
+    async function handleCardPayment() {
+        await speakThenGoHome("카드를 넣어주세요.");
     }
 
     async function handlePayPayment() {
-        const msg = "페이 결제를 선택하셨습니다. 결제가 완료되었습니다.";
-        shouldListenRef.current = false;
-        try { recognitionRef.current && recognitionRef.current.stop(); } catch {}
-        setAssistantMessage(msg);
-        speakKorean(msg).catch(() => {});
-        setTimeout(() => {
-            navigateTo(entry === "qr" ? "/qr-order" : "/");
-        }, 1000);
+        await speakThenGoHome("바코드를 찍어주세요.");
     }
 
     useEffect(() => {
