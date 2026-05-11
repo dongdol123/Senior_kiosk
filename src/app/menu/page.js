@@ -97,6 +97,7 @@ function MenuPageContent() {
     const [cartItems, setCartItems] = useState([]); // [{id, name, price, qty}]
     const [recommendedMenus, setRecommendedMenus] = useState([]);
     const [showRecommendation, setShowRecommendation] = useState(false);
+    const [showShrimpRecommendation, setShowShrimpRecommendation] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCategory, setSelectedCategory] = useState("burger"); // "burger", "drink", "side"
     const [activeMenuCardId, setActiveMenuCardId] = useState(null);
@@ -106,10 +107,12 @@ function MenuPageContent() {
     const [activeSideSizeButton, setActiveSideSizeButton] = useState("");
     const [activeCartAdjustButton, setActiveCartAdjustButton] = useState("");
     const [activeCartDeleteButton, setActiveCartDeleteButton] = useState("");
+    const [isShrimpPopupCloseButtonActive, setIsShrimpPopupCloseButtonActive] = useState(false);
 
     useEffect(() => {
         const menuCategory = searchParams.get("menuCategory");
         const menuPageParam = parseInt(searchParams.get("menuPage") || "", 10);
+        const shouldShowShrimpPopup = searchParams.get("showShrimpPopup") === "1";
 
         if (menuCategory === "burger" || menuCategory === "drink" || menuCategory === "side") {
             setSelectedCategory(menuCategory);
@@ -117,6 +120,10 @@ function MenuPageContent() {
 
         if (Number.isInteger(menuPageParam) && menuPageParam >= 1) {
             setCurrentPage(menuPageParam);
+        }
+
+        if (shouldShowShrimpPopup) {
+            setShowShrimpRecommendation(true);
         }
     }, [searchParams]);
 
@@ -161,6 +168,50 @@ function MenuPageContent() {
         );
         // 최대 2개 추천
         return matches.slice(0, 2);
+    }
+
+    function findShrimpMenus() {
+        const shrimpPopupMenuIds = ["bur-chili-shrimp", "bur-truffle-shrimp"];
+        const matchedMenus = MENU_ITEMS.filter((item) => {
+            return shrimpPopupMenuIds.includes(item?.id);
+        });
+
+        if (matchedMenus.length > 0) {
+            return matchedMenus;
+        }
+
+        return STATIC_MENU.filter((item) => shrimpPopupMenuIds.includes(item?.id));
+    }
+
+    function findMenuByTranscript(normalized) {
+        let matchedMenu = MENU_ITEMS.find((item) => {
+            const menuNameNormalized = item.name.replaceAll(" ", "").toLowerCase();
+            if (normalized === menuNameNormalized || normalized.includes(menuNameNormalized)) {
+                return true;
+            }
+            if (menuNameNormalized.includes(normalized) && normalized.length >= 2) {
+                return true;
+            }
+            return false;
+        });
+
+        if (!matchedMenu) {
+            matchedMenu = MENU_ITEMS.find((item) => {
+                if (item.keywords && item.keywords.some((kw) => {
+                    const kwNormalized = kw.replaceAll(" ", "").toLowerCase();
+                    return normalized === kwNormalized || normalized.includes(kwNormalized);
+                })) {
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        if (!matchedMenu && normalized === "버거") {
+            matchedMenu = MENU_ITEMS.find((item) => item.name.includes("버거"));
+        }
+
+        return matchedMenu;
     }
 
     async function addToCart(item) {
@@ -381,6 +432,12 @@ function MenuPageContent() {
         }
 
         navigateTo(`/menu-option?menuId=${menu.id}&menuName=${encodeURIComponent(name)}&price=${menu.price}&cart=${cartData}&orderType=${orderType}&${menuState}&${entryQuery(entry)}`);
+    }
+
+    function handleShrimpRecommendationSelect(menu) {
+        setShowShrimpRecommendation(false);
+        setActiveMenuCardId(null);
+        proceedMenuCardClick(menu);
     }
 
     function handleCartAdjustClick(type, item) {
@@ -692,6 +749,12 @@ function MenuPageContent() {
                     console.log("음성 인식 중지 오류:", e);
                 }
                 
+                setActiveMenuCardId(matchedMenu.id);
+                setTimeout(() => {
+                    proceedMenuCardClick(matchedMenu);
+                }, 120);
+                return;
+
                 if (isTapToAddSide(matchedMenu)) {
                     addToCart(matchedMenu);
                     // 장바구니에 담은 후 음성 인식 재시작
@@ -769,9 +832,16 @@ function MenuPageContent() {
             // 새우 추천 요청 감지 - "새우 추천", "새우 메뉴 추천", "새우 들어간 메뉴 추천해줘" 같은 맥락만
             const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)/;
             if (shrimpRecommendPattern.test(normalized)) {
-                const cartData = encodeURIComponent(JSON.stringify(cartItems));
-                navigateTo(`/shrimp-recommend?cart=${cartData}&orderType=${searchParams.get("orderType") || "takeout"}&${entryQuery(entry)}`);
                 try { recognition.stop(); } catch { }
+                const shrimpMenus = findShrimpMenus();
+                if (shrimpMenus.length > 0) {
+                    setShowShrimpRecommendation(true);
+                    const msg = "새우 메뉴를 추천해드릴게요. 원하시는 메뉴를 선택해주세요.";
+                    setAssistantMessage(msg);
+                    isSpeakingRef.current = true;
+                    speakKorean(msg).catch(() => {});
+                    setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                }
                 return;
             }
 
@@ -1686,6 +1756,135 @@ function MenuPageContent() {
                                         </button>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showShrimpRecommendation && findShrimpMenus().length > 0 && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.52)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1100,
+                        padding: 24,
+                    }}
+                    onClick={() => setShowShrimpRecommendation(false)}
+                >
+                    <div
+                        style={{
+                            width: "min(960px, 100%)",
+                            background: "#f5f8fc",
+                            borderRadius: 24,
+                            padding: "28px 28px 24px",
+                            border: "2px solid #d9e3ef",
+                            boxShadow: "0 24px 60px rgba(0, 46, 85, 0.22)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 16,
+                                marginBottom: 24,
+                            }}
+                        >
+                            <div style={{ textAlign: "center" }}>
+                                <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000000", margin: 0 }}>
+                                    새우 메뉴 추천
+                                </h2>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsShrimpPopupCloseButtonActive(true);
+                                    setTimeout(() => {
+                                        setShowShrimpRecommendation(false);
+                                        setIsShrimpPopupCloseButtonActive(false);
+                                    }, 120);
+                                }}
+                                style={{
+                                    padding: "12px 18px",
+                                    backgroundColor: isShrimpPopupCloseButtonActive ? "#fec315" : "#002e55",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "700",
+                                }}
+                            >
+                                닫기
+                            </button>
+                        </div>
+
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                                gap: 18,
+                            }}
+                        >
+                            {findShrimpMenus().map((menu) => (
+                                <button
+                                    key={menu.id}
+                                    onClick={() => {
+                                        setActiveMenuCardId(menu.id);
+                                        setTimeout(() => {
+                                            handleShrimpRecommendationSelect(menu);
+                                        }, 120);
+                                    }}
+                                    style={{
+                                        border: activeMenuCardId === menu.id ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: 22,
+                                        background: "#ffffff",
+                                        padding: 18,
+                                        textAlign: "center",
+                                        cursor: "pointer",
+                                        boxShadow:
+                                            activeMenuCardId === menu.id
+                                                ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                : "0 2px 6px rgba(0,0,0,0.06)",
+                                        transition: "all 0.2s",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            height: 250,
+                                            borderRadius: 18,
+                                            background: "#ffffff",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            marginBottom: 16,
+                                            overflow: "hidden",
+                                        }}
+                                    >
+                                        <img
+                                            src={menuThumbImageSrc(menu) || "/shrimp.png"}
+                                            alt={menu.name}
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "contain",
+                                                display: "block",
+                                            }}
+                                        />
+                                    </div>
+                                    <div style={{ fontSize: "2.2rem", fontWeight: 800, color: "#000000", marginBottom: 10 }}>
+                                        {menu.name}
+                                    </div>
+                                    <div style={{ fontSize: "1.9rem", color: "#002e55", fontWeight: 800, marginBottom: 14 }}>
+                                        {menu.price.toLocaleString()}원
+                                    </div>
+                                </button>
                             ))}
                         </div>
                     </div>
