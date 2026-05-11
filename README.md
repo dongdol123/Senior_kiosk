@@ -18,7 +18,7 @@
 | 음성 인식(STT) | Web Speech API (브라우저) |
 | 음성 합성(TTS) | Google Cloud TTS REST (서버 라우트 `/api/tts`) |
 | 대화/주문 해석 | OpenAI Chat Completions |
-| 배포 | AWS EC2 (Ubuntu) + PM2 권장 |
+| 배포 | AWS EC2 (Ubuntu) + PM2 권장 + HTTPS(마이크권한)|
 
 ## 주요 화면 흐름
 
