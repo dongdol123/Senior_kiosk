@@ -710,7 +710,7 @@ function MenuPageContent() {
                 const shrimpMenus = findShrimpMenus();
                 if (shrimpMenus.length > 0) {
                     setShowShrimpRecommendation(true);
-                    const msg = "?덉슦 硫붾돱瑜?異붿쿇?대뱶由닿쾶?? ?먰븯?쒕뒗 硫붾돱瑜??좏깮?댁＜?몄슂.";
+                    const msg = "새우 메뉴를 추천해드릴게요. 원하시는 메뉴를 선택해주세요.";
                     setAssistantMessage(msg);
                     isSpeakingRef.current = true;
                     speakKorean(msg).catch(() => {});
