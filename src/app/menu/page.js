@@ -60,7 +60,7 @@ function cartItemImageSrc(it) {
     return null;
 }
 
-/** 새우 추천 팝업 전용: 화면에는 영양·알레르기 표시, 음성은 영양(칼로리·단백질·나트륨·당류) 제외 */
+/** 새우 추천 팝업 전용: 화면에는 이름·요약·영양·알레르기 표시, 음성은 메뉴 요약(intro)만 */
 const SHRIMP_MENU_DETAIL_BY_ID = {
     "bur-chili-shrimp": {
         image: "/chilli_shrimp.png",
@@ -74,7 +74,7 @@ const SHRIMP_MENU_DETAIL_BY_ID = {
         ],
         allergyLine: "알레르기 정보: 새우, 밀, 계란, 우유, 대두 포함",
         get voiceScript() {
-            return `${this.title}. ${this.intro} ${this.allergyLine}`;
+            return this.intro;
         },
     },
     "bur-truffle-shrimp": {
@@ -89,7 +89,7 @@ const SHRIMP_MENU_DETAIL_BY_ID = {
         ],
         allergyLine: "알레르기 정보: 새우, 우유, 밀, 계란, 대두 포함",
         get voiceScript() {
-            return `${this.title}. ${this.intro} ${this.allergyLine}`;
+            return this.intro;
         },
     },
 };
@@ -110,7 +110,6 @@ function MenuPageContent() {
     const [isClearCartButtonActive, setIsClearCartButtonActive] = useState(false);
     const [isOrderButtonActive, setIsOrderButtonActive] = useState(false);
     const recognitionRef = useRef(null);
-    const restartingRef = useRef(false);
     const mountedRef = useRef(true);
     const shouldListenRef = useRef(true);
     const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -119,6 +118,13 @@ function MenuPageContent() {
     const routerRef = useRef(null);
     const searchParamsRef = useRef(null);
     const isSpeakingRef = useRef(false); // 음성 안내 재생 중인지 추적
+    const orderedRef = useRef(false);
+    /** 음성 useEffect 안에서 갱신됨 — TTS 직후 인식 재시작에 사용 */
+    const resumeSpeechRecognitionRef = useRef(() => {});
+
+    useEffect(() => {
+        orderedRef.current = ordered;
+    }, [ordered]);
 
     useEffect(() => {
         if (qrRequiresOrderTypeRedirect(searchParams)) {
@@ -193,7 +199,8 @@ function MenuPageContent() {
                 if (!cancelled) {
                     setTimeout(() => {
                         isSpeakingRef.current = false;
-                    }, 400);
+                        resumeSpeechRecognitionRef.current();
+                    }, 50);
                 }
             }
         })();
@@ -324,22 +331,13 @@ function MenuPageContent() {
             } catch (e) {}
         }
         isSpeakingRef.current = true;
-        try { 
-            await speakKorean(`${item.name} 담았어요.`); 
-        } catch { }
-        setTimeout(() => { 
-            isSpeakingRef.current = false;
-            // 음성 인식 재시작
-            if (mountedRef.current && shouldListenRef.current && !ordered) {
-                setTimeout(() => {
-                    if (recognitionRef.current && mountedRef.current && shouldListenRef.current && !ordered) {
-                        try {
-                            recognitionRef.current.start();
-                        } catch (e) {}
-                        }
-                }, 2000);
-            }
-        }, 1000);
+        try {
+            await speakKorean(`${item.name} 담았어요.`);
+        } catch {
+            /* ignore */
+        }
+        isSpeakingRef.current = false;
+        resumeSpeechRecognitionRef.current();
     }
 
     async function removeFromCart(itemId) {
@@ -371,20 +369,11 @@ function MenuPageContent() {
             } else {
                 await speakKorean(`${removedItemName} 한 개 뺐어요.`);
             }
-        } catch { }
-        setTimeout(() => { 
-            isSpeakingRef.current = false;
-            // 음성 인식 재시작
-            if (mountedRef.current && shouldListenRef.current && !ordered) {
-                setTimeout(() => {
-                    if (recognitionRef.current && mountedRef.current && shouldListenRef.current && !ordered) {
-                        try {
-                            recognitionRef.current.start();
-                        } catch (e) {}
-                    }
-                }, 2000);
-            }
-        }, 1000);
+        } catch {
+            /* ignore */
+        }
+        isSpeakingRef.current = false;
+        resumeSpeechRecognitionRef.current();
     }
 
     async function deleteFromCart(itemId) {
@@ -404,20 +393,11 @@ function MenuPageContent() {
         isSpeakingRef.current = true;
         try {
             await speakKorean(`${deletedItemName}를 장바구니에서 삭제했어요.`);
-        } catch { }
-        setTimeout(() => { 
-            isSpeakingRef.current = false;
-            // 음성 인식 재시작
-            if (mountedRef.current && shouldListenRef.current && !ordered) {
-                setTimeout(() => {
-                    if (recognitionRef.current && mountedRef.current && shouldListenRef.current && !ordered) {
-                        try {
-                            recognitionRef.current.start();
-                        } catch (e) {}
-                    }
-                }, 2000);
-            }
-        }, 1000);
+        } catch {
+            /* ignore */
+        }
+        isSpeakingRef.current = false;
+        resumeSpeechRecognitionRef.current();
     }
 
     async function clearCart() {
@@ -429,20 +409,13 @@ function MenuPageContent() {
             } catch (e) {}
         }
         isSpeakingRef.current = true;
-        try { await speakKorean("장바구니를 모두 비웠어요."); } catch { }
-        setTimeout(() => { 
-            isSpeakingRef.current = false;
-            // 음성 인식 재시작
-            if (mountedRef.current && shouldListenRef.current && !ordered) {
-                setTimeout(() => {
-                    if (recognitionRef.current && mountedRef.current && shouldListenRef.current && !ordered) {
-                        try {
-                            recognitionRef.current.start();
-                        } catch (e) {}
-                    }
-                }, 2000);
-            }
-        }, 1000);
+        try {
+            await speakKorean("장바구니를 모두 비웠어요.");
+        } catch {
+            /* ignore */
+        }
+        isSpeakingRef.current = false;
+        resumeSpeechRecognitionRef.current();
     }
 
     async function handleOrder() {
@@ -459,19 +432,8 @@ function MenuPageContent() {
             }
             isSpeakingRef.current = true;
             await speakKorean(msg);
-            setTimeout(() => { 
-                isSpeakingRef.current = false;
-                // 음성 인식 재시작
-                if (mountedRef.current && shouldListenRef.current && !ordered) {
-                    setTimeout(() => {
-                        if (recognitionRef.current && mountedRef.current && shouldListenRef.current && !ordered) {
-                            try {
-                                recognitionRef.current.start();
-                            } catch (e) {}
-                        }
-                    }, 2000);
-                }
-            }, 1000);
+            isSpeakingRef.current = false;
+            resumeSpeechRecognitionRef.current();
             return;
         }
         const cartTotal = currentCartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
@@ -669,66 +631,32 @@ function MenuPageContent() {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
+        /** TTS·안내 플래그가 풀린 뒤 곧바로(짧은 간격으로 재시도) 마이크 인식 재개 */
+        function scheduleResumeSpeechRecognition() {
+            const tryOnce = (attempt) => {
+                if (attempt > 120) return;
+                if (!mountedRef.current || !shouldListenRef.current || orderedRef.current) return;
+                if (isSpeakingRef.current || isTtsActive()) {
+                    setTimeout(() => tryOnce(attempt + 1), 40);
+                    return;
+                }
+                try {
+                    recognition.start();
+                } catch {
+                    setTimeout(() => tryOnce(attempt + 1), 35);
+                }
+            };
+            setTimeout(() => tryOnce(0), 10);
+        }
+        resumeSpeechRecognitionRef.current = scheduleResumeSpeechRecognition;
+
         recognition.onstart = () => {
             setIsListening(true);
         };
         recognition.onend = () => {
             setIsListening(false);
-            // 자동 재시작(메뉴1 주문 완료 전까지 지속 듣기)
-            // 음성 안내 재생 중이어도 일정 시간 후 재시작 시도
-            if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                restartingRef.current = true;
-                const delay = isSpeakingRef.current ? 2000 : 250; // 음성 안내 중이면 더 긴 딜레이
-                setTimeout(() => {
-                    if (!mountedRef.current || !shouldListenRef.current || ordered) {
-                        restartingRef.current = false;
-                        return;
-                    }
-                    // isSpeakingRef가 여전히 true면 더 기다림
-                    if (isSpeakingRef.current) {
-                        restartingRef.current = false;
-                        // 다시 시도
-                        setTimeout(() => {
-                            if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                                restartingRef.current = true;
-                                try { 
-                                    recognition.start(); 
-                                    restartingRef.current = false;
-                                } catch (e) {
-                                    restartingRef.current = false;
-                                    // 재시작 실패 시 다시 시도
-                                    setTimeout(() => {
-                                        if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                                            try { 
-                                                recognition.start(); 
-                                            } catch (e2) {
-                                                console.log("음성 인식 재시작 재시도 실패:", e2);
-                                            }
-                                        }
-                                    }, 1000);
-                                }
-                            }
-                        }, 2000);
-                        return;
-                    }
-                    try { 
-                        recognition.start(); 
-                        restartingRef.current = false;
-                    } catch (e) {
-                        restartingRef.current = false;
-                        // 재시작 실패 시 다시 시도
-                        setTimeout(() => {
-                            if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
-                                } catch (e2) {
-                                    console.log("음성 인식 재시작 재시도 실패:", e2);
-                                }
-                            }
-                        }, 1000);
-                    }
-                }, delay);
-            }
+            if (!mountedRef.current || !shouldListenRef.current || orderedRef.current) return;
+            scheduleResumeSpeechRecognition();
         };
         recognition.onerror = (event) => {
             // "aborted"와 "no-speech"는 정상적인 동작이므로 무시
@@ -736,48 +664,8 @@ function MenuPageContent() {
                 setErrorMessage(`음성 인식 오류: ${event.error}`);
             }
             setIsListening(false);
-            
-            // 에러 발생 시에도 재시작 시도 (키오스크 시스템이므로 지속적으로 작동해야 함)
-            if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                restartingRef.current = true;
-                setTimeout(() => {
-                    if (!mountedRef.current || !shouldListenRef.current || ordered) {
-                        restartingRef.current = false;
-                        return;
-                    }
-                    // isSpeakingRef가 true면 더 기다림
-                    if (isSpeakingRef.current) {
-                        restartingRef.current = false;
-                        setTimeout(() => {
-                            if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
-                                } catch (e) {
-                                    console.log("음성 인식 재시작 오류:", e);
-                                }
-                            }
-                        }, 2000);
-                        return;
-                    }
-                    try { 
-                        recognition.start(); 
-                        restartingRef.current = false;
-                    } catch (e) {
-                        console.log("음성 인식 재시작 오류:", e);
-                        restartingRef.current = false;
-                        // 재시작 실패 시 다시 시도
-                        setTimeout(() => {
-                            if (mountedRef.current && shouldListenRef.current && !ordered && !restartingRef.current) {
-                                try { 
-                                    recognition.start(); 
-                                } catch (e2) {
-                                    console.log("음성 인식 재시작 재시도 실패:", e2);
-                                }
-                            }
-                        }, 2000);
-                    }
-                }, 500);
-            }
+            if (!mountedRef.current || !shouldListenRef.current || orderedRef.current) return;
+            scheduleResumeSpeechRecognition();
         };
 
         recognition.onresult = async (event) => {
@@ -808,7 +696,12 @@ function MenuPageContent() {
             // 새우 추천 팝업: 메뉴 안내 / 안내 화면에서 선택
             if (showShrimpRecommendationRef.current) {
                 if (shrimpMenuInfoIdRef.current) {
-                    if (/이걸로할게|이걸로할래|이걸로주문|그걸로할게|그걸로할래|세트로|세트선택|세트로할게|좋아요|좋아|응그래|그래요|그래|맞아|맞아요|확인/.test(normalized)) {
+                    if (
+                        normalized === "선택" ||
+                        /이걸로할게|이걸로할래|이걸로주문|그걸로할게|그걸로할래|세트로|세트선택|세트로할게|선택할게|선택할래|이거선택|메뉴선택|좋아요|좋아|응그래|그래요|그래|맞아|맞아요|확인/.test(
+                            normalized
+                        )
+                    ) {
                         try {
                             recognition.stop();
                         } catch {
@@ -830,7 +723,10 @@ function MenuPageContent() {
                         }
                         return;
                     }
-                    if (/별로야|별로|별로에요|싫어|아니야|아니에요|아니|다시|취소|뒤로|돌아/.test(normalized)) {
+                    if (
+                        normalized === "뒤로가기" ||
+                        /별로야|별로|별로에요|싫어|아니야|아니에요|아니|다시|취소|뒤로|돌아/.test(normalized)
+                    ) {
                         try {
                             recognition.stop();
                         } catch {
@@ -879,8 +775,12 @@ function MenuPageContent() {
                     const msg = "새우 메뉴를 추천해드릴게요. 원하시는 메뉴를 선택해주세요.";
                     setAssistantMessage(msg);
                     isSpeakingRef.current = true;
-                    speakKorean(msg).catch(() => {});
-                    setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                    void speakKorean(msg)
+                        .catch(() => {})
+                        .finally(() => {
+                            isSpeakingRef.current = false;
+                            resumeSpeechRecognitionRef.current();
+                        });
                 }
                 return;
             }
@@ -1005,8 +905,12 @@ function MenuPageContent() {
                 const msg = `${matchedMenu.name} 옵션을 선택해주세요.`;
                 setAssistantMessage(msg);
                 isSpeakingRef.current = true;
-                speakKorean(msg).catch(err => console.error("음성 안내 오류:", err));
-                setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                void speakKorean(msg)
+                    .catch((err) => console.error("음성 안내 오류:", err))
+                    .finally(() => {
+                        isSpeakingRef.current = false;
+                        resumeSpeechRecognitionRef.current();
+                    });
                 
                 // 약간의 딜레이 후 페이지 이동
                 setTimeout(() => {
@@ -1023,7 +927,8 @@ function MenuPageContent() {
                     setAssistantMessage(msg);
                     isSpeakingRef.current = true;
                     await speakKorean(msg);
-                    setTimeout(() => { isSpeakingRef.current = false; }, 1000);
+                    isSpeakingRef.current = false;
+                    resumeSpeechRecognitionRef.current();
                     return;
                 }
                 const cartTotal = currentCartItems.reduce((sum, it) => sum + it.price * it.qty, 0);
@@ -1061,8 +966,12 @@ function MenuPageContent() {
                     const msg = "새우 메뉴를 추천해드릴게요. 원하시는 메뉴를 선택해주세요.";
                     setAssistantMessage(msg);
                     isSpeakingRef.current = true;
-                    speakKorean(msg).catch(() => {});
-                    setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                    void speakKorean(msg)
+                        .catch(() => {})
+                        .finally(() => {
+                            isSpeakingRef.current = false;
+                            resumeSpeechRecognitionRef.current();
+                        });
                 }
                 return;
             }
@@ -1082,19 +991,8 @@ function MenuPageContent() {
                     setAssistantMessage(msg);
                     isSpeakingRef.current = true;
                     await speakKorean(msg);
-                    setTimeout(() => { 
-                        isSpeakingRef.current = false;
-                        // 음성 인식 재시작
-                        if (mountedRef.current && shouldListenRef.current && !ordered) {
-                            setTimeout(() => {
-                                if (mountedRef.current && shouldListenRef.current && !ordered) {
-                                    try {
-                                        recognition.start();
-                                    } catch (e) {}
-                                }
-                            }, 2000);
-                        }
-                    }, 1000);
+                    isSpeakingRef.current = false;
+                    resumeSpeechRecognitionRef.current();
                     return;
                 }
             }
@@ -1108,7 +1006,7 @@ function MenuPageContent() {
                 setConversation((prev) => [...prev, { role: "user", content: transcript }, { role: "assistant", content: msg }]);
                 isSpeakingRef.current = true;
                 await speakKorean(msg);
-                setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                isSpeakingRef.current = false;
                 try { recognition.stop(); } catch { }
                 return;
             }
@@ -1135,58 +1033,13 @@ function MenuPageContent() {
                 setConversation((prev) => [...prev, { role: "assistant", content: reply }]);
                 isSpeakingRef.current = true;
                 await speakKorean(reply);
-                setTimeout(() => { 
-                    isSpeakingRef.current = false;
-                    // 음성 인식 재시작
-                    if (mountedRef.current && shouldListenRef.current && !ordered) {
-                        setTimeout(() => {
-                            if (mountedRef.current && shouldListenRef.current && !ordered) {
-                                try {
-                                    recognition.start();
-                                } catch (e) {}
-                            }
-                        }, 2000);
-                    }
-                }, 1000);
-                
-                // 음성 안내 후 음성 인식 재시작 (더 긴 딜레이로 확실히 재시작)
-                if (mountedRef.current && shouldListenRef.current && !ordered) {
-                    setTimeout(() => {
-                        if (mountedRef.current && shouldListenRef.current && !ordered) {
-                            try { 
-                                console.log("🔄 음성 인식 재시작 시도");
-                                recognition.start(); 
-                            } catch (e) {
-                                console.log("음성 인식 재시작 오류:", e);
-                                // 재시작 실패 시 다시 시도
-                                setTimeout(() => {
-                                    if (mountedRef.current && shouldListenRef.current && !ordered) {
-                                        try { 
-                                            recognition.start(); 
-                                        } catch (e2) {
-                                            console.log("음성 인식 재시작 재시도 오류:", e2);
-                                        }
-                                    }
-                                }, 1000);
-                            }
-                        }
-                    }, 1500);
-                }
+                isSpeakingRef.current = false;
+                resumeSpeechRecognitionRef.current();
             } catch (e) {
                 setAssistantMessage("");
                 setErrorMessage(e.message || "네트워크 오류가 발생했습니다.");
-                // 에러 발생 시에도 음성 인식 재시작
-                if (mountedRef.current && shouldListenRef.current && !ordered) {
-                    setTimeout(() => {
-                        if (mountedRef.current && shouldListenRef.current && !ordered) {
-                            try { 
-                                recognition.start(); 
-                            } catch (e) {
-                                console.log("음성 인식 재시작 오류:", e);
-                            }
-                        }
-                    }, 500);
-                }
+                isSpeakingRef.current = false;
+                resumeSpeechRecognitionRef.current();
             }
         };
 
@@ -1224,12 +1077,8 @@ function MenuPageContent() {
                     hasPlayedInitialGreetingRef.current = true;
                 }
 
-                if (!mountedRef.current || !shouldListenRef.current || ordered) return;
-                try {
-                    recognition.start();
-                } catch (e) {
-                    setErrorMessage("마이크 사용 권한을 허용해 주세요.");
-                }
+                if (!mountedRef.current || !shouldListenRef.current || orderedRef.current) return;
+                scheduleResumeSpeechRecognition();
             };
             startVoiceFlow();
         } else {
@@ -1252,6 +1101,7 @@ function MenuPageContent() {
         window.addEventListener("pagehide", handlePageHide);
 
         return () => {
+            resumeSpeechRecognitionRef.current = () => {};
             mountedRef.current = false;
             shouldListenRef.current = false;
             try { recognition.onresult = null; } catch { }
@@ -2310,7 +2160,7 @@ function MenuPageContent() {
                                     minWidth: 160,
                                 }}
                             >
-                                별로야
+                                뒤로가기
                             </button>
                             <button
                                 type="button"
@@ -2332,10 +2182,10 @@ function MenuPageContent() {
                                     fontSize: "1.5rem",
                                     fontWeight: 800,
                                     cursor: "pointer",
-                                    minWidth: 200,
+                                    minWidth: 160,
                                 }}
                             >
-                                이걸로 할게
+                                선택
                             </button>
                         </div>
                     </div>
