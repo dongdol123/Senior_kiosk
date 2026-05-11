@@ -1851,7 +1851,7 @@ function MenuPageContent() {
                             width: "min(960px, 100%)",
                             background: "#f5f8fc",
                             borderRadius: 24,
-                            padding: "28px 28px 24px",
+                            padding: "28px",
                             border: "2px solid #d9e3ef",
                             boxShadow: "0 24px 60px rgba(0, 46, 85, 0.22)",
                         }}
