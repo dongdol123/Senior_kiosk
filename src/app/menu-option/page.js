@@ -77,7 +77,7 @@ function getMenuImageSrc(menuId, menuName) {
         return "/cream_shrimp.png";
     }
     if (/새우|shrimp/.test(normalizedName)) {
-        return "/shrimp.png";
+        return "/egg.png";
     }
     if (/치킨/.test(normalizedName) && /버거/.test(normalizedName)) {
         return "/chicken.png";

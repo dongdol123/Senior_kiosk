@@ -39,7 +39,7 @@ function cartItemImageSrc(it) {
     if (/마늘/.test(n) && /불고기/.test(n) && /버거/.test(n)) return "/garlic_bulgogi.png";
     if (/칠리/.test(n) && /새우|shrimp/.test(n)) return "/chilli_shrimp.png";
     if (/크림|cream/.test(n) && /새우|shrimp/.test(n)) return "/cream_shrimp.png";
-    if (/새우|shrimp/.test(n)) return "/shrimp.png";
+    if (/새우|shrimp/.test(n)) return "/egg.png";
     if (/베이컨|토마토/.test(n) && /버거/.test(n)) return "/bacon_bulgogi.png";
     if (/치즈/.test(n) && /불고기/.test(n) && /버거/.test(n)) return "/cheese.png";
     if (/더블/.test(n) && /버거/.test(n)) return "/double_bulgogi.png";
@@ -766,7 +766,7 @@ function MenuPageContent() {
                 return;
             }
 
-            // 새우 추천 요청 - 메뉴 매칭보다 먼저 (그러지 않으면 "새우" 키워드 때문에 새우버거로 잡힘)
+            // 새우 추천 요청 - 메뉴 매칭보다 먼저 (그러지 않으면 "새우" 키워드 때문에 에그버거로 잡힘)
             const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)|(들어간|메뉴|추천|보여|알려).*새우/;
             if (shrimpRecommendPattern.test(normalized)) {
                 try { recognition.stop(); } catch { }
@@ -789,7 +789,7 @@ function MenuPageContent() {
             // 메뉴 이름 직접 말하기 - 가장 먼저 체크 (부가 설명 없이 바로 담기)
             let matchedMenu = null;
 
-            // 0. 변종 우선 매칭 (변종 키워드를 일반(불고기버거/새우버거)보다 먼저 잡기)
+            // 0. 변종 우선 매칭 (변종 키워드를 일반(불고기버거/에그버거)보다 먼저 잡기)
             //    - 불고기 계열: 치즈/더블/베이컨/버섯·머쉬룸·머시룸·mushroom/마늘·garlic
             //    - 새우 계열: 칠리/크림·cream
             const findById = (id) => MENU_ITEMS.find((m) => m.id === id);
@@ -839,12 +839,12 @@ function MenuPageContent() {
 
             // 2. 키워드로 매칭 (예: "불고기" -> "불고기버거")
             //    단, 이미 변종 키워드(치즈/더블/베이컨/버섯/마늘/칠리/크림)가 발화된 경우엔
-            //    기본 "불고기버거"/"새우버거"로 빠지지 않도록 가드
+            //    기본 "불고기버거"/"에그버거"로 빠지지 않도록 가드
             if (!matchedMenu) {
                 const hasBulgogiVariantWord = /치즈|cheese|더블|double|베이컨|bacon|버섯|머쉬룸|머시룸|mushroom|마늘|garlic|galic/.test(normalized);
                 const hasShrimpVariantWord = /칠리|chili|크림|cream/.test(normalized);
                 matchedMenu = MENU_ITEMS.find((item) => {
-                    // 변종 단어가 같이 들어왔는데 후보가 기본 불고기버거/새우버거면 스킵
+                    // 변종 단어가 같이 들어왔는데 후보가 기본 불고기버거/에그버거면 스킵
                     if (item.id === "bur-bulgogi" && hasBulgogiVariantWord) return false;
                     if (item.id === "bur-shrimp" && hasShrimpVariantWord) return false;
                     if (item.keywords && item.keywords.some((kw) => {
@@ -893,7 +893,7 @@ function MenuPageContent() {
                     return;
                 }
 
-                // 버거(새우버거 포함)나 음료는 옵션 선택 페이지로 이동
+                // 버거(에그버거 포함)나 음료는 옵션 선택 페이지로 이동
                 const cartData = encodeURIComponent(JSON.stringify(cartItems));
                 const orderType = searchParams.get("orderType") || "takeout";
                 console.log("🚀 menu-option으로 이동:", matchedMenu.name, "menuId:", matchedMenu.id);
@@ -1974,7 +1974,7 @@ function MenuPageContent() {
                                             }}
                                         >
                                             <img
-                                                src={menuThumbImageSrc(menu) || "/shrimp.png"}
+                                                src={menuThumbImageSrc(menu) || "/egg.png"}
                                                 alt={menu.name}
                                                 style={{
                                                     width: "100%",

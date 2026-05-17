@@ -235,7 +235,7 @@ export function menuThumbImageSrc(m) {
     if (/에그|egg/.test(n)) return "/egg.png";
     if (/칠리/.test(n)) return "/chilli_shrimp.png";
     if (/크림|cream/.test(n)) return "/cream_shrimp.png";
-    if (/새우|shrimp/.test(n)) return "/shrimp.png";
+    if (/새우|shrimp/.test(n)) return "/egg.png";
     if (/치킨/.test(n) && /버거/.test(n)) return "/chicken.png";
     if (/불고기/.test(n) && /버거/.test(n)) return "/bulgogi.png";
     if (/버거/.test(n)) return "/burger.png";
