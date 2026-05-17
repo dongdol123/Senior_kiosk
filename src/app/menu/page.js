@@ -66,7 +66,7 @@ const SHRIMP_MENU_DETAIL_BY_ID = {
     "bur-chili-shrimp": {
         image: "/chilli_shrimp.png",
         title: "칠리 새우버거",
-        intro: "통새우 패티에 매콤한 스위트 칠리소스를 더한 버거입니다.",
+        intro: "통새우 패티에 매콤달콤한 칠리 소스를 더한 버거입니다.",
         nutritionLines: [
             "칼로리: 약 538kcal",
             "단백질: 23g",
@@ -81,7 +81,7 @@ const SHRIMP_MENU_DETAIL_BY_ID = {
     "bur-truffle-shrimp": {
         image: "/cream_shrimp.png",
         title: "크림 새우버거",
-        intro: "새우 패티에 부드러운 갈릭 크림소스를 더한 새우버거입니다.",
+        intro: "새우 패티에 부드러운 마늘 크림 소스를 더한 버거입니다.",
         nutritionLines: [
             "칼로리: 약 612kcal",
             "단백질: 21g",
@@ -149,6 +149,7 @@ function MenuPageContent() {
     const [activeCartAdjustButton, setActiveCartAdjustButton] = useState("");
     const [activeCartDeleteButton, setActiveCartDeleteButton] = useState("");
     const [isShrimpPopupCloseButtonActive, setIsShrimpPopupCloseButtonActive] = useState(false);
+    const [activeShrimpInfoButtonId, setActiveShrimpInfoButtonId] = useState("");
     const [shrimpMenuInfoId, setShrimpMenuInfoId] = useState(null);
     const [isShrimpInfoConfirmActive, setIsShrimpInfoConfirmActive] = useState(false);
     const [isShrimpInfoDeclineActive, setIsShrimpInfoDeclineActive] = useState(false);
@@ -1993,17 +1994,33 @@ function MenuPageContent() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setShrimpMenuInfoId(menu.id)}
+                                        onClick={() => {
+                                            setActiveShrimpInfoButtonId(menu.id);
+                                            setTimeout(() => {
+                                                setShrimpMenuInfoId(menu.id);
+                                                setActiveShrimpInfoButtonId("");
+                                            }, 120);
+                                        }}
                                         style={{
                                             marginTop: "auto",
-                                            padding: "10px 14px",
-                                            borderRadius: 10,
-                                            border: "2px solid #002e55",
-                                            background: "#fff",
-                                            color: "#002e55",
-                                            fontSize: "1.25rem",
-                                            fontWeight: 700,
+                                            width: "100%",
+                                            padding: "14px 18px",
+                                            borderRadius: "16px",
+                                            border:
+                                                activeShrimpInfoButtonId === menu.id
+                                                    ? "2px solid #002e55"
+                                                    : "2px solid #d9e3ef",
+                                            backgroundColor:
+                                                activeShrimpInfoButtonId === menu.id ? "#c8d8ea" : "#f5f8fc",
+                                            color: "#000",
+                                            fontSize: "26px",
+                                            fontWeight: activeShrimpInfoButtonId === menu.id ? 700 : 500,
                                             cursor: "pointer",
+                                            transition: "all 0.2s",
+                                            boxShadow:
+                                                activeShrimpInfoButtonId === menu.id
+                                                    ? "0 4px 10px rgba(0,0,0,0.12)"
+                                                    : "0 2px 6px rgba(0,0,0,0.06)",
                                         }}
                                     >
                                         메뉴 안내
@@ -2046,7 +2063,7 @@ function MenuPageContent() {
                             style={{
                                 display: "flex",
                                 alignItems: "center",
-                                justifyContent: "space-between",
+                                justifyContent: "flex-start",
                                 gap: 16,
                                 marginBottom: 20,
                             }}
@@ -2054,22 +2071,6 @@ function MenuPageContent() {
                             <h2 style={{ fontSize: "2.2rem", fontWeight: 800, color: "#000000", margin: 0 }}>
                                 메뉴 정보 안내
                             </h2>
-                            <button
-                                type="button"
-                                onClick={() => setShrimpMenuInfoId(null)}
-                                style={{
-                                    padding: "12px 18px",
-                                    backgroundColor: "#002e55",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: "10px",
-                                    cursor: "pointer",
-                                    fontSize: "1.35rem",
-                                    fontWeight: "700",
-                                }}
-                            >
-                                닫기
-                            </button>
                         </div>
                         <div
                             style={{
@@ -2135,7 +2136,7 @@ function MenuPageContent() {
                             style={{
                                 display: "flex",
                                 flexWrap: "wrap",
-                                gap: 14,
+                                gap: 24,
                                 marginTop: 28,
                                 justifyContent: "center",
                             }}
@@ -2151,14 +2152,15 @@ function MenuPageContent() {
                                 }}
                                 style={{
                                     padding: "14px 28px",
-                                    borderRadius: 12,
-                                    border: "2px solid #002e55",
-                                    background: isShrimpInfoDeclineActive ? "#fec315" : "#fff",
-                                    color: "#002e55",
+                                    borderRadius: "16px",
+                                    border: isShrimpInfoDeclineActive ? "2px solid #002e55" : "2px solid #c8d8ea",
+                                    backgroundColor: "#fff",
+                                    color: "#000",
                                     fontSize: "1.5rem",
-                                    fontWeight: 800,
+                                    fontWeight: isShrimpInfoDeclineActive ? 700 : 500,
                                     cursor: "pointer",
                                     minWidth: 160,
+                                    transition: "all 0.2s",
                                 }}
                             >
                                 뒤로가기
@@ -2176,7 +2178,7 @@ function MenuPageContent() {
                                 }}
                                 style={{
                                     padding: "14px 28px",
-                                    borderRadius: 12,
+                                    borderRadius: "16px",
                                     border: "none",
                                     background: isShrimpInfoConfirmActive ? "#fec315" : "#002e55",
                                     color: "#fff",
