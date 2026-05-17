@@ -117,12 +117,30 @@ function isPopularMenuRequest(normalized) {
     const popularCue = /잘나가|잘팔리|많이나가|많이팔리|인기|베스트|best|bestseller|잘나가는|인기있는|인기많은/.test(
         normalized
     );
-    const askCue = /메뉴|뭐|어떤|있|추천|알려|보여|어때|말해|소개/.test(normalized);
+    const askCue = /메뉴|뭐|어떤|있|추천|알려|보여|어때|말해|소개|주문|해줘|해주/.test(normalized);
     return popularCue && askCue;
 }
 
-const POPULAR_MENU_VOICE_REPLY =
-    "더블 불고기버거가 가장 잘나가요. 주문하시려면 해당 메뉴를 말씀해주세요.";
+const POPULAR_MENU_ID = "bur-triple";
+
+const POPULAR_RECOMMEND_VOICE = "더블 불고기버거 주문하시겠어요?";
+
+/** 인기 메뉴 추천 팝업 전용: 화면에는 요약·영양 표시, 음성은 intro만 */
+const POPULAR_MENU_DETAIL = {
+    image: "/double_bulgogi.png",
+    title: "더블 불고기버거",
+    intro: "직화 풍미를 살린 불고기 패티에 특제 불고기 소스를 더한 버거입니다.",
+    nutritionLines: [
+        "중량: 312g",
+        "칼로리: 약 742kcal",
+        "단백질: 36g",
+        "나트륨: 1,320mg",
+        "당류: 18g",
+    ],
+    get voiceScript() {
+        return this.intro;
+    },
+};
 
 /** 음료·사이드 단품 사이즈 팝업용 (치킨윙: 6개/8개 → 미디움/라지) */
 function parseMenuSizeChoice(normalized, menuId) {
@@ -194,8 +212,15 @@ function MenuPageContent() {
     const [shrimpMenuInfoId, setShrimpMenuInfoId] = useState(null);
     const [isShrimpInfoConfirmActive, setIsShrimpInfoConfirmActive] = useState(false);
     const [isShrimpInfoDeclineActive, setIsShrimpInfoDeclineActive] = useState(false);
+    const [showPopularRecommendation, setShowPopularRecommendation] = useState(false);
+    const [showPopularMenuInfo, setShowPopularMenuInfo] = useState(false);
+    const [isPopularPopupCloseButtonActive, setIsPopularPopupCloseButtonActive] = useState(false);
+    const [isPopularInfoConfirmActive, setIsPopularInfoConfirmActive] = useState(false);
+    const [isPopularInfoDeclineActive, setIsPopularInfoDeclineActive] = useState(false);
 
     const showShrimpRecommendationRef = useRef(false);
+    const showPopularRecommendationRef = useRef(false);
+    const showPopularMenuInfoRef = useRef(false);
     const shrimpMenuInfoIdRef = useRef(null);
     const menuItemsRef = useRef(MENU_ITEMS);
     const currentPageRef = useRef(1);
@@ -206,6 +231,14 @@ function MenuPageContent() {
     useEffect(() => {
         showShrimpRecommendationRef.current = showShrimpRecommendation;
     }, [showShrimpRecommendation]);
+
+    useEffect(() => {
+        showPopularRecommendationRef.current = showPopularRecommendation;
+    }, [showPopularRecommendation]);
+
+    useEffect(() => {
+        showPopularMenuInfoRef.current = showPopularMenuInfo;
+    }, [showPopularMenuInfo]);
 
     useEffect(() => {
         selectedDrinkMenuRef.current = selectedDrinkMenu;
@@ -236,6 +269,60 @@ function MenuPageContent() {
             setShrimpMenuInfoId(null);
         }
     }, [showShrimpRecommendation]);
+
+    useEffect(() => {
+        if (!showPopularRecommendation) {
+            setShowPopularMenuInfo(false);
+        }
+    }, [showPopularRecommendation]);
+
+    useEffect(() => {
+        if (!showPopularRecommendation || showPopularMenuInfo) return;
+        let cancelled = false;
+        const msg = POPULAR_RECOMMEND_VOICE;
+        setAssistantMessage(msg);
+        (async () => {
+            isSpeakingRef.current = true;
+            try {
+                await speakKorean(msg);
+            } catch (e) {
+                console.error("인기 메뉴 추천 음성 오류:", e);
+            } finally {
+                if (!cancelled) {
+                    setTimeout(() => {
+                        isSpeakingRef.current = false;
+                        resumeSpeechRecognitionRef.current();
+                    }, 50);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [showPopularRecommendation, showPopularMenuInfo]);
+
+    useEffect(() => {
+        if (!showPopularMenuInfo) return;
+        let cancelled = false;
+        (async () => {
+            isSpeakingRef.current = true;
+            try {
+                await speakKorean(POPULAR_MENU_DETAIL.voiceScript);
+            } catch (e) {
+                console.error("인기 메뉴 안내 음성 오류:", e);
+            } finally {
+                if (!cancelled) {
+                    setTimeout(() => {
+                        isSpeakingRef.current = false;
+                        resumeSpeechRecognitionRef.current();
+                    }, 50);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [showPopularMenuInfo]);
 
     useEffect(() => {
         if (!shrimpMenuInfoId) return;
@@ -357,6 +444,26 @@ function MenuPageContent() {
         }
 
         return STATIC_MENU.filter((item) => shrimpPopupMenuIds.includes(item?.id));
+    }
+
+    function findPopularMenu() {
+        const fromItems = MENU_ITEMS.find((item) => item.id === POPULAR_MENU_ID);
+        if (fromItems) return fromItems;
+        return STATIC_MENU.find((item) => item.id === POPULAR_MENU_ID) || null;
+    }
+
+    function openPopularRecommendation() {
+        setShowShrimpRecommendation(false);
+        setShrimpMenuInfoId(null);
+        setShowPopularRecommendation(true);
+        setShowPopularMenuInfo(false);
+    }
+
+    function handlePopularRecommendationSelect(menu) {
+        setShowPopularRecommendation(false);
+        setShowPopularMenuInfo(false);
+        setActiveMenuCardId(null);
+        proceedMenuCardClick(menu);
     }
 
     function findMenuByTranscript(normalized) {
@@ -577,6 +684,7 @@ function MenuPageContent() {
 
     function handleShrimpRecommendationSelect(menu) {
         setShowShrimpRecommendation(false);
+        setShrimpMenuInfoId(null);
         setActiveMenuCardId(null);
         proceedMenuCardClick(menu);
     }
@@ -778,6 +886,79 @@ function MenuPageContent() {
             const wantsCreamShrimpInfo =
                 asksShrimpMenuExplain &&
                 (/크림|cream|트러플|truffle/.test(normalized) && /새우|shrimp|버거/.test(normalized));
+            const wantsDoubleBulgogiInfo =
+                asksShrimpMenuExplain &&
+                (/더블|double/.test(normalized) && /불고기|bulgogi|버거/.test(normalized));
+
+            // 인기 메뉴 추천 팝업: 메뉴 안내 / 선택
+            if (showPopularRecommendationRef.current) {
+                if (showPopularMenuInfoRef.current) {
+                    if (
+                        normalized === "선택" ||
+                        /이걸로할게|이걸로할래|이걸로주문|그걸로할게|그걸로할래|세트로|세트선택|세트로할게|선택할게|선택할래|이거선택|메뉴선택|좋아요|좋아|응그래|그래요|그래|맞아|맞아요|확인|주문|주문할게/.test(
+                            normalized
+                        )
+                    ) {
+                        const m = menuItemsRef.current.find((item) => item.id === POPULAR_MENU_ID);
+                        if (m) {
+                            try {
+                                recognition.stop();
+                            } catch {
+                                /* ignore */
+                            }
+                            setShowPopularMenuInfo(false);
+                            setShowPopularRecommendation(false);
+                            setActiveMenuCardId(m.id);
+                            const cartData = encodeURIComponent(JSON.stringify(cartItemsRef.current));
+                            const sp = searchParamsRef.current;
+                            const orderType = sp?.get("orderType") || "takeout";
+                            const menuState = `menuPage=${currentPageRef.current}&menuCategory=${selectedCategoryRef.current}`;
+                            stopVoiceSession(recognitionRef.current, shouldListenRef, isSpeakingRef);
+                            const path = `/menu-option?menuId=${m.id}&menuName=${encodeURIComponent(m.name)}&price=${m.price}&cart=${cartData}&orderType=${orderType}&${menuState}&${entryQuery(getOrderFlowEntry(sp))}`;
+                            routerRef.current.push(path);
+                        }
+                        return;
+                    }
+                    if (
+                        normalized === "뒤로가기" ||
+                        /별로야|별로|별로에요|싫어|아니야|아니에요|아니|다시|취소|뒤로|돌아/.test(normalized)
+                    ) {
+                        setShowPopularMenuInfo(false);
+                        return;
+                    }
+                    return;
+                }
+                if (wantsDoubleBulgogiInfo) {
+                    setShowPopularMenuInfo(true);
+                    setAssistantMessage(`${POPULAR_MENU_DETAIL.title} 안내입니다. 화면을 확인해 주세요.`);
+                    return;
+                }
+                if (
+                    normalized === "선택" ||
+                    /이걸로할게|이걸로할래|주문|주문할게|주문할래|좋아|좋아요|응|그래|맞아|확인/.test(normalized)
+                ) {
+                    const m = findPopularMenu();
+                    if (m) {
+                        handlePopularRecommendationSelect(m);
+                    }
+                    return;
+                }
+                if (
+                    normalized === "뒤로가기" ||
+                    /별로야|별로|아니야|아니|취소|닫기/.test(normalized)
+                ) {
+                    setShowPopularRecommendation(false);
+                    setShowPopularMenuInfo(false);
+                    resumeSpeechRecognitionRef.current();
+                    return;
+                }
+                return;
+            } else if (wantsDoubleBulgogiInfo && !showShrimpRecommendationRef.current) {
+                openPopularRecommendation();
+                setShowPopularMenuInfo(true);
+                setAssistantMessage(`${POPULAR_MENU_DETAIL.title} 안내입니다. 화면을 확인해 주세요.`);
+                return;
+            }
 
             // 새우 추천 팝업: 메뉴 안내 / 안내 화면에서 선택
             if (showShrimpRecommendationRef.current) {
@@ -894,6 +1075,12 @@ function MenuPageContent() {
                 return;
             }
 
+            // 인기·잘나가는 메뉴 추천 (탭 이동·메뉴 매칭보다 먼저)
+            if (isPopularMenuRequest(normalized)) {
+                openPopularRecommendation();
+                return;
+            }
+
             // 음료·사이드 메뉴 종류 안내 → 해당 탭으로 이동
             if (isDrinkCategoryBrowseRequest(normalized)) {
                 switchMenuCategory("drink");
@@ -922,25 +1109,14 @@ function MenuPageContent() {
                 return;
             }
 
-            // 인기·잘나가는 메뉴 (음성 안내만, 새우 추천 팝업과 별도)
-            if (isPopularMenuRequest(normalized)) {
-                setAssistantMessage(POPULAR_MENU_VOICE_REPLY);
-                isSpeakingRef.current = true;
-                void speakKorean(POPULAR_MENU_VOICE_REPLY)
-                    .catch(() => {})
-                    .finally(() => {
-                        isSpeakingRef.current = false;
-                        resumeSpeechRecognitionRef.current();
-                    });
-                return;
-            }
-
             // 새우 추천 요청 - 메뉴 매칭보다 먼저 (그러지 않으면 "새우" 키워드 때문에 에그버거로 잡힘)
             const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)|(들어간|메뉴|추천|보여|알려).*새우/;
             if (shrimpRecommendPattern.test(normalized)) {
                 try { recognition.stop(); } catch { }
                 const shrimpMenus = findShrimpMenus();
                 if (shrimpMenus.length > 0) {
+                    setShowPopularRecommendation(false);
+                    setShowPopularMenuInfo(false);
                     setShowShrimpRecommendation(true);
                     const msg = "새우 메뉴를 추천해드릴게요. 원하시는 메뉴를 선택해주세요.";
                     setAssistantMessage(msg);
@@ -2038,6 +2214,249 @@ function MenuPageContent() {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showPopularRecommendation && findPopularMenu() && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.52)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1100,
+                        padding: 24,
+                    }}
+                    onClick={() => {
+                        if (showPopularMenuInfo) {
+                            setShowPopularMenuInfo(false);
+                        } else {
+                            setShowPopularRecommendation(false);
+                        }
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "min(960px, 100%)",
+                            background: "#f5f8fc",
+                            borderRadius: 24,
+                            padding: "28px",
+                            border: "2px solid #d9e3ef",
+                            boxShadow: "0 24px 60px rgba(0, 46, 85, 0.22)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 16,
+                                marginBottom: 24,
+                            }}
+                        >
+                            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000", margin: 0, flex: 1, textAlign: "center" }}>
+                                인기 메뉴 추천
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsPopularPopupCloseButtonActive(true);
+                                    setTimeout(() => {
+                                        setShowPopularRecommendation(false);
+                                        setShowPopularMenuInfo(false);
+                                        setIsPopularPopupCloseButtonActive(false);
+                                    }, 120);
+                                }}
+                                style={{
+                                    padding: "12px 18px",
+                                    backgroundColor: isPopularPopupCloseButtonActive ? "#fec315" : "#002e55",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    cursor: "pointer",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "700",
+                                }}
+                            >
+                                닫기
+                            </button>
+                        </div>
+                        {(() => {
+                            const menu = findPopularMenu();
+                            if (!menu) return null;
+                            return (
+                                <div style={{ display: "flex", justifyContent: "center" }}>
+                                    <div
+                                        style={{
+                                            width: "min(360px, 100%)",
+                                            border: activeMenuCardId === menu.id ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                            borderRadius: 22,
+                                            background: "#fff",
+                                            padding: 18,
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            textAlign: "center",
+                                        }}
+                                    >
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveMenuCardId(menu.id);
+                                                setTimeout(() => handlePopularRecommendationSelect(menu), 120);
+                                            }}
+                                            style={{ border: "none", background: "transparent", cursor: "pointer", width: "100%" }}
+                                        >
+                                            <div
+                                                style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}
+                                            >
+                                                <img
+                                                    src={menuThumbImageSrc(menu) || POPULAR_MENU_DETAIL.image}
+                                                    alt={menu.name}
+                                                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                                                />
+                                            </div>
+                                            <div style={{ fontSize: "2.2rem", fontWeight: 800, marginBottom: 10 }}>
+                                                {menu.name}
+                                            </div>
+                                            <div style={{ fontSize: "1.9rem", color: "#002e55", fontWeight: 800, marginBottom: 10 }}>
+                                                {menu.price.toLocaleString()}원
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPopularMenuInfo(true)}
+                                            style={{
+                                                marginTop: "auto",
+                                                width: "100%",
+                                                padding: "14px 18px",
+                                                borderRadius: "16px",
+                                                border: "2px solid #d9e3ef",
+                                                backgroundColor: "#f5f8fc",
+                                                fontSize: "26px",
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            메뉴 안내
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
+
+            {showPopularRecommendation && showPopularMenuInfo && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0,0,0,0.55)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 1150,
+                        padding: 24,
+                    }}
+                    onClick={() => setShowPopularMenuInfo(false)}
+                >
+                    <div
+                        style={{
+                            width: "min(960px, 100%)",
+                            background: "#f5f8fc",
+                            borderRadius: 24,
+                            padding: "28px",
+                            border: "2px solid #d9e3ef",
+                            boxShadow: "0 24px 60px rgba(0, 46, 85, 0.22)",
+                            maxHeight: "min(90vh, 900px)",
+                            overflow: "auto",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 style={{ fontSize: "2.2rem", fontWeight: 800, margin: "0 0 20px" }}>메뉴 정보 안내</h2>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+                            <div
+                                style={{
+                                    flex: "1 1 280px",
+                                    minHeight: 260,
+                                    borderRadius: 18,
+                                    background: "#fff",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    padding: 16,
+                                    border: "1px solid #d9e3ef",
+                                }}
+                            >
+                                <img
+                                    src={POPULAR_MENU_DETAIL.image}
+                                    alt={POPULAR_MENU_DETAIL.title}
+                                    style={{ width: "100%", maxWidth: 420, maxHeight: 320, objectFit: "contain" }}
+                                />
+                            </div>
+                            <div style={{ flex: "1.2 1 320px", minWidth: 0 }}>
+                                <div style={{ fontSize: "2rem", fontWeight: 800, marginBottom: 12 }}>{POPULAR_MENU_DETAIL.title}</div>
+                                <p style={{ fontSize: "1.45rem", lineHeight: 1.55, margin: "0 0 16px" }}>{POPULAR_MENU_DETAIL.intro}</p>
+                                <ul style={{ margin: 0, paddingLeft: 22, fontSize: "1.25rem", lineHeight: 1.65, color: "#002e55" }}>
+                                    {POPULAR_MENU_DETAIL.nutritionLines.map((line) => (
+                                        <li key={line}>{line}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 24, marginTop: 28, justifyContent: "center" }}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsPopularInfoDeclineActive(true);
+                                    setTimeout(() => {
+                                        setShowPopularMenuInfo(false);
+                                        setIsPopularInfoDeclineActive(false);
+                                    }, 120);
+                                }}
+                                style={{
+                                    padding: "14px 28px",
+                                    borderRadius: "16px",
+                                    border: isPopularInfoDeclineActive ? "2px solid #002e55" : "2px solid #c8d8ea",
+                                    backgroundColor: "#fff",
+                                    fontSize: "1.5rem",
+                                    fontWeight: isPopularInfoDeclineActive ? 700 : 500,
+                                    cursor: "pointer",
+                                    minWidth: 160,
+                                }}
+                            >
+                                뒤로가기
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const menu = findPopularMenu();
+                                    if (!menu) return;
+                                    setIsPopularInfoConfirmActive(true);
+                                    setTimeout(() => {
+                                        handlePopularRecommendationSelect(menu);
+                                        setIsPopularInfoConfirmActive(false);
+                                    }, 120);
+                                }}
+                                style={{
+                                    padding: "14px 28px",
+                                    borderRadius: "16px",
+                                    border: "none",
+                                    background: isPopularInfoConfirmActive ? "#fec315" : "#002e55",
+                                    color: "#fff",
+                                    fontSize: "1.5rem",
+                                    fontWeight: 800,
+                                    cursor: "pointer",
+                                    minWidth: 160,
+                                }}
+                            >
+                                선택
+                            </button>
                         </div>
                     </div>
                 </div>
