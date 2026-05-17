@@ -67,6 +67,9 @@ function cartItemImageSrc(item) {
 
 function getMenuImageSrc(menuId, menuName) {
     const normalizedName = (menuName || "").replace(/\s+/g, "").toLowerCase();
+    if (/에그|egg/.test(normalizedName)) {
+        return "/egg.png";
+    }
     if (/칠리/.test(normalizedName) && /새우|shrimp/.test(normalizedName)) {
         return "/chilli_shrimp.png";
     }

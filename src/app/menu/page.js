@@ -35,6 +35,7 @@ function cartItemImageSrc(it) {
             : it?.name || "";
     const raw = baseName.replace(/\s+/g, "").toLowerCase();
     const n = raw.replace(/\(.*?\)/g, "");
+    if (/에그|egg/.test(n)) return "/egg.png";
     if (/마늘/.test(n) && /불고기/.test(n) && /버거/.test(n)) return "/garlic_bulgogi.png";
     if (/칠리/.test(n) && /새우|shrimp/.test(n)) return "/chilli_shrimp.png";
     if (/크림|cream/.test(n) && /새우|shrimp/.test(n)) return "/cream_shrimp.png";
@@ -727,7 +728,7 @@ function MenuPageContent() {
             //    - 새우 계열: 칠리/크림·cream
             const findById = (id) => MENU_ITEMS.find((m) => m.id === id);
             const isBulgogiContext = /불고기|bulgogi/.test(normalized);
-            const isShrimpContext = /새우|shrimp/.test(normalized);
+            const isShrimpContext = /새우|shrimp|에그|egg/.test(normalized);
             if (isBulgogiContext) {
                 if (/치즈|cheese/.test(normalized)) matchedMenu = findById("bur-mozza");
                 else if (/더블|double/.test(normalized)) matchedMenu = findById("bur-triple");
@@ -740,7 +741,7 @@ function MenuPageContent() {
             } else if (isShrimpContext) {
                 if (/칠리|chili/.test(normalized)) matchedMenu = findById("bur-chili-shrimp");
                 else if (/크림|cream/.test(normalized)) matchedMenu = findById("bur-truffle-shrimp");
-                else if (/^(새우|새우버거|shrimp)$/.test(normalized) || /새우버거/.test(normalized)) {
+                else if (/^(새우|새우버거|shrimp|에그|에그버거|egg)$/.test(normalized) || /새우버거|에그버거/.test(normalized)) {
                     matchedMenu = findById("bur-shrimp");
                 }
             }

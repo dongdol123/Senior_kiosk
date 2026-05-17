@@ -31,11 +31,11 @@ export const STATIC_MENU = [
     },
     {
         id: "bur-shrimp",
-        name: "새우버거",
+        name: "에그버거",
         price: 6000,
         category: "burger",
-        image: "/shrimp.png",
-        keywords: ["새우", "새우버거", "shrimp"],
+        image: "/egg.png",
+        keywords: ["에그", "에그버거", "egg", "새우", "새우버거", "shrimp"],
     },
     {
         id: "bur-triple",
@@ -232,6 +232,7 @@ export function mergeMenusFromApiResponse(data) {
 export function menuThumbImageSrc(m) {
     if (m?.image) return m.image;
     const n = normalizeMenuKey(m?.name);
+    if (/에그|egg/.test(n)) return "/egg.png";
     if (/칠리/.test(n)) return "/chilli_shrimp.png";
     if (/크림|cream/.test(n)) return "/cream_shrimp.png";
     if (/새우|shrimp/.test(n)) return "/shrimp.png";
