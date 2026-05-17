@@ -95,6 +95,47 @@ const SHRIMP_MENU_DETAIL_BY_ID = {
     },
 };
 
+function isDrinkCategoryBrowseRequest(normalized) {
+    return (
+        (/음료|음료수|드링크/.test(normalized) &&
+            /종류|뭐|어떤|있|보여|알려|메뉴|리스트|목록/.test(normalized)) ||
+        /(종류|뭐|어떤|있|보여|알려|메뉴).*(음료|음료수|드링크)/.test(normalized)
+    );
+}
+
+function isSideCategoryBrowseRequest(normalized) {
+    return (
+        (/사이드/.test(normalized) &&
+            /종류|뭐|어떤|있|보여|알려|메뉴|리스트|목록/.test(normalized)) ||
+        /(종류|뭐|어떤|있|보여|알려|메뉴).*(사이드|사이드메뉴)/.test(normalized)
+    );
+}
+
+/** 인기·잘나가는 메뉴 문의 (새우 추천과 구분 — 새우 키워드 있으면 제외) */
+function isPopularMenuRequest(normalized) {
+    if (/새우|shrimp|에그|egg/.test(normalized)) return false;
+    const popularCue = /잘나가|잘팔리|많이나가|많이팔리|인기|베스트|best|bestseller|잘나가는|인기있는|인기많은/.test(
+        normalized
+    );
+    const askCue = /메뉴|뭐|어떤|있|추천|알려|보여|어때|말해|소개/.test(normalized);
+    return popularCue && askCue;
+}
+
+const POPULAR_MENU_VOICE_REPLY =
+    "더블 불고기버거가 가장 잘나가요. 주문하시려면 해당 메뉴를 말씀해주세요.";
+
+/** 음료·사이드 단품 사이즈 팝업용 (치킨윙: 6개/8개 → 미디움/라지) */
+function parseMenuSizeChoice(normalized, menuId) {
+    if (menuId === "side-wing") {
+        if (/8개|여덟개|여덟|팔개|라지|큰|large|빅/.test(normalized)) return "라지";
+        if (/6개|여섯개|여섯|육개|미디움|중간|medium|레귤러|보통|작은/.test(normalized)) return "미디움";
+        return null;
+    }
+    if (/라지|큰|large|빅|라아지/.test(normalized)) return "라지";
+    if (/미디움|중간|medium|레귤러|보통|미디엄/.test(normalized)) return "미디움";
+    return null;
+}
+
 function MenuPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -159,10 +200,20 @@ function MenuPageContent() {
     const menuItemsRef = useRef(MENU_ITEMS);
     const currentPageRef = useRef(1);
     const selectedCategoryRef = useRef("burger");
+    const selectedDrinkMenuRef = useRef(null);
+    const selectedSideMenuRef = useRef(null);
 
     useEffect(() => {
         showShrimpRecommendationRef.current = showShrimpRecommendation;
     }, [showShrimpRecommendation]);
+
+    useEffect(() => {
+        selectedDrinkMenuRef.current = selectedDrinkMenu;
+    }, [selectedDrinkMenu]);
+
+    useEffect(() => {
+        selectedSideMenuRef.current = selectedSideMenu;
+    }, [selectedSideMenu]);
 
     useEffect(() => {
         shrimpMenuInfoIdRef.current = shrimpMenuInfoId;
@@ -210,6 +261,29 @@ function MenuPageContent() {
             cancelled = true;
         };
     }, [shrimpMenuInfoId]);
+
+    useEffect(() => {
+        if (!selectedDrinkMenu && !selectedSideMenu) return;
+        let cancelled = false;
+        const msg = "사이즈 선택해주세요.";
+        setAssistantMessage(msg);
+        (async () => {
+            isSpeakingRef.current = true;
+            try {
+                await speakKorean(msg);
+            } catch {
+                /* ignore */
+            } finally {
+                if (!cancelled) {
+                    isSpeakingRef.current = false;
+                    resumeSpeechRecognitionRef.current();
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedDrinkMenu?.id, selectedSideMenu?.id]);
 
     useEffect(() => {
         const menuCategory = searchParams.get("menuCategory");
@@ -470,6 +544,16 @@ function MenuPageContent() {
         setTimeout(() => {
             proceedMenuCardClick(menu);
         }, 120);
+    }
+
+    function switchMenuCategory(category) {
+        setSelectedCategory(category);
+        setCurrentPage(1);
+        setSelectedDrinkMenu(null);
+        setSelectedSideMenu(null);
+        setActiveDrinkSizeButton("");
+        setActiveSideSizeButton("");
+        setActiveMenuCardId(null);
     }
 
     function proceedMenuCardClick(menu) {
@@ -767,6 +851,90 @@ function MenuPageContent() {
                 return;
             }
 
+            // 음료·사이드 사이즈 선택 팝업 (치킨윙 6개/8개 포함)
+            const pendingDrink = selectedDrinkMenuRef.current;
+            const pendingSide = selectedSideMenuRef.current;
+            if (pendingDrink || pendingSide) {
+                if (/취소|취소하기|닫기|그만/.test(normalized)) {
+                    setSelectedDrinkMenu(null);
+                    setSelectedSideMenu(null);
+                    setActiveDrinkSizeButton("");
+                    setActiveSideSizeButton("");
+                    setActiveMenuCardId(null);
+                    resumeSpeechRecognitionRef.current();
+                    return;
+                }
+                const sizeMenu = pendingDrink || pendingSide;
+                const sizeChoice = parseMenuSizeChoice(normalized, sizeMenu.id);
+                if (sizeChoice) {
+                    if (pendingDrink) {
+                        addDrinkWithSize(pendingDrink, sizeChoice);
+                    } else {
+                        addSideWithSize(pendingSide, sizeChoice);
+                    }
+                    const label =
+                        sizeMenu.id === "side-wing"
+                            ? sizeChoice === "미디움"
+                                ? "6개"
+                                : "8개"
+                            : sizeChoice === "미디움"
+                              ? "중간"
+                              : "큰";
+                    const doneMsg = `${sizeMenu.name} ${label} 사이즈를 담았어요.`;
+                    setAssistantMessage(doneMsg);
+                    isSpeakingRef.current = true;
+                    void speakKorean(doneMsg)
+                        .catch(() => {})
+                        .finally(() => {
+                            isSpeakingRef.current = false;
+                            resumeSpeechRecognitionRef.current();
+                        });
+                    return;
+                }
+                return;
+            }
+
+            // 음료·사이드 메뉴 종류 안내 → 해당 탭으로 이동
+            if (isDrinkCategoryBrowseRequest(normalized)) {
+                switchMenuCategory("drink");
+                const msg = "음료 메뉴입니다. 원하시는 음료를 말씀해 주세요.";
+                setAssistantMessage(msg);
+                isSpeakingRef.current = true;
+                void speakKorean(msg)
+                    .catch(() => {})
+                    .finally(() => {
+                        isSpeakingRef.current = false;
+                        resumeSpeechRecognitionRef.current();
+                    });
+                return;
+            }
+            if (isSideCategoryBrowseRequest(normalized)) {
+                switchMenuCategory("side");
+                const msg = "사이드 메뉴입니다. 원하시는 사이드를 말씀해 주세요.";
+                setAssistantMessage(msg);
+                isSpeakingRef.current = true;
+                void speakKorean(msg)
+                    .catch(() => {})
+                    .finally(() => {
+                        isSpeakingRef.current = false;
+                        resumeSpeechRecognitionRef.current();
+                    });
+                return;
+            }
+
+            // 인기·잘나가는 메뉴 (음성 안내만, 새우 추천 팝업과 별도)
+            if (isPopularMenuRequest(normalized)) {
+                setAssistantMessage(POPULAR_MENU_VOICE_REPLY);
+                isSpeakingRef.current = true;
+                void speakKorean(POPULAR_MENU_VOICE_REPLY)
+                    .catch(() => {})
+                    .finally(() => {
+                        isSpeakingRef.current = false;
+                        resumeSpeechRecognitionRef.current();
+                    });
+                return;
+            }
+
             // 새우 추천 요청 - 메뉴 매칭보다 먼저 (그러지 않으면 "새우" 키워드 때문에 에그버거로 잡힘)
             const shrimpRecommendPattern = /새우.*(추천|메뉴|들어간|보여|알려|뭐|어떤|있)|(들어간|메뉴|추천|보여|알려).*새우/;
             if (shrimpRecommendPattern.test(normalized)) {
@@ -865,14 +1033,48 @@ function MenuPageContent() {
 
             if (matchedMenu) {
                 console.log("✅ 메뉴 매칭됨:", matchedMenu.name, "사용자 입력:", transcript);
-                
-                // 음성 인식 중지 (페이지 이동 전)
-                try { 
-                    recognition.stop(); 
+
+                if (isDrinkMenu(matchedMenu) || isTapToAddSide(matchedMenu)) {
+                    const sizeChoice = parseMenuSizeChoice(normalized, matchedMenu.id);
+                    if (sizeChoice) {
+                        if (isDrinkMenu(matchedMenu)) {
+                            addDrinkWithSize(matchedMenu, sizeChoice);
+                        } else {
+                            addSideWithSize(matchedMenu, sizeChoice);
+                        }
+                        const label =
+                            matchedMenu.id === "side-wing"
+                                ? sizeChoice === "미디움"
+                                    ? "6개"
+                                    : "8개"
+                                : sizeChoice === "미디움"
+                                  ? "중간"
+                                  : "큰";
+                        const doneMsg = `${matchedMenu.name} ${label} 사이즈를 담았어요.`;
+                        setAssistantMessage(doneMsg);
+                        isSpeakingRef.current = true;
+                        void speakKorean(doneMsg)
+                            .catch(() => {})
+                            .finally(() => {
+                                isSpeakingRef.current = false;
+                                resumeSpeechRecognitionRef.current();
+                            });
+                        return;
+                    }
+                    setActiveMenuCardId(matchedMenu.id);
+                    setTimeout(() => {
+                        proceedMenuCardClick(matchedMenu);
+                    }, 120);
+                    return;
+                }
+
+                // 버거 등 — 옵션(세트) 페이지로 이동
+                try {
+                    recognition.stop();
                 } catch (e) {
                     console.log("음성 인식 중지 오류:", e);
                 }
-                
+
                 setActiveMenuCardId(matchedMenu.id);
                 setTimeout(() => {
                     proceedMenuCardClick(matchedMenu);
@@ -1232,10 +1434,7 @@ function MenuPageContent() {
                 }}
             >
                 <button
-                    onClick={() => {
-                        setSelectedCategory("burger");
-                        setCurrentPage(1);
-                    }}
+                    onClick={() => switchMenuCategory("burger")}
                     style={{
                         flex: 1,
                         padding: "14px 18px",
@@ -1253,10 +1452,7 @@ function MenuPageContent() {
                     버거
                 </button>
                 <button
-                    onClick={() => {
-                        setSelectedCategory("drink");
-                        setCurrentPage(1);
-                    }}
+                    onClick={() => switchMenuCategory("drink")}
                     style={{
                         flex: 1,
                         padding: "14px 18px",
@@ -1274,10 +1470,7 @@ function MenuPageContent() {
                     음료
                 </button>
                 <button
-                    onClick={() => {
-                        setSelectedCategory("side");
-                        setCurrentPage(1);
-                    }}
+                    onClick={() => switchMenuCategory("side")}
                     style={{
                         flex: 1,
                         padding: "14px 18px",

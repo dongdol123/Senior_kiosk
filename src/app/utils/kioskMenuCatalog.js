@@ -107,7 +107,7 @@ export const STATIC_MENU = [
         price: 4000,
         category: "side",
         image: "/wing.png",
-        keywords: ["치킨윙", "윙", "wing"],
+        keywords: ["치킨윙", "윙", "wing", "6개", "8개"],
     },
     {
         id: "drink-cola",
