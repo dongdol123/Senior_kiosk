@@ -95,6 +95,7 @@ mysql -u kiosk -p senior_kiosk < server/db/add_drinks_sides_menu.sql
 ### MySQL: `Access denied for user '...'@'<IP>'`
 
 - `.env(.local)`의 `DB_HOST` / `DB_USER`가 운영 환경에 맞는지 확인.
+
 - PM2를 쓰면 PM2가 보관 중인 환경변수가 더 우선될 수 있음.
 
 ```bash
