@@ -7,6 +7,7 @@ export default function HomePage() {
   const router = useRouter();
   const [activeOrderType, setActiveOrderType] = useState("");
   const [showQuickRecommendChoice, setShowQuickRecommendChoice] = useState(false);
+  const [isQuickRecommendCloseButtonActive, setIsQuickRecommendCloseButtonActive] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -330,12 +331,12 @@ export default function HomePage() {
                 style={{
                   width: "min(280px, 100%)",
                   minHeight: "92px",
-                  border: "none",
+                  border: "2px solid #d9e3ef",
                   borderRadius: "22px",
-                  backgroundColor: "#002e55",
-                  color: "#ffffff",
+                  backgroundColor: "#f5f8fc",
+                  color: "#002e55",
                   fontFamily: mainFontFamily,
-                  fontSize: "clamp(1.3rem, 3vw, 1.9rem)",
+                  fontSize: "clamp(1.5rem, 3.4vw, 2.1rem)",
                   fontWeight: 800,
                   cursor: "pointer",
                 }}
@@ -348,32 +349,39 @@ export default function HomePage() {
                 style={{
                   width: "min(280px, 100%)",
                   minHeight: "92px",
-                  border: "3px solid #002e55",
+                  border: "2px solid #d9e3ef",
                   borderRadius: "22px",
-                  backgroundColor: "#ffffff",
+                  backgroundColor: "#f5f8fc",
                   color: "#002e55",
                   fontFamily: mainFontFamily,
-                  fontSize: "clamp(1.3rem, 3vw, 1.9rem)",
+                  fontSize: "clamp(1.5rem, 3.4vw, 2.1rem)",
                   fontWeight: 800,
                   cursor: "pointer",
                 }}
-              >
-                포장하기
-              </button>
-            </div>
+            >
+              포장하기
+            </button>
+          </div>
             <button
               type="button"
-              onClick={() => setShowQuickRecommendChoice(false)}
+              onClick={() => {
+                setIsQuickRecommendCloseButtonActive(true);
+                setTimeout(() => {
+                  setShowQuickRecommendChoice(false);
+                  setIsQuickRecommendCloseButtonActive(false);
+                }, 120);
+              }}
               style={{
                 alignSelf: "center",
+                padding: "12px 18px",
+                backgroundColor: isQuickRecommendCloseButtonActive ? "#fec315" : "#002e55",
+                color: "#fff",
                 border: "none",
-                background: "transparent",
-                color: "#5f7690",
-                fontFamily: mainFontFamily,
-                fontSize: "1.05rem",
-                fontWeight: 700,
+                borderRadius: "10px",
                 cursor: "pointer",
-                padding: "6px 10px",
+                fontSize: "1.5rem",
+                fontWeight: "700",
+                fontFamily: mainFontFamily,
               }}
             >
               닫기
