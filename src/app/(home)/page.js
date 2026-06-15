@@ -239,7 +239,7 @@ export default function HomePage() {
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span style={{ fontSize: "clamp(1.25rem, 3.5vw, 2rem)", fontWeight: 800 }}>
+              <span style={{ fontSize: "clamp(1.45rem, 3.9vw, 2.2rem)", fontWeight: 800 }}>
                 고르기 쉬운 빠른 추천
               </span>
               <span style={{ fontSize: "clamp(0.95rem, 2vw, 1.2rem)", fontWeight: 600, color: "#33597b" }}>
