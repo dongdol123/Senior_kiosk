@@ -2342,7 +2342,7 @@ function MenuPageContent() {
                                 marginBottom: 24,
                             }}
                         >
-                            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000", margin: 0, flex: 1, textAlign: "center" }}>
+                            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000", margin: 0, flex: 1, textAlign: "left" }}>
                                 인기 메뉴 추천
                             </h2>
                             <button
