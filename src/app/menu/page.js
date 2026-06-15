@@ -123,7 +123,7 @@ function isPopularMenuRequest(normalized) {
 
 const POPULAR_MENU_ID = "bur-triple";
 
-const POPULAR_RECOMMEND_VOICE = "인기 메뉴 네 가지를 먼저 보여드릴게요.";
+const POPULAR_RECOMMEND_VOICE = "빠른 메뉴 추천 네 가지를 먼저 보여드릴게요.";
 
 /** 인기 메뉴 추천 팝업 전용: 화면에는 요약·영양 표시, 음성은 intro만 */
 const POPULAR_MENU_DETAIL = {
@@ -314,7 +314,7 @@ function MenuPageContent() {
             try {
                 await speakKorean(msg);
             } catch (e) {
-                console.error("인기 메뉴 추천 음성 오류:", e);
+                console.error("빠른 메뉴 추천 음성 오류:", e);
             } finally {
                 if (!cancelled) {
                     setTimeout(() => {
@@ -340,7 +340,7 @@ function MenuPageContent() {
             try {
                 await speakKorean(detail.voiceScript);
             } catch (e) {
-                console.error("인기 메뉴 안내 음성 오류:", e);
+                console.error("빠른 메뉴 안내 음성 오류:", e);
             } finally {
                 if (!cancelled) {
                     setTimeout(() => {
@@ -504,7 +504,7 @@ function MenuPageContent() {
 
     function getPopularMenuDetail(menu) {
         const preset = POPULAR_MENU_DETAIL_BY_ID[menu?.id];
-        const intro = preset?.intro || `${menu?.name || "이 메뉴"}는 편하게 고르기 좋은 인기 메뉴예요.`;
+        const intro = preset?.intro || `${menu?.name || "이 메뉴"}는 편하게 고르기 좋은 빠른 메뉴 추천 항목이에요.`;
         const summaryLines = preset?.summaryLines || ["부담 없이 고르기 좋은 메뉴예요"];
         return {
             image: menuThumbImageSrc(menu) || menu?.image || POPULAR_MENU_DETAIL.image,
@@ -2343,7 +2343,7 @@ function MenuPageContent() {
                             }}
                         >
                             <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000", margin: 0, flex: 1, textAlign: "left" }}>
-                                인기 메뉴 추천
+                                빠른 메뉴 추천
                             </h2>
                             <button
                                 type="button"
