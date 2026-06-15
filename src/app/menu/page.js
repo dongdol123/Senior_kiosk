@@ -147,20 +147,20 @@ const POPULAR_MENU_IDS = ["bur-triple", "bur-bulgogi", "bur-mozza", "bur-chicken
 
 const POPULAR_MENU_DETAIL_BY_ID = {
     "bur-triple": {
-        intro: "진한 불고기 맛을 좋아하시면 더블 불고기버거를 추천드려요.",
-        summaryLines: ["가격대가 무난해요", "든든하게 드시기 좋아요"],
+        intro: "불고기버거와 같은 맛에 패티가 두 장 들어간 버거입니다.",
+        nutritionLines: ["칼로리: 742kcal", "단백질: 18g", "나트륨: 1,320mg"],
     },
     "bur-bulgogi": {
-        intro: "불고기버거는 익숙한 맛이라 처음 고르실 때 부담이 적어요.",
-        summaryLines: ["기본에 가까운 인기 메뉴예요", "달콤한 불고기 맛이 특징이에요"],
+        intro: "달콤한 불고기 소스가 들어간 기본 버거입니다.",
+        nutritionLines: ["칼로리: 512kcal", "단백질: 14g", "나트륨: 980mg"],
     },
     "bur-mozza": {
-        intro: "치즈 불고기버거는 부드럽고 고소한 맛을 좋아하실 때 잘 맞아요.",
-        summaryLines: ["치즈를 좋아하시면 추천드려요", "불고기 맛에 치즈 풍미가 더해져요"],
+        intro: "불고기버거에 치즈가 더해진 고소한 버거입니다.",
+        nutritionLines: ["칼로리: 558kcal", "단백질: 16g", "나트륨: 1,050mg"],
     },
     "bur-chicken": {
-        intro: "치킨버거는 담백하게 드시고 싶을 때 많이 고르시는 메뉴예요.",
-        summaryLines: ["부담 없이 고르기 좋아요", "가벼운 느낌을 원할 때 잘 맞아요"],
+        intro: "바삭한 치킨 패티가 들어간 담백한 버거입니다.",
+        nutritionLines: ["칼로리: 534kcal", "단백질: 15g", "나트륨: 1,010mg"],
     },
 };
 
@@ -333,7 +333,7 @@ function MenuPageContent() {
         if (!showPopularMenuInfo) return;
         const targetMenu = findPopularMenuById(popularMenuInfoId) || findPopularMenus()[0];
         if (!targetMenu) return;
-        const detail = getPopularMenuDetail(targetMenu);
+        const detail = getPopularMenuGuide(targetMenu);
         let cancelled = false;
         (async () => {
             isSpeakingRef.current = true;
@@ -515,6 +515,18 @@ function MenuPageContent() {
                 ...summaryLines,
             ],
             voiceScript: intro,
+        };
+    }
+
+    function getPopularMenuGuide(menu) {
+        const preset = POPULAR_MENU_DETAIL_BY_ID[menu?.id];
+        const fallbackText = `${menu?.name || "메뉴"} 안내입니다.`;
+        return {
+            image: menuThumbImageSrc(menu) || menu?.image || POPULAR_MENU_DETAIL.image,
+            title: menu?.name || POPULAR_MENU_DETAIL.title,
+            intro: preset?.intro || fallbackText,
+            nutritionLines: preset?.nutritionLines || [`가격: ${(menu?.price || 0).toLocaleString()}원`],
+            voiceScript: preset?.intro || fallbackText,
         };
     }
 
@@ -2528,7 +2540,7 @@ function MenuPageContent() {
                     {(() => {
                         const menu = findPopularMenuById(popularMenuInfoId) || findPopularMenus()[0];
                         if (!menu) return null;
-                        const detail = getPopularMenuDetail(menu);
+                        const detail = getPopularMenuGuide(menu);
                         return (
                     <div
                         style={{
