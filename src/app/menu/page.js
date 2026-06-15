@@ -2407,10 +2407,10 @@ function MenuPageContent() {
                                                 style={{ width: "100%", height: "100%", objectFit: "contain" }}
                                             />
                                         </div>
-                                        <div style={{ fontSize: "1.7rem", fontWeight: 800, marginBottom: 10 }}>
+                                        <div style={{ fontSize: "1.9rem", fontWeight: 800, marginBottom: 10 }}>
                                             {menu.name}
                                         </div>
-                                        <div style={{ fontSize: "1.5rem", color: "#002e55", fontWeight: 800, marginBottom: 14 }}>
+                                        <div style={{ fontSize: "1.65rem", color: "#002e55", fontWeight: 800, marginBottom: 14 }}>
                                             {menu.price.toLocaleString()}원
                                         </div>
                                     </button>
