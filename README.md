@@ -2,11 +2,11 @@
 
 > 시니어 사용자가 더 쉽고 편하게 주문할 수 있도록 설계한 음성 기반 키오스크 웹 서비스
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
-![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react)
-![Express](https://img.shields.io/badge/Express-Backend-111111?style=for-the-badge&logo=express)
-![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-Voice%20%26%20AI-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat&logo=next.js)
+![React](https://img.shields.io/badge/React-19-20232A?style=flat&logo=react)
+![Express](https://img.shields.io/badge/Express-Backend-111111?style=flat&logo=express)
+![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?style=flat&logo=mysql&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-Voice%20%26%20AI-412991?style=flat&logo=openai&logoColor=white)
 
 ---
 
@@ -51,10 +51,6 @@
     <td align="center"><img src="./docs/images/pay.jpg" alt="결제 화면" width="100%"><br><strong>결제 화면</strong></td>
   </tr>
 </table>
-
-추가로 옵션 화면까지 보여주고 싶다면 아래 이미지를 같은 방식으로 이어서 넣으면 됩니다.
-
-- `./docs/images/option.jpg`
 
 ---
 
@@ -293,9 +289,3 @@ http://192.168.0.28:3000
 - [README_SETUP.md](./README_SETUP.md)
 - [DEVELOPMENT.md](./DEVELOPMENT.md)
 - [TTS_SETUP.md](./TTS_SETUP.md)
-
----
-
-## 라이선스
-
-이 프로젝트는 학습 및 포트폴리오 목적으로 제작되었습니다.
