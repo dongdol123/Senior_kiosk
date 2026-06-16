@@ -1,6 +1,6 @@
 # Senior Kiosk
 
-> A senior-friendly kiosk ordering experience designed to make menu selection simpler, clearer, and less stressful.
+> 시니어 사용자가 더 쉽고 편하게 주문할 수 있도록 설계한 음성 기반 키오스크 웹 서비스
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
 ![React](https://img.shields.io/badge/React-19-20232A?style=for-the-badge&logo=react)
@@ -10,131 +10,120 @@
 
 ---
 
-## Overview
+## 프로젝트 소개
 
-**Senior Kiosk** is a voice-assisted kiosk web application built for older adults who may feel overwhelmed by conventional self-order systems.
+**Senior Kiosk**는 기존 키오스크 사용이 어렵게 느껴질 수 있는 시니어 사용자를 위해 만든 주문 서비스입니다.
 
-The project focuses on:
+이 프로젝트는 단순히 메뉴를 보여주는 데서 끝나지 않고,
 
-- larger and clearer touch targets
-- simpler step-by-step ordering flows
-- voice guidance and voice-based order support
-- quick recommendation flows that reduce decision fatigue
+- 큰 버튼으로 쉽게 누를 수 있게 하고
+- 음성 안내로 다음 행동을 이해하기 쉽게 만들고
+- 빠른 추천 흐름으로 선택 부담을 줄이는 것
 
-Instead of treating accessibility as an extra feature, this project places it at the center of the user experience.
+에 초점을 맞췄습니다.
+
+즉, "주문 기능"보다 **접근성과 사용 경험**을 더 중심에 둔 키오스크 프로젝트입니다.
 
 ---
 
-## Project Snapshot
+## 프로젝트 한눈에 보기
 
-| Item | Detail |
+| 항목 | 내용 |
 |---|---|
-| Project Type | Senior-friendly kiosk ordering web app |
-| Core Goal | Reduce friction for older adults using digital kiosks |
-| Frontend | Next.js 15, React 19 |
-| Backend | Express |
-| Database | MySQL |
-| AI / Voice | OpenAI API, Web Speech API, TTS |
+| 프로젝트 유형 | 시니어 친화형 키오스크 주문 웹앱 |
+| 핵심 목표 | 고령층 사용자의 주문 부담 완화 |
+| 프론트엔드 | Next.js 15, React 19 |
+| 백엔드 | Express |
+| 데이터베이스 | MySQL |
+| AI / 음성 | OpenAI API, Web Speech API, TTS |
 
 ---
 
-## Screenshots
+## 화면 미리보기
 
-Add your kiosk screenshots here.
+<table>
+  <tr>
+    <td align="center"><img src="./docs/images/main.png.jpg" alt="메인 화면" width="100%"><br><strong>메인 화면</strong></td>
+    <td align="center"><img src="./docs/images/quick.jpg" alt="빠른 메뉴 추천" width="100%"><br><strong>빠른 메뉴 추천</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="./docs/images/menu.png.jpg" alt="메뉴 화면" width="100%"><br><strong>메뉴 화면</strong></td>
+    <td align="center"><img src="./docs/images/pay.jpg" alt="결제 화면" width="100%"><br><strong>결제 화면</strong></td>
+  </tr>
+</table>
 
-### Main Screen
+추가로 옵션 화면까지 보여주고 싶다면 아래 이미지를 같은 방식으로 이어서 넣으면 됩니다.
 
-```md
-![Main Screen](./docs/images/main-screen.png)
-```
-
-### Quick Recommendation Flow
-
-```md
-![Quick Recommendation](./docs/images/quick-recommendation.png)
-```
-
-### Menu Screen
-
-```md
-![Menu Screen](./docs/images/menu-screen.png)
-```
-
-### Order Flow / Voice Interaction
-
-```md
-![Voice Flow](./docs/images/voice-flow.png)
-```
-
-Tip:
-- Create a `docs/images/` folder
-- Drop your screenshots there
-- Replace the example filenames above with your actual image files
+- `./docs/images/option.jpg`
 
 ---
 
-## Why This Project
+## 문제의식
 
-Many kiosk interfaces are designed for speed, but not for comfort.
+기존 키오스크는 빠르게 주문하는 데 초점이 맞춰져 있지만,  
+시니어 사용자 입장에서는 다음과 같은 불편이 크게 느껴질 수 있습니다.
 
-For senior users, common problems include:
+- 한 화면에 선택지가 너무 많음
+- 글자가 작고 정보가 복잡함
+- 무엇을 먼저 눌러야 하는지 직관적이지 않음
+- 실수했을 때 다시 돌아가기가 부담스러움
+- 사람들 앞에서 천천히 조작하기 어려움
 
-- too many choices on one screen
-- small text and dense layouts
-- unfamiliar digital flows
-- difficulty understanding where to tap next
-- anxiety when making mistakes in public
-
-This project responds to those issues with a more guided and forgiving interface.
-
----
-
-## Key Features
-
-### 1. Voice-First Ordering Support
-- voice-based menu exploration
-- AI-assisted order interpretation
-- spoken guidance during the ordering process
-
-### 2. Senior-Friendly UI Design
-- large buttons and touch-friendly layout
-- simplified screen hierarchy
-- reduced visual clutter
-
-### 3. Quick Menu Recommendation
-- fast-entry recommendation flow from the main screen
-- simple dine-in / takeout selection before recommendation
-- 2x2 burger recommendation cards for easier comparison
-
-### 4. QR Entry Support
-- kiosk mode for in-store use
-- QR-based mobile entry flow
-
-### 5. Full Order Flow Structure
-- menu browsing
-- option selection
-- cart handling
-- phone / points step
-- payment-ready flow
+이 프로젝트는 이런 문제를 줄이기 위해 **더 단순하고, 더 명확하고, 더 안내적인 흐름**으로 설계되었습니다.
 
 ---
 
-## User Flow
+## 주요 기능
+
+### 1. 음성 기반 주문 보조
+
+- 음성으로 메뉴 탐색 가능
+- OpenAI 기반 주문 해석
+- TTS 기반 음성 안내 제공
+
+### 2. 시니어 친화형 UI
+
+- 큰 버튼 중심 레이아웃
+- 단계별로 명확한 선택지 제공
+- 복잡한 정보보다 핵심 행동 중심 구성
+
+### 3. 빠른 메뉴 추천 흐름
+
+- 메인 화면에서 빠르게 추천 흐름 진입 가능
+- 추천 전 `여기서 먹기 / 포장하기` 선택
+- 대표 버거 4종을 2x2 카드 형태로 비교 가능
+
+### 4. QR 진입 지원
+
+- 키오스크 모드 주문 지원
+- QR 기반 모바일 진입 흐름 지원
+
+### 5. 전체 주문 플로우 구성
+
+- 메뉴 조회
+- 옵션 선택
+- 장바구니 반영
+- 전화번호 / 포인트 입력
+- 결제 전 단계까지 연결
+
+---
+
+## 사용자 흐름
 
 ```text
-Home
- -> Dine-in / Takeout
- -> Quick Recommendation or Full Menu
- -> Menu Option Selection
- -> Phone / Points
- -> Payment
+메인 화면
+ -> 여기서 먹기 / 포장하기
+ -> 빠른 메뉴 추천 또는 전체 메뉴
+ -> 메뉴 옵션 선택
+ -> 전화번호 / 포인트
+ -> 결제
 ```
 
 ---
 
-## Tech Stack
+## 기술 스택
 
-| Area | Stack |
+| 영역 | 사용 기술 |
 |---|---|
 | Frontend | Next.js 15, React 19, Tailwind CSS 4 |
 | Backend | Node.js, Express |
@@ -145,70 +134,72 @@ Home
 
 ---
 
-## Architecture
+## 시스템 구조
 
 ```text
 Next.js UI
    -> API Proxy (/api/voice-order)
 Express Server
-   -> OpenAI (order interpretation / TTS)
-   -> MySQL (menu / cart / order-related data)
+   -> OpenAI (주문 해석 / TTS)
+   -> MySQL (메뉴 / 장바구니 / 주문 관련 데이터)
 ```
 
 ---
 
-## Folder Structure
+## 폴더 구조
 
 ```text
 src/
   app/
-    (home)/         # main entry screen
-    menu/           # menu list / quick recommendation / voice order
-    menu-option/    # option selection
-    points/         # phone number / points flow
-    payment/        # payment screen
-    qr-order/       # QR entry flow
-  components/       # shared UI components
+    (home)/         # 메인 진입 화면
+    menu/           # 메뉴 목록 / 빠른 추천 / 음성 주문
+    menu-option/    # 옵션 선택
+    points/         # 전화번호 / 포인트 입력
+    payment/        # 결제 화면
+    qr-order/       # QR 진입 흐름
+  components/       # 공통 UI 컴포넌트
 
 server/
-  routes/           # Express routes
-  db/               # schema and seed SQL
+  routes/           # Express API 라우트
+  db/               # DB 스키마 및 시드 SQL
 
-public/             # static assets
+public/             # 이미지 및 정적 리소스
+docs/
+  images/           # README용 화면 이미지
 ```
 
 ---
 
-## API Overview
+## API 요약
 
-Base Express port: `3001`
+기본 Express 포트는 `3001`입니다.
 
 - `POST /api/voice-order`
-  voice/text-based order interpretation
+  음성/텍스트 기반 주문 해석
 - `GET /api/menu`
-  fetch menu list
+  메뉴 목록 조회
 - `POST /api/cart`
-  store cart state
+  장바구니 저장
 - `GET /api/cart/:sessionId`
-  fetch cart state
+  장바구니 조회
 - `POST /api/tts`
-  generate speech output
+  음성 안내 생성
 - `GET /health`
-  health check
+  서버 상태 확인
 
 ---
 
-## Getting Started
+## 실행 방법
 
-### 1. Install Dependencies
+### 1. 패키지 설치
 
 ```bash
 npm install
 ```
 
-### 2. Create Environment File
+### 2. 환경변수 파일 생성
 
-Create `.env.local` or `.env` in the project root.
+프로젝트 루트에 `.env.local` 또는 `.env`를 생성합니다.
 
 ```env
 EXPRESS_PORT=3001
@@ -225,7 +216,7 @@ OPENAI_TTS_VOICE=nova
 OPENAI_TTS_SPEED=0.95
 ```
 
-### 3. Set Up Database
+### 3. 데이터베이스 설정
 
 ```bash
 mysql -u root -p
@@ -235,22 +226,22 @@ mysql -u root -p
 CREATE DATABASE senior_kiosk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-Apply schema and menu seed data:
+스키마와 메뉴 시드 데이터를 적용합니다.
 
 ```bash
 mysql -u root -p senior_kiosk < server/db/schema.sql
 mysql -u root -p senior_kiosk < server/db/add_drinks_sides_menu.sql
 ```
 
-### 4. Run the Project
+### 4. 프로젝트 실행
 
-Run frontend and backend together:
+프론트엔드와 백엔드를 동시에 실행:
 
 ```bash
 npm run dev:all
 ```
 
-Or run them separately:
+개별 실행:
 
 ```bash
 npm run dev
@@ -259,13 +250,15 @@ npm run server
 
 ---
 
-## Local Access
+## 로컬 접속 주소
 
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- Backend: [http://localhost:3001](http://localhost:3001)
-- Health Check: [http://localhost:3001/health](http://localhost:3001/health)
+- 프론트엔드: [http://localhost:3000](http://localhost:3000)
+- 백엔드: [http://localhost:3001](http://localhost:3001)
+- 헬스체크: [http://localhost:3001/health](http://localhost:3001/health)
 
-For tablet testing on the same Wi-Fi, use your PC's local IP:
+같은 와이파이에 연결된 태블릿이나 모바일에서 테스트할 때는 PC의 로컬 IP를 사용하면 됩니다.
+
+예시:
 
 ```text
 http://192.168.0.28:3000
@@ -273,29 +266,29 @@ http://192.168.0.28:3000
 
 ---
 
-## Portfolio Highlights
+## 포트폴리오 포인트
 
-This project is useful in a portfolio because it shows:
+이 프로젝트는 포트폴리오에서 다음 강점을 보여줄 수 있습니다.
 
-- accessibility-driven UX thinking
-- full-stack integration across frontend, backend, DB, and AI APIs
-- real-world kiosk scenario design
-- recommendation and voice interaction in a service flow
-- practical problem-solving for a specific user group
-
----
-
-## Future Improvements
-
-- real user testing with older adults
-- refined recommendation logic
-- stronger payment integration
-- personalized order history features
-- admin dashboard for menu and order management
+- 접근성 중심 UX 설계
+- 프론트엔드, 백엔드, DB, AI API를 연결한 풀스택 구현
+- 실제 키오스크 상황을 고려한 서비스 설계
+- 음성 안내와 추천 흐름을 결합한 사용자 경험 설계
+- 특정 사용자군(시니어)을 위한 문제 해결형 프로젝트
 
 ---
 
-## Related Docs
+## 향후 개선 방향
+
+- 실제 시니어 사용자 테스트 기반 개선
+- 추천 로직 고도화
+- 결제 연동 강화
+- 주문 이력 기반 개인화 기능
+- 관리자용 메뉴 / 주문 관리 대시보드
+
+---
+
+## 관련 문서
 
 - [README_SETUP.md](./README_SETUP.md)
 - [DEVELOPMENT.md](./DEVELOPMENT.md)
@@ -303,6 +296,6 @@ This project is useful in a portfolio because it shows:
 
 ---
 
-## License
+## 라이선스
 
-This project was created for learning and portfolio purposes.
+이 프로젝트는 학습 및 포트폴리오 목적으로 제작되었습니다.
