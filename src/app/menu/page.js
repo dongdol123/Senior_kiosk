@@ -123,7 +123,7 @@ function isPopularMenuRequest(normalized) {
 
 const POPULAR_MENU_ID = "bur-triple";
 
-const POPULAR_RECOMMEND_VOICE = "더블 불고기버거 주문하시겠어요?";
+const POPULAR_RECOMMEND_VOICE = "빠른 메뉴 추천 네 가지를 먼저 보여드릴게요.";
 
 /** 인기 메뉴 추천 팝업 전용: 화면에는 요약·영양 표시, 음성은 intro만 */
 const POPULAR_MENU_DETAIL = {
@@ -143,6 +143,27 @@ const POPULAR_MENU_DETAIL = {
 };
 
 /** 음료·사이드 단품 사이즈 팝업용 (치킨윙: 6개/8개 → 미디움/라지) */
+const POPULAR_MENU_IDS = ["bur-triple", "bur-bulgogi", "bur-mozza", "bur-chicken"];
+
+const POPULAR_MENU_DETAIL_BY_ID = {
+    "bur-triple": {
+        intro: "불고기버거와 같은 맛에 패티가 두 장 들어간 버거입니다.",
+        nutritionLines: ["칼로리: 742kcal", "단백질: 18g", "나트륨: 1,320mg"],
+    },
+    "bur-bulgogi": {
+        intro: "달콤한 불고기 소스가 들어간 기본 버거입니다.",
+        nutritionLines: ["칼로리: 512kcal", "단백질: 14g", "나트륨: 980mg"],
+    },
+    "bur-mozza": {
+        intro: "불고기버거에 치즈가 더해진 고소한 버거입니다.",
+        nutritionLines: ["칼로리: 558kcal", "단백질: 16g", "나트륨: 1,050mg"],
+    },
+    "bur-chicken": {
+        intro: "바삭한 치킨 패티가 들어간 담백한 버거입니다.",
+        nutritionLines: ["칼로리: 534kcal", "단백질: 15g", "나트륨: 1,010mg"],
+    },
+};
+
 function parseMenuSizeChoice(normalized, menuId) {
     if (menuId === "side-wing") {
         if (/8개|여덟개|여덟|팔개|라지|큰|large|빅/.test(normalized)) return "라지";
@@ -214,6 +235,7 @@ function MenuPageContent() {
     const [isShrimpInfoDeclineActive, setIsShrimpInfoDeclineActive] = useState(false);
     const [showPopularRecommendation, setShowPopularRecommendation] = useState(false);
     const [showPopularMenuInfo, setShowPopularMenuInfo] = useState(false);
+    const [popularMenuInfoId, setPopularMenuInfoId] = useState(null);
     const [isPopularPopupCloseButtonActive, setIsPopularPopupCloseButtonActive] = useState(false);
     const [isPopularInfoConfirmActive, setIsPopularInfoConfirmActive] = useState(false);
     const [isPopularInfoDeclineActive, setIsPopularInfoDeclineActive] = useState(false);
@@ -221,6 +243,7 @@ function MenuPageContent() {
     const showShrimpRecommendationRef = useRef(false);
     const showPopularRecommendationRef = useRef(false);
     const showPopularMenuInfoRef = useRef(false);
+    const popularMenuInfoIdRef = useRef(null);
     const shrimpMenuInfoIdRef = useRef(null);
     const menuItemsRef = useRef(MENU_ITEMS);
     const currentPageRef = useRef(1);
@@ -239,6 +262,10 @@ function MenuPageContent() {
     useEffect(() => {
         showPopularMenuInfoRef.current = showPopularMenuInfo;
     }, [showPopularMenuInfo]);
+
+    useEffect(() => {
+        popularMenuInfoIdRef.current = popularMenuInfoId;
+    }, [popularMenuInfoId]);
 
     useEffect(() => {
         selectedDrinkMenuRef.current = selectedDrinkMenu;
@@ -273,6 +300,7 @@ function MenuPageContent() {
     useEffect(() => {
         if (!showPopularRecommendation) {
             setShowPopularMenuInfo(false);
+            setPopularMenuInfoId(null);
         }
     }, [showPopularRecommendation]);
 
@@ -286,7 +314,7 @@ function MenuPageContent() {
             try {
                 await speakKorean(msg);
             } catch (e) {
-                console.error("인기 메뉴 추천 음성 오류:", e);
+                console.error("빠른 메뉴 추천 음성 오류:", e);
             } finally {
                 if (!cancelled) {
                     setTimeout(() => {
@@ -303,13 +331,16 @@ function MenuPageContent() {
 
     useEffect(() => {
         if (!showPopularMenuInfo) return;
+        const targetMenu = findPopularMenuById(popularMenuInfoId) || findPopularMenus()[0];
+        if (!targetMenu) return;
+        const detail = getPopularMenuGuide(targetMenu);
         let cancelled = false;
         (async () => {
             isSpeakingRef.current = true;
             try {
-                await speakKorean(POPULAR_MENU_DETAIL.voiceScript);
+                await speakKorean(detail.voiceScript);
             } catch (e) {
-                console.error("인기 메뉴 안내 음성 오류:", e);
+                console.error("빠른 메뉴 안내 음성 오류:", e);
             } finally {
                 if (!cancelled) {
                     setTimeout(() => {
@@ -322,7 +353,7 @@ function MenuPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [showPopularMenuInfo]);
+    }, [showPopularMenuInfo, popularMenuInfoId, MENU_ITEMS]);
 
     useEffect(() => {
         if (!shrimpMenuInfoId) return;
@@ -376,6 +407,7 @@ function MenuPageContent() {
         const menuCategory = searchParams.get("menuCategory");
         const menuPageParam = parseInt(searchParams.get("menuPage") || "", 10);
         const shouldShowShrimpPopup = searchParams.get("showShrimpPopup") === "1";
+        const shouldShowQuickRecommend = searchParams.get("quickRecommend") === "1";
 
         if (menuCategory === "burger" || menuCategory === "drink" || menuCategory === "side") {
             setSelectedCategory(menuCategory);
@@ -387,6 +419,13 @@ function MenuPageContent() {
 
         if (shouldShowShrimpPopup) {
             setShowShrimpRecommendation(true);
+        }
+
+        if (shouldShowQuickRecommend) {
+            setShowShrimpRecommendation(false);
+            setShrimpMenuInfoId(null);
+            setShowPopularRecommendation(true);
+            setShowPopularMenuInfo(false);
         }
     }, [searchParams]);
 
@@ -450,6 +489,45 @@ function MenuPageContent() {
         const fromItems = MENU_ITEMS.find((item) => item.id === POPULAR_MENU_ID);
         if (fromItems) return fromItems;
         return STATIC_MENU.find((item) => item.id === POPULAR_MENU_ID) || null;
+    }
+
+    function findPopularMenuById(menuId) {
+        if (!menuId) return null;
+        const fromItems = MENU_ITEMS.find((item) => item.id === menuId);
+        if (fromItems) return fromItems;
+        return STATIC_MENU.find((item) => item.id === menuId) || null;
+    }
+
+    function findPopularMenus() {
+        return POPULAR_MENU_IDS.map((menuId) => findPopularMenuById(menuId)).filter(Boolean);
+    }
+
+    function getPopularMenuDetail(menu) {
+        const preset = POPULAR_MENU_DETAIL_BY_ID[menu?.id];
+        const intro = preset?.intro || `${menu?.name || "이 메뉴"}는 편하게 고르기 좋은 빠른 메뉴 추천 항목이에요.`;
+        const summaryLines = preset?.summaryLines || ["부담 없이 고르기 좋은 메뉴예요"];
+        return {
+            image: menuThumbImageSrc(menu) || menu?.image || POPULAR_MENU_DETAIL.image,
+            title: menu?.name || POPULAR_MENU_DETAIL.title,
+            intro,
+            nutritionLines: [
+                `가격: ${(menu?.price || 0).toLocaleString()}원`,
+                ...summaryLines,
+            ],
+            voiceScript: intro,
+        };
+    }
+
+    function getPopularMenuGuide(menu) {
+        const preset = POPULAR_MENU_DETAIL_BY_ID[menu?.id];
+        const fallbackText = `${menu?.name || "메뉴"} 안내입니다.`;
+        return {
+            image: menuThumbImageSrc(menu) || menu?.image || POPULAR_MENU_DETAIL.image,
+            title: menu?.name || POPULAR_MENU_DETAIL.title,
+            intro: preset?.intro || fallbackText,
+            nutritionLines: preset?.nutritionLines || [`가격: ${(menu?.price || 0).toLocaleString()}원`],
+            voiceScript: preset?.intro || fallbackText,
+        };
     }
 
     function openPopularRecommendation() {
@@ -899,7 +977,10 @@ function MenuPageContent() {
                             normalized
                         )
                     ) {
-                        const m = menuItemsRef.current.find((item) => item.id === POPULAR_MENU_ID);
+                        const m =
+                            findPopularMenuById(popularMenuInfoIdRef.current) ||
+                            findPopularMenus()[0] ||
+                            menuItemsRef.current.find((item) => item.id === POPULAR_MENU_ID);
                         if (m) {
                             try {
                                 recognition.stop();
@@ -929,6 +1010,7 @@ function MenuPageContent() {
                     return;
                 }
                 if (wantsDoubleBulgogiInfo) {
+                    setPopularMenuInfoId(POPULAR_MENU_ID);
                     setShowPopularMenuInfo(true);
                     setAssistantMessage(`${POPULAR_MENU_DETAIL.title} 안내입니다. 화면을 확인해 주세요.`);
                     return;
@@ -937,7 +1019,7 @@ function MenuPageContent() {
                     normalized === "선택" ||
                     /이걸로할게|이걸로할래|주문|주문할게|주문할래|좋아|좋아요|응|그래|맞아|확인/.test(normalized)
                 ) {
-                    const m = findPopularMenu();
+                    const m = findPopularMenus()[0] || findPopularMenu();
                     if (m) {
                         handlePopularRecommendationSelect(m);
                     }
@@ -955,6 +1037,7 @@ function MenuPageContent() {
                 return;
             } else if (wantsDoubleBulgogiInfo && !showShrimpRecommendationRef.current) {
                 openPopularRecommendation();
+                setPopularMenuInfoId(POPULAR_MENU_ID);
                 setShowPopularMenuInfo(true);
                 setAssistantMessage(`${POPULAR_MENU_DETAIL.title} 안내입니다. 화면을 확인해 주세요.`);
                 return;
@@ -2219,7 +2302,7 @@ function MenuPageContent() {
                 </div>
             )}
 
-            {showPopularRecommendation && findPopularMenu() && (
+            {showPopularRecommendation && findPopularMenus().length > 0 && (
                 <div
                     style={{
                         position: "fixed",
@@ -2259,8 +2342,8 @@ function MenuPageContent() {
                                 marginBottom: 24,
                             }}
                         >
-                            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000", margin: 0, flex: 1, textAlign: "center" }}>
-                                인기 메뉴 추천
+                            <h2 style={{ fontSize: "2.5rem", fontWeight: 800, color: "#000", margin: 0, flex: 1, textAlign: "left" }}>
+                                빠른 메뉴 추천
                             </h2>
                             <button
                                 type="button"
@@ -2286,7 +2369,96 @@ function MenuPageContent() {
                                 닫기
                             </button>
                         </div>
-                        {(() => {
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                                gap: 20,
+                            }}
+                        >
+                            {findPopularMenus().map((menu) => (
+                                <div
+                                    key={menu.id}
+                                    style={{
+                                        border: activeMenuCardId === menu.id ? "2px solid #002e55" : "2px solid #d9e3ef",
+                                        borderRadius: 22,
+                                        background: "#fff",
+                                        padding: 18,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        textAlign: "center",
+                                        minHeight: 420,
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveMenuCardId(menu.id);
+                                            setTimeout(() => handlePopularRecommendationSelect(menu), 120);
+                                        }}
+                                        style={{ border: "none", background: "transparent", cursor: "pointer", width: "100%" }}
+                                    >
+                                        <div
+                                            style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16 }}
+                                        >
+                                            <img
+                                                src={menuThumbImageSrc(menu) || menu.image || POPULAR_MENU_DETAIL.image}
+                                                alt={menu.name}
+                                                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                                            />
+                                        </div>
+                                        <div style={{ fontSize: "1.9rem", fontWeight: 800, marginBottom: 10 }}>
+                                            {menu.name}
+                                        </div>
+                                        <div style={{ fontSize: "1.65rem", color: "#002e55", fontWeight: 800, marginBottom: 14 }}>
+                                            {menu.price.toLocaleString()}원
+                                        </div>
+                                    </button>
+                                    <div style={{ display: "flex", gap: 10, marginTop: "auto" }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPopularMenuInfoId(menu.id);
+                                                setShowPopularMenuInfo(true);
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: "14px 16px",
+                                                borderRadius: "16px",
+                                                border: "2px solid #d9e3ef",
+                                                backgroundColor: "#f5f8fc",
+                                                fontSize: "1.2rem",
+                                                fontWeight: 700,
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            메뉴 안내
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveMenuCardId(menu.id);
+                                                setTimeout(() => handlePopularRecommendationSelect(menu), 120);
+                                            }}
+                                            style={{
+                                                flex: 1,
+                                                padding: "14px 16px",
+                                                borderRadius: "16px",
+                                                border: "none",
+                                                backgroundColor: "#002e55",
+                                                color: "#fff",
+                                                fontSize: "1.2rem",
+                                                fontWeight: 800,
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            이 메뉴 선택
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        {false && (() => {
                             const menu = findPopularMenu();
                             if (!menu) return null;
                             return (
@@ -2365,6 +2537,11 @@ function MenuPageContent() {
                     }}
                     onClick={() => setShowPopularMenuInfo(false)}
                 >
+                    {(() => {
+                        const menu = findPopularMenuById(popularMenuInfoId) || findPopularMenus()[0];
+                        if (!menu) return null;
+                        const detail = getPopularMenuGuide(menu);
+                        return (
                     <div
                         style={{
                             width: "min(960px, 100%)",
@@ -2394,16 +2571,16 @@ function MenuPageContent() {
                                 }}
                             >
                                 <img
-                                    src={POPULAR_MENU_DETAIL.image}
-                                    alt={POPULAR_MENU_DETAIL.title}
+                                    src={detail.image}
+                                    alt={detail.title}
                                     style={{ width: "100%", maxWidth: 420, maxHeight: 320, objectFit: "contain" }}
                                 />
                             </div>
                             <div style={{ flex: "1.2 1 320px", minWidth: 0 }}>
-                                <div style={{ fontSize: "2rem", fontWeight: 800, marginBottom: 12 }}>{POPULAR_MENU_DETAIL.title}</div>
-                                <p style={{ fontSize: "1.45rem", lineHeight: 1.55, margin: "0 0 16px" }}>{POPULAR_MENU_DETAIL.intro}</p>
+                                <div style={{ fontSize: "2rem", fontWeight: 800, marginBottom: 12 }}>{detail.title}</div>
+                                <p style={{ fontSize: "1.45rem", lineHeight: 1.55, margin: "0 0 16px" }}>{detail.intro}</p>
                                 <ul style={{ margin: 0, paddingLeft: 22, fontSize: "1.25rem", lineHeight: 1.65, color: "#002e55" }}>
-                                    {POPULAR_MENU_DETAIL.nutritionLines.map((line) => (
+                                    {detail.nutritionLines.map((line) => (
                                         <li key={line}>{line}</li>
                                     ))}
                                 </ul>
@@ -2435,7 +2612,6 @@ function MenuPageContent() {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    const menu = findPopularMenu();
                                     if (!menu) return;
                                     setIsPopularInfoConfirmActive(true);
                                     setTimeout(() => {
@@ -2459,6 +2635,8 @@ function MenuPageContent() {
                             </button>
                         </div>
                     </div>
+                        );
+                    })()}
                 </div>
             )}
 
