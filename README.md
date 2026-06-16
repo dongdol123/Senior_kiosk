@@ -43,12 +43,24 @@
 
 <table>
   <tr>
-    <td align="center"><img src="./docs/images/main.png.jpg" alt="메인 화면" width="100%"><br><strong>메인 화면</strong></td>
-    <td align="center"><img src="./docs/images/quick.jpg" alt="빠른 메뉴 추천" width="100%"><br><strong>빠른 메뉴 추천</strong></td>
+    <td align="center">
+      <img src="./docs/images/main.png.jpg" alt="메인 화면" width="100%"><br>
+      <strong>메인 화면</strong>
+    </td>
+    <td align="center">
+      <img src="./docs/images/quick.jpg" alt="빠른 메뉴 추천" width="100%"><br>
+      <strong>빠른 메뉴 추천</strong>
+    </td>
   </tr>
   <tr>
-    <td align="center"><img src="./docs/images/menu.png.jpg" alt="메뉴 화면" width="100%"><br><strong>메뉴 화면</strong></td>
-    <td align="center"><img src="./docs/images/pay.jpg" alt="결제 화면" width="100%"><br><strong>결제 화면</strong></td>
+    <td align="center">
+      <img src="./docs/images/menu.png.jpg" alt="메뉴 화면" width="100%"><br>
+      <strong>메뉴 화면</strong>
+    </td>
+    <td align="center">
+      <img src="./docs/images/pay.jpg" alt="결제 화면" width="100%"><br>
+      <strong>결제 화면</strong>
+    </td>
   </tr>
 </table>
 
@@ -89,12 +101,7 @@
 - 추천 전 `여기서 먹기 / 포장하기` 선택
 - 대표 버거 4종을 2x2 카드 형태로 비교 가능
 
-### 4. QR 진입 지원
-
-- 키오스크 모드 주문 지원
-- QR 기반 모바일 진입 흐름 지원
-
-### 5. 전체 주문 플로우 구성
+### 4. 전체 주문 플로우 구성
 
 - 메뉴 조회
 - 옵션 선택
@@ -160,8 +167,6 @@ server/
   db/               # DB 스키마 및 시드 SQL
 
 public/             # 이미지 및 정적 리소스
-docs/
-  images/           # README용 화면 이미지
 ```
 
 ---
@@ -262,7 +267,7 @@ http://192.168.0.28:3000
 
 ---
 
-## 포트폴리오 포인트
+## 프로젝트 특징
 
 이 프로젝트는 포트폴리오에서 다음 강점을 보여줄 수 있습니다.
 
@@ -271,16 +276,6 @@ http://192.168.0.28:3000
 - 실제 키오스크 상황을 고려한 서비스 설계
 - 음성 안내와 추천 흐름을 결합한 사용자 경험 설계
 - 특정 사용자군(시니어)을 위한 문제 해결형 프로젝트
-
----
-
-## 향후 개선 방향
-
-- 실제 시니어 사용자 테스트 기반 개선
-- 추천 로직 고도화
-- 결제 연동 강화
-- 주문 이력 기반 개인화 기능
-- 관리자용 메뉴 / 주문 관리 대시보드
 
 ---
 
