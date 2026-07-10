@@ -4,10 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -H 0.0.0.0",
-    "build": "next build --turbopack",
-    "start": "next start",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0",
     "server": "node server/index.js",
     "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
+    "db:import": "mysql -h \"${DB_HOST:-127.0.0.1}\" -P \"${DB_PORT:-3306}\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" \"$DB_NAME\" < server/db/senior_kiosk.sql",
+    "db:schema": "mysql -h \"${DB_HOST:-127.0.0.1}\" -P \"${DB_PORT:-3306}\" -u \"$DB_USER\" -p\"$DB_PASSWORD\" < server/db/schema.sql",
+    "pm2:start": "pm2 start ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs --update-env",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "deploy:ec2": "bash scripts/deploy-ec2.sh",
+    "setup:mysql": "bash scripts/setup-ec2-mysql.sh",
     "lint": "eslint"
   },
   "dependencies": {

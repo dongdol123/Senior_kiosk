@@ -143,7 +143,8 @@
 Next.js UI
    -> API Proxy (/api/voice-order)
 Express Server
-   -> OpenAI (주문 해석 / TTS)
+   -> OpenAI (주문 해석)
+   -> Google Cloud TTS (/api/tts)
    -> MySQL (메뉴 / 장바구니 / 주문 관련 데이터)
 ```
 
@@ -164,7 +165,9 @@ src/
 
 server/
   routes/           # Express API 라우트
-  db/               # DB 스키마 및 시드 SQL
+  db/               # DB 스키마, 운영 덤프(senior_kiosk.sql)
+
+scripts/            # EC2 MySQL/배포 스크립트
 
 public/             # 이미지 및 정적 리소스
 ```
@@ -186,7 +189,7 @@ public/             # 이미지 및 정적 리소스
 - `POST /api/tts`
   음성 안내 생성
 - `GET /health`
-  서버 상태 확인
+  API + MySQL 연결 상태 확인
 
 ---
 
@@ -200,39 +203,43 @@ npm install
 
 ### 2. 환경변수 파일 생성
 
-프로젝트 루트에 `.env.local` 또는 `.env`를 생성합니다.
+프로젝트 루트에 `.env.local` 또는 `.env`를 생성합니다. (`.env.example` 참고)
 
 ```env
 EXPRESS_PORT=3001
-EXPRESS_API_URL=http://localhost:3001
+EXPRESS_API_URL=http://127.0.0.1:3001
+NEXT_PUBLIC_API_URL=http://127.0.0.1:3001
 
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_USER=root
+DB_USER=kiosk
 DB_PASSWORD=your_password
 DB_NAME=senior_kiosk
 
 OPENAI_API_KEY=sk-...
-OPENAI_TTS_VOICE=nova
-OPENAI_TTS_SPEED=0.95
+GOOGLE_TTS_API_KEY=AIza...
 ```
 
 ### 3. 데이터베이스 설정
 
-```bash
-mysql -u root -p
-```
-
-```sql
-CREATE DATABASE senior_kiosk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-스키마와 메뉴 시드 데이터를 적용합니다.
+**로컬 개발** — 스키마 + 시드:
 
 ```bash
 mysql -u root -p senior_kiosk < server/db/schema.sql
 mysql -u root -p senior_kiosk < server/db/add_drinks_sides_menu.sql
 ```
+
+**EC2 운영** — 운영 덤프 복원 (권장):
+
+```bash
+export DB_PASSWORD='강한비밀번호'
+npm run setup:mysql
+```
+
+| 파일 | 용도 |
+|------|------|
+| `server/db/senior_kiosk.sql` | 운영 덤프 (메뉴 + 대화 기록) |
+| `server/db/schema.sql` | 신규 설치용 스키마 |
 
 ### 4. 프로젝트 실행
 
@@ -276,6 +283,25 @@ http://192.168.0.28:3000
 - 실제 키오스크 상황을 고려한 서비스 설계
 - 음성 안내와 추천 흐름을 결합한 사용자 경험 설계
 - 특정 사용자군(시니어)을 위한 문제 해결형 프로젝트
+
+---
+
+## EC2 배포 (Ubuntu + 내부 MySQL)
+
+```bash
+git clone git@github.com:dongdol123/Senior_kiosk.git
+cd Senior_kiosk
+cp .env.example .env
+# API 키·DB 비밀번호 입력
+
+export DB_PASSWORD='강한비밀번호'
+npm run setup:mysql
+npm run deploy:ec2
+```
+
+```bash
+curl -s http://127.0.0.1:3001/health
+```
 
 ---
 

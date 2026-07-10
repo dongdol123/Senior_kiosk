@@ -23,6 +23,10 @@ function buildMysqlPoolConfig() {
         waitForConnections: true,
         connectionLimit: 10,
         queueLimit: 0,
+        charset: 'utf8mb4',
+        timezone: '+09:00',
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
     };
     if (process.env.DB_SOCKET_PATH) {
         return { ...base, socketPath: process.env.DB_SOCKET_PATH };
@@ -58,9 +62,28 @@ app.use('/api/cart', require('./routes/cart')(pool));
 app.use('/api/menu', require('./routes/menu')(pool));
 app.use('/api/tts', require('./routes/tts')());
 
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check (DB 연결 포함)
+app.get('/health', async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        try {
+            await conn.query('SELECT 1');
+        } finally {
+            conn.release();
+        }
+        res.json({
+            status: 'ok',
+            db: 'connected',
+            timestamp: new Date().toISOString(),
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'error',
+            db: 'disconnected',
+            detail: error.message,
+            timestamp: new Date().toISOString(),
+        });
+    }
 });
 
 app.listen(PORT, () => {

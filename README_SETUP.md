@@ -3,122 +3,106 @@
 ## 아키텍처
 
 ```
-Frontend (Next.js) → Express Server → OpenAI & MySQL → Express → Frontend
+브라우저(키오스크) → Next.js(:3000) → Express(:3001) → MySQL(EC2 localhost)
+                              ↘ Express 직접 호출 (메뉴/TTS 등)
 ```
 
-## 필수 요구사항
-
-- Node.js 18+
-- MySQL 8.0+
-- OpenAI API Key
-
-## 설치 및 설정
-
-### 1. 의존성 설치
+## 1. 의존성
 
 ```bash
 npm install
 ```
 
-### 2. MySQL 데이터베이스 설정
+## 2. 환경변수
 
 ```bash
-# MySQL 접속
-mysql -u root -p
-
-# 스키마 실행
-mysql -u root -p < server/db/schema.sql
+cp .env.example .env
 ```
 
-또는 MySQL Workbench에서 `server/db/schema.sql` 파일을 실행하세요.
+필수 항목:
 
-### 3. 환경 변수 설정
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+- `OPENAI_API_KEY`
+- `NEXT_PUBLIC_API_URL` (키오스크 단말에서 접근 가능한 API 주소)
 
-`.env` 파일을 프로젝트 루트에 생성하고 다음 내용을 추가하세요:
+## 3. MySQL (EC2 Ubuntu)
 
-```env
-# Express Server
-EXPRESS_PORT=3001
+### 자동 설치 + 운영 덤프 복원
 
-# MySQL Database
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=senior_kiosk
-
-# OpenAI API
-OPENAI_API_KEY=sk-your-openai-api-key
-
-# Next.js API Proxy (선택사항)
-EXPRESS_API_URL=http://localhost:3001
+```bash
+export DB_PASSWORD='강한비밀번호'
+bash scripts/setup-ec2-mysql.sh
 ```
 
-### 4. 서버 실행
+또는:
 
-#### 옵션 1: 동시 실행 (권장)
+```bash
+export DB_PASSWORD='강한비밀번호'
+npm run setup:mysql
+```
+
+`server/db/senior_kiosk.sql` 이 복원됩니다. (메뉴 21종 + 대화 기록 포함)
+
+### 수동 설치
+
+```bash
+sudo apt update && sudo apt install -y mysql-server
+sudo systemctl enable --now mysql
+
+sudo mysql <<'SQL'
+CREATE DATABASE senior_kiosk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'kiosk'@'localhost' IDENTIFIED BY 'STRONG_PW';
+GRANT ALL PRIVILEGES ON senior_kiosk.* TO 'kiosk'@'localhost';
+FLUSH PRIVILEGES;
+SQL
+
+mysql -u kiosk -p senior_kiosk < server/db/senior_kiosk.sql
+```
+
+## 4. 실행
+
+### 개발
 
 ```bash
 npm run dev:all
 ```
 
-이 명령은 Next.js (포트 3000)와 Express (포트 3001)를 동시에 실행합니다.
+### 프로덕션 (EC2)
 
-#### 옵션 2: 별도 실행
-
-터미널 1 - Next.js:
 ```bash
-npm run dev
+npm run build
+npm run pm2:start
+pm2 save
 ```
 
-터미널 2 - Express:
+또는 한 번에:
+
 ```bash
-npm run server
+npm run deploy:ec2
+```
+
+## 5. 확인
+
+```bash
+curl -s http://127.0.0.1:3001/health
+# {"status":"ok","db":"connected",...}
+
+curl -s http://127.0.0.1:3001/api/menu | head
 ```
 
 ## API 엔드포인트
 
-### Express Server (포트 3001)
-
-- `POST /api/voice-order` - 음성 주문 처리 (OpenAI + DB 저장)
-- `POST /api/cart` - 장바구니 저장
-- `GET /api/cart/:sessionId` - 장바구니 조회
-- `GET /health` - 서버 상태 확인
-
-### Next.js API Routes (포트 3000)
-
-- `POST /api/voice-order` - Express 서버로 프록시
-
-## 데이터베이스 스키마
-
-- `conversations` - 대화 기록 저장
-- `carts` - 장바구니 상태 저장
-- `orders` - 주문 내역 저장 (향후 사용)
+- `POST /api/voice-order`
+- `GET /api/menu`
+- `POST /api/cart` / `GET /api/cart/:sessionId`
+- `POST /api/tts`
+- `GET /health`
 
 ## 문제 해결
 
-### MySQL 연결 오류
-- `.env` 파일의 DB 설정 확인
-- MySQL 서비스가 실행 중인지 확인
-- 데이터베이스가 생성되었는지 확인
-
-### Express 서버가 시작되지 않음
-- 포트 3001이 사용 중인지 확인
-- `.env` 파일이 올바른지 확인
-
-### OpenAI API 오류
-- API 키가 올바른지 확인
-- API 사용량/크레딧 확인
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+| 증상 | 확인 |
+|------|------|
+| MySQL 연결 실패 | `DB_HOST=127.0.0.1`, mysql 서비스 실행 여부 |
+| 메뉴 없음 | `npm run db:import` 로 덤프 재적용 |
+| TTS 503 | `GOOGLE_TTS_API_KEY` 설정 |
+| 마이크 안 됨 | HTTPS 사용, 브라우저 권한 확인 |

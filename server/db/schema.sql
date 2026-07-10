@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS menu (
   INDEX idx_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 메뉴 시드: 기존 메뉴 + 키오스크 추가 메뉴 (전체 파일을 다시 넣을 때만 실행; 이미 DB가 있으면 아래 "추가만" 구문 참고)
+-- 메뉴 시드 (운영 덤프 server/db/senior_kiosk.sql 과 동일)
 INSERT INTO menu (name, price, keywords) VALUES
 ('불고기버거', 5000, '불고기,불고기버거,불버거,bulgogi,불거지'),
 ('치즈 불고기버거', 4800, '치즈,치즈불고기버거,불고기,cheese,bulgogi'),
@@ -58,20 +58,15 @@ INSERT INTO menu (name, price, keywords) VALUES
 ('크림 새우버거', 6500, '크림,크림새우,새우,슈림프,cream,shrimp'),
 ('버섯 불고기버거', 6000, '버섯,버섯불고기버거,불고기,머쉬룸,머시룸,mushroom'),
 ('마늘 불고기버거', 5300, '마늘,마늘불고기버거,불고기,garlic,bulgogi'),
-('치즈버거', 4800, '치즈,치즈버거,cheese,치즈버,치즈보거'),
-('치킨윙 4개', 4000, '치킨윙,윙,wing'),
-('해쉬브라운', 2500, '해쉬,해시,hash,브라운,해쉬브라운'),
-('카페라떼', 2500, '카페라떼,라떼,latte,카페'),
-('아이스티', 2500, '아이스티,티,iced,icetea,ice tea');
-
--- 이미 운영 중인 DB에 "추가만" 할 때는 위 INSERT 대신 아래만 실행하면 됩니다 (이름이 겹치면 에러 나므로 이미 있으면 생략).
--- INSERT INTO menu (name, price, keywords) VALUES
--- ('베이컨 불고기버거', 4600, '베이컨,불고기,베이컨불고기버거,bacon,bulgogi,토마토'),
--- ('치즈 불고기버거', 4800, '치즈,치즈불고기버거,불고기,cheese,bulgogi'),
--- ('더블 불고기버거', 5500, '더블,더블불고기버거,불고기,double,bulgogi'),
--- ('버섯 불고기버거', 6000, '버섯,버섯불고기버거,불고기,머쉬룸,머시룸,mushroom'),
--- ('치킨윙 4개', 4000, '치킨윙,윙,wing'),
--- ('해쉬브라운', 2500, '해쉬,해시,hash,브라운,해쉬브라운'),
--- ('카페라떼', 2500, '카페라떼,라떼,latte,카페'),
--- ('아이스티', 2500, '아이스티,티,iced,icetea,ice tea');
+('콜라', 2000, '콜라,coke,코카콜라'),
+('제로콜라', 2000, '제로콜라,제로,coke zero'),
+('사이다', 2000, '사이다,sprite'),
+('제로사이다', 2000, '제로사이다,제로,sprite zero'),
+('아메리카노', 2500, '아메리카노,커피,americano'),
+('카페라떼', 2500, '카페라떼,라떼,latte'),
+('아이스티', 2500, '아이스티,티,iced tea,icetea'),
+('감자튀김', 3000, '감자튀김,감튀,프렌치프라이,french fries'),
+('해시브라운', 2500, '해시브라운,해쉬브라운,해시,hashbrown'),
+('치킨윙', 4000, '치킨윙,윙,wing'),
+('코울슬로', 2000, '코울슬로,샐러드,coleslaw');
 

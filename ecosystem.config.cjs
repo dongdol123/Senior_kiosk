@@ -1,8 +1,8 @@
 /**
- * PM2 설정 — 프로덕션에서 API(Express)와 웹(Next.js) 동시 실행
+ * PM2 설정 — EC2 프로덕션 (Express API + Next.js)
  *
- * 사전 작업: npm run build
- * 시작: pm2 start ecosystem.config.cjs
+ * 사전: npm run build && .env 설정
+ * 시작: npm run pm2:start
  */
 module.exports = {
   apps: [
@@ -17,14 +17,14 @@ module.exports = {
       max_memory_restart: "500M",
       env: {
         NODE_ENV: "production",
+        EXPRESS_PORT: 3001,
       },
-      // .env / .env.local 은 server/index.js 에서 로드
     },
     {
       name: "senior-kiosk-web",
       cwd: __dirname,
       script: "npm",
-      args: "run start -- -H 0.0.0.0",
+      args: "run start -- -H 0.0.0.0 -p 3000",
       instances: 1,
       exec_mode: "fork",
       autorestart: true,
