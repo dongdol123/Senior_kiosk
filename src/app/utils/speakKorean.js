@@ -30,34 +30,32 @@ async function playNext() {
     }
 
     isPlaying = true;
-    const { text, resolve, reject } = audioQueue.shift();
+    const { text, resolve, reject, blockRecognition } = audioQueue.shift();
 
     try {
-        // 서버의 TTS API 호출
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        // 서버의 TTS API 호출 (Google Cloud TTS — 원래 목소리)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
         const response = await fetch(`${apiUrl}/api/tts`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
             body: JSON.stringify({ text }),
         });
 
         if (!response.ok) {
-            // TTS API가 실패하면 브라우저 기본 TTS로 fallback
-            console.warn('TTS API failed, using browser fallback');
+            console.warn("TTS API failed, using browser fallback");
             await fallbackSpeakKorean(text);
             resolve();
             isPlaying = false;
-            playNext(); // 다음 큐 재생
+            playNext();
             return;
         }
 
         const data = await response.json();
 
         if (data.audio) {
-            // Base64 오디오를 디코딩하여 재생
-            const audioBlob = base64ToBlob(data.audio, 'audio/mp3');
+            const audioBlob = base64ToBlob(data.audio, "audio/mp3");
             const audioUrl = URL.createObjectURL(audioBlob);
             currentAudio = new Audio(audioUrl);
 
@@ -73,15 +71,12 @@ async function playNext() {
                     rejectAudio(e);
                 };
                 currentAudio.play().catch(async (err) => {
-                    // 사용자 상호작용 전 autoplay 정책으로 막히는 경우
                     if (isNotAllowedPlaybackError(err)) {
                         URL.revokeObjectURL(audioUrl);
                         currentAudio = null;
                         try {
                             await fallbackSpeakKorean(text);
-                        } catch (_) {
-                            // fallback도 막히면 조용히 종료
-                        }
+                        } catch (_) {}
                         resolveAudio();
                         return;
                     }
@@ -91,79 +86,81 @@ async function playNext() {
         }
         resolve();
     } catch (error) {
-        console.error('TTS Error:', error);
-        // 에러 발생 시 브라우저 기본 TTS로 fallback
+        console.error("TTS Error:", error);
         try {
             await fallbackSpeakKorean(text);
         } catch (e) {
-            console.error('Fallback TTS also failed:', e);
+            console.error("Fallback TTS also failed:", e);
         }
         reject(error);
     } finally {
         isPlaying = false;
         currentAudio = null;
-        // 다음 큐 재생
+        if (blockRecognition !== false && audioQueue.length === 0) {
+            setTtsPlaybackActive(false);
+        }
         playNext();
     }
 }
 
 /**
- * Google WaveNet TTS를 사용하여 한국어 텍스트를 음성으로 변환
- * 한 번에 하나의 음성만 재생되도록 큐잉 시스템 사용
- * @param {string} text - 음성으로 변환할 텍스트
- * @returns {Promise<void>}
+ * Google Cloud TTS (원래 키오스크 목소리)
+ * @param {string} text
+ * @param {{ blockRecognition?: boolean }} [options]
  */
-export async function speakKorean(text) {
-    if (!text || typeof text !== 'string') {
+export async function speakKorean(text, options = {}) {
+    if (!text || typeof text !== "string") {
         return;
     }
 
-    // 현재 재생 중인 음성이 있으면 취소
-    // 주의: pause()는 onended를 발화시키지 않아 이전 playNext의 await가 영영 풀리지 않음.
-    // 따라서 큐/상태 플래그를 강제로 리셋해 새 호출이 즉시 진행될 수 있도록 한다.
+    const blockRecognition = options.blockRecognition !== false;
+
     if (currentAudio) {
         try {
-            // onended를 null 처리해 두면 혹시 남은 핸들러가 늦게 호출돼도 영향 없음
-            try { currentAudio.onended = null; } catch (_) {}
-            try { currentAudio.onerror = null; } catch (_) {}
+            try {
+                currentAudio.onended = null;
+            } catch (_) {}
+            try {
+                currentAudio.onerror = null;
+            } catch (_) {}
             currentAudio.pause();
             currentAudio.currentTime = 0;
         } catch (e) {
-            console.error('Error stopping current audio:', e);
+            console.error("Error stopping current audio:", e);
         }
         currentAudio = null;
     }
 
-    // 이전 호출이 await 중이었더라도 새 호출은 막히지 않도록 상태 플래그 리셋
     isPlaying = false;
 
-    // 브라우저 TTS도 취소
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-        try { window.speechSynthesis.cancel(); } catch (_) {}
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+        try {
+            window.speechSynthesis.cancel();
+        } catch (_) {}
     }
 
-    // 큐 비우기
     audioQueue = [];
 
-    // 새 음성을 큐에 추가하고 즉시 재생
     return new Promise((resolve, reject) => {
-        setTtsPlaybackActive(true);
-        audioQueue.push({ text, resolve, reject });
+        if (blockRecognition) {
+            setTtsPlaybackActive(true);
+        } else {
+            // 사이즈 확인 등: 원래 목소리는 재생하되 음성 인식/화면 전환은 막지 않음
+            setTtsPlaybackActive(false);
+        }
+        audioQueue.push({ text, resolve, reject, blockRecognition });
         playNext();
     });
 }
 
-/**
- * 브라우저 기본 TTS (fallback)
- */
 function fallbackSpeakKorean(text) {
     try {
         const synth = window.speechSynthesis;
         if (!synth) return Promise.resolve();
 
         const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'ko-KR';
-        utter.rate = 1.05;
+        utter.lang = "ko-KR";
+        utter.rate = 0.95;
 
         synth.cancel();
 
@@ -176,43 +173,25 @@ function fallbackSpeakKorean(text) {
             };
             utter.onend = finish;
             utter.onerror = finish;
-            // 예전 5초 대기가 사이즈 담기 후 멈춤처럼 보였음 → 짧게
             setTimeout(finish, 1200);
             synth.speak(utter);
         });
     } catch (e) {
-        console.error('Fallback TTS Error:', e);
+        console.error("Fallback TTS Error:", e);
         return Promise.resolve();
     }
 }
 
 /**
- * 짧은 확인 멘트용 — 네트워크 TTS 없이 바로 브라우저 TTS, 흐름을 막지 않음
+ * 원래 Google TTS 목소리로 재생하되, await/인식 대기는 하지 않음
  */
 export function speakKoreanQuick(text) {
-    if (!text || typeof text !== 'string') return Promise.resolve();
-    try {
-        if (currentAudio) {
-            try { currentAudio.onended = null; } catch (_) {}
-            try { currentAudio.onerror = null; } catch (_) {}
-            try { currentAudio.pause(); } catch (_) {}
-            currentAudio = null;
-        }
-        isPlaying = false;
-        audioQueue = [];
-        setTtsPlaybackActive(false);
-        return fallbackSpeakKorean(text).finally(() => {
-            setTtsPlaybackActive(false);
-        });
-    } catch (_) {
-        setTtsPlaybackActive(false);
-        return Promise.resolve();
-    }
+    if (!text || typeof text !== "string") return Promise.resolve();
+    // 백그라운드 재생 — 호출부는 바로 다음 단계로
+    void speakKorean(text, { blockRecognition: false }).catch(() => {});
+    return Promise.resolve();
 }
 
-/**
- * Base64 문자열을 Blob으로 변환
- */
 function base64ToBlob(base64, mimeType) {
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
@@ -229,5 +208,3 @@ function isNotAllowedPlaybackError(err) {
     const message = String(err.message || "");
     return name === "NotAllowedError" || message.includes("user didn't interact");
 }
-
-
