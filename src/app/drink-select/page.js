@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useMemo } from "react";
-import { isTtsActive, speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean, speakKoreanQuick } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
@@ -425,10 +425,10 @@ function DrinkSelectPageContent() {
             ) {
                 if (/미디움|미디엄|중간/.test(normalized)) {
                     setSelectedDrinkSize("미디움");
-                    reply = `${selectedDrink} 미디움으로 선택했어요.`;
+                    reply = `${selectedDrink} 중간으로 담을게요.`;
                 } else if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
                     setSelectedDrinkSize("라지");
-                    reply = `${selectedDrink} 라지로 선택했어요.`;
+                    reply = `${selectedDrink} 큰 사이즈로 담을게요.`;
                 }
             }
 
@@ -455,10 +455,10 @@ function DrinkSelectPageContent() {
             ) {
                 if (/미디움|미디엄|중간/.test(normalized)) {
                     setSelectedSideSize("미디움");
-                    reply = `${selectedSide} 미디움으로 선택했어요.`;
+                    reply = `${selectedSide} 중간으로 담을게요.`;
                 } else if (/라지|큰거|큰사이즈|큰/.test(normalized)) {
                     setSelectedSideSize("라지");
-                    reply = `${selectedSide} 라지로 선택했어요.`;
+                    reply = `${selectedSide} 큰 사이즈로 담을게요.`;
                 }
             }
 
@@ -472,18 +472,14 @@ function DrinkSelectPageContent() {
 
             setAssistantMessage(reply);
             try { recognition.stop(); } catch (e) { }
-            isSpeakingRef.current = true;
-            await speakKorean(reply);
+            // 사이즈 확인 멘트는 네트워크 TTS await 하지 않음 (5초 멈춤 방지)
+            isSpeakingRef.current = false;
+            speakKoreanQuick(reply).catch(() => {});
             setTimeout(() => {
-                isSpeakingRef.current = false;
-                if (mountedRef.current && shouldListenRef.current) {
-                    setTimeout(() => {
-                        if (recognitionRef.current && mountedRef.current && shouldListenRef.current) {
-                            try { recognitionRef.current.start(); } catch (e) { }
-                        }
-                    }, 2000);
+                if (mountedRef.current && shouldListenRef.current && recognitionRef.current) {
+                    try { recognitionRef.current.start(); } catch (e) { }
                 }
-            }, 1000);
+            }, 400);
         };
 
         recognitionRef.current = recognition;
