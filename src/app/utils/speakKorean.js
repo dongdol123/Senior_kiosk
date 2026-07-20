@@ -159,21 +159,54 @@ export async function speakKorean(text) {
 function fallbackSpeakKorean(text) {
     try {
         const synth = window.speechSynthesis;
-        if (!synth) return;
+        if (!synth) return Promise.resolve();
 
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = 'ko-KR';
-        utter.rate = 0.95;
+        utter.rate = 1.05;
 
         synth.cancel();
 
         return new Promise((resolve) => {
-            utter.onend = resolve;
-            setTimeout(resolve, 5000);
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                resolve();
+            };
+            utter.onend = finish;
+            utter.onerror = finish;
+            // 예전 5초 대기가 사이즈 담기 후 멈춤처럼 보였음 → 짧게
+            setTimeout(finish, 1200);
             synth.speak(utter);
         });
     } catch (e) {
         console.error('Fallback TTS Error:', e);
+        return Promise.resolve();
+    }
+}
+
+/**
+ * 짧은 확인 멘트용 — 네트워크 TTS 없이 바로 브라우저 TTS, 흐름을 막지 않음
+ */
+export function speakKoreanQuick(text) {
+    if (!text || typeof text !== 'string') return Promise.resolve();
+    try {
+        if (currentAudio) {
+            try { currentAudio.onended = null; } catch (_) {}
+            try { currentAudio.onerror = null; } catch (_) {}
+            try { currentAudio.pause(); } catch (_) {}
+            currentAudio = null;
+        }
+        isPlaying = false;
+        audioQueue = [];
+        setTtsPlaybackActive(false);
+        return fallbackSpeakKorean(text).finally(() => {
+            setTtsPlaybackActive(false);
+        });
+    } catch (_) {
+        setTtsPlaybackActive(false);
+        return Promise.resolve();
     }
 }
 

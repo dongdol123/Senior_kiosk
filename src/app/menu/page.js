@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { isTtsActive, speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean, speakKoreanQuick } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import KioskProgressBars from "../../components/KioskProgressBars";
@@ -1146,13 +1146,9 @@ function MenuPageContent() {
                               : "큰";
                     const doneMsg = `${sizeMenu.name} ${label} 사이즈를 담았어요.`;
                     setAssistantMessage(doneMsg);
-                    isSpeakingRef.current = true;
-                    void speakKorean(doneMsg)
-                        .catch(() => {})
-                        .finally(() => {
-                            isSpeakingRef.current = false;
-                            resumeSpeechRecognitionRef.current();
-                        });
+                    isSpeakingRef.current = false;
+                    void speakKoreanQuick(doneMsg).catch(() => {});
+                    resumeSpeechRecognitionRef.current();
                     return;
                 }
                 return;
@@ -1311,13 +1307,9 @@ function MenuPageContent() {
                                   : "큰";
                         const doneMsg = `${matchedMenu.name} ${label} 사이즈를 담았어요.`;
                         setAssistantMessage(doneMsg);
-                        isSpeakingRef.current = true;
-                        void speakKorean(doneMsg)
-                            .catch(() => {})
-                            .finally(() => {
-                                isSpeakingRef.current = false;
-                                resumeSpeechRecognitionRef.current();
-                            });
+                        isSpeakingRef.current = false;
+                        void speakKoreanQuick(doneMsg).catch(() => {});
+                        resumeSpeechRecognitionRef.current();
                         return;
                     }
                     setActiveMenuCardId(matchedMenu.id);

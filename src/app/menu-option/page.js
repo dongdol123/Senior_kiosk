@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { isTtsActive, speakKorean } from "../utils/speakKorean";
+import { isTtsActive, speakKorean, speakKoreanQuick } from "../utils/speakKorean";
 import { registerVoiceSession, stopVoiceSession } from "../utils/voiceSession";
 import KioskAspectFrame from "../../components/KioskAspectFrame";
 import { getOrderFlowEntry, entryQuery } from "../utils/orderFlowEntry";
@@ -562,31 +562,19 @@ function MenuOptionPageContent() {
                         recognition.stop();
                     } catch (e) { }
                     setAssistantMessage("중간 사이즈로 담을게요.");
-                    isSpeakingRef.current = true;
-                    speakKorean("중간 사이즈로 담을게요.").catch(err => console.error("음성 안내 오류:", err));
-                    setTimeout(() => { isSpeakingRef.current = false; }, 2000);
-
-                    // 즉시 함수 호출(터치 버튼과 동일)
-                    console.log("handleDrinkSize(미디움) 호출 시작");
-                    setTimeout(() => {
-                        handleDrinkSize("미디움");
-                    }, 100);
+                    speakKoreanQuick("중간 사이즈로 담을게요.").catch(() => {});
+                    isSpeakingRef.current = false;
+                    handleDrinkSize("미디움");
                     return;
                 }
                 if (/라지|큰거|큰사이즈|큰|라지로|대자|엘사이즈/.test(normalized)) {
                     try {
                         recognition.stop();
                     } catch (e) { }
-                    setAssistantMessage("큰 사이즈로 담을게요. 500원 추가됩니다.");
-                    isSpeakingRef.current = true;
-                    speakKorean("큰 사이즈로 담을게요. 500원 추가됩니다.").catch(err => console.error("음성 안내 오류:", err));
-                    setTimeout(() => { isSpeakingRef.current = false; }, 2000);
-
-                    // 즉시 함수 호출
-                    console.log("handleDrinkSize(라지) 호출 시작");
-                    setTimeout(() => {
-                        handleDrinkSize("라지");
-                    }, 100);
+                    setAssistantMessage("큰 사이즈로 담을게요.");
+                    speakKoreanQuick("큰 사이즈로 담을게요.").catch(() => {});
+                    isSpeakingRef.current = false;
+                    handleDrinkSize("라지");
                     return;
                 }
                 const msg = "중간 사이즈 또는 큰 사이즈 중 어떤 걸 선택하시겠어요?";
@@ -701,11 +689,15 @@ function MenuOptionPageContent() {
                         setSelectedAdditionalDrinkSize("");
                         setActiveOptionButton("");
                         const sizeLabel = pickedSize === "라지" ? "큰" : "중간";
-                        const sayMsg = `${drinkName} ${sizeLabel} 사이즈로 담을게요.`;
+                        const sayMsg = `${drinkName} ${sizeLabel}으로 담을게요.`;
                         setAssistantMessage(sayMsg);
-                        isSpeakingRef.current = true;
-                        speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
-                        setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                        speakKoreanQuick(sayMsg).catch(() => {});
+                        isSpeakingRef.current = false;
+                        setTimeout(() => {
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 300);
                         return;
                     }
                     return; // 사이즈 단계에서는 다른 분기로 빠지지 않음
@@ -776,11 +768,15 @@ function MenuOptionPageContent() {
                         setSelectedAdditionalSideSize("");
                         setActiveOptionButton("");
                         const sizeLabel = pickedSize === "라지" ? "큰" : "중간";
-                        const sayMsg = `${sideName} ${sizeLabel} 사이즈로 담을게요.`;
+                        const sayMsg = `${sideName} ${sizeLabel}으로 담을게요.`;
                         setAssistantMessage(sayMsg);
-                        isSpeakingRef.current = true;
-                        speakKorean(sayMsg).catch((err) => console.error("음성 안내 오류:", err));
-                        setTimeout(() => { isSpeakingRef.current = false; }, 2000);
+                        speakKoreanQuick(sayMsg).catch(() => {});
+                        isSpeakingRef.current = false;
+                        setTimeout(() => {
+                            if (mountedRef.current && shouldListenRef.current) {
+                                try { recognition.start(); } catch (e) { }
+                            }
+                        }, 300);
                         return;
                     }
                     return;
